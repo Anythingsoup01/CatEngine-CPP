@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.30)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+project(CatEngine LANGUAGES C CXX)
+add_subdirectory(vendor/imgui)
+add_subdirectory(vendor/Glad)
+add_subdirectory(CatEditor)
+add_subdirectory(CatEngine)
+add_subdirectory(vendor/glfw)
