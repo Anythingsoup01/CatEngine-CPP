@@ -48,6 +48,11 @@ namespace CatEngine
         bool OnWindowResize(WindowResizeEvent& e);
 
     private:
+
+        // DUMMY DATA TO BE REMOVED AND SEPARATED!
+        uint32_t m_VertexArray, m_VertexBuffer, m_IndexBuffer;
+
+
         bool m_Running = false;
         bool m_Minimized = false;
 

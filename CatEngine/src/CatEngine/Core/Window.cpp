@@ -6,8 +6,6 @@
 #include "CatEngine/Event/KeyEvent.h"
 #include "CatEngine/Event/MouseEvent.h"
 
-#include <glad/glad.h>
-
 namespace CatEngine 
 {
 	// Setting GLFW Functions and Variables
@@ -36,10 +34,11 @@ namespace CatEngine
 		
 		m_Window = glfwCreateWindow((int)props.Width, (int)props.Height, m_Data.Title.c_str(), nullptr, nullptr);
 
-        // Move to a graphics context class
-        glfwMakeContextCurrent(m_Window);
-        int status = gladLoadGL();
-        CE_API_ASSERT(status, "Failed to load GLAD!");
+        // We will simply create our graphics context without a window handle assigned to it
+        m_Context = GraphicsContext::Create();
+        // Then we will run MakeContextCurrent(window) separately to future proof this if we ever need multpile contexts
+        m_Context->MakeContextCurrent(m_Window);
+        m_Context->Init();
 
 		glfwSetWindowUserPointer(m_Window, &m_Data);
 
@@ -169,9 +168,7 @@ namespace CatEngine
 	{
 		glfwPollEvents();
         // TODO MOVE TO GRAPHICS CONTEXT
-        glfwSwapBuffers(m_Window);
-
-        glClear(GL_COLOR_BUFFER_BIT);
+        m_Context->SwapBuffers();
 	}
 	void Window::SetVSync(bool enabled)
 	{

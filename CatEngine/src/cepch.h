@@ -1,6 +1,8 @@
 #pragma once
 
 // TODO We need platform detection for some of these to be included
+#include "CatEngine/Core/PlatformDetection.h"
+
 
 #ifdef CE_PLATFORM_WINDOWS
 #ifndef NOMINMAX
@@ -9,7 +11,7 @@
 #endif
 #endif
 
-#ifdef __linux__
+#ifdef CE_PLATFORM_LINUX
 
 #include <signal.h>
 

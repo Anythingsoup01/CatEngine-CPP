@@ -6,6 +6,8 @@
 
 #include <GLFW/glfw3.h>
 
+#include "CatEngine/Renderer/GraphicsContext.h"
+
 namespace CatEngine 
 {
 	struct WindowProps 
@@ -36,6 +38,7 @@ namespace CatEngine
 		GLFWwindow* Get() { return m_Window; }
     private:
         GLFWwindow* m_Window;
+        Scope<GraphicsContext> m_Context;
 		
         struct WindowData 
         {

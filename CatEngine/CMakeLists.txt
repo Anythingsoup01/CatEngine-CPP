@@ -1,6 +1,9 @@
 set(SRCS
+    src/CatEngine/Renderer/RenderAPI.cpp
+    src/CatEngine/Renderer/GraphicsContext.cpp
     src/CatEngine/ImGui/ImGuiBuild.cpp
     src/CatEngine/ImGui/ImGuiLayer.cpp
+    src/CatEngine/Platform/OpenGL/OpenGLGraphicsContext.cpp
     src/CatEngine/Layer/Layer.cpp
     src/CatEngine/Layer/LayerStack.cpp
     src/CatEngine/Core/Window.cpp
@@ -8,11 +11,14 @@ set(SRCS
     src/CatEngine/Core/Application.cpp
     src/CatEngine.h
     src/cepch.h
+    src/CatEngine/Renderer/RenderAPI.h
+    src/CatEngine/Renderer/GraphicsContext.h
     src/CatEngine/Event/Event.h
     src/CatEngine/Event/MouseEvent.h
     src/CatEngine/Event/KeyEvent.h
     src/CatEngine/Event/ApplicationEvent.h
     src/CatEngine/ImGui/ImGuiLayer.h
+    src/CatEngine/Platform/OpenGL/OpenGLGraphicsContext.h
     src/CatEngine/Layer/LayerStack.h
     src/CatEngine/Layer/Layer.h
     src/CatEngine/Core/Entrypoint.h
@@ -20,6 +26,7 @@ set(SRCS
     src/CatEngine/Core/Log.h
     src/CatEngine/Core/MouseCodes.h
     src/CatEngine/Core/KeyCodes.h
+    src/CatEngine/Core/PlatformDetection.h
     src/CatEngine/Core/Window.h
     src/CatEngine/Core/Application.h
 )
