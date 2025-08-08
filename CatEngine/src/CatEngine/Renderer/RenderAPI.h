@@ -12,8 +12,9 @@ namespace CatEngine
         };
 
         static API Get() { return s_API; }
+        static void Set(API api) { s_API = api; }
 
     private:
-        static inline API s_API = API::OpenGL;
+        static inline API s_API = API::None;
     };
 }

@@ -6,6 +6,8 @@
 
 #define BIND_EVENT_FN(fn) [this](auto&&... args) -> decltype(auto) { return this->fn(std::forward<decltype(args)>(args)...); }
 
+typedef uint32_t RendererID;
+
 #define CE_API_ASSERT(x, ...) if (!(x)) { CatEngine::Log::GetAPILogger()->critical(__VA_ARGS__); raise(SIGTRAP); }
 namespace CatEngine
 {

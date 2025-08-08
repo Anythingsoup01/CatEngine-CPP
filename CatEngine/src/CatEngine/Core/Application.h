@@ -8,6 +8,10 @@
 #include "CatEngine/ImGui/ImGuiLayer.h"
 #include "CatEngine/Layer/LayerStack.h"
 
+#include "CatEngine/Renderer/Shader.h"
+#include "CatEngine/Renderer/Buffer.h"
+#include "CatEngine/Renderer/VertexArray.h"
+
 namespace CatEngine
 {
 	struct ApplicationCommandLineArgs
@@ -49,9 +53,10 @@ namespace CatEngine
 
     private:
 
-        // DUMMY DATA TO BE REMOVED AND SEPARATED!
-        uint32_t m_VertexArray, m_VertexBuffer, m_IndexBuffer;
-
+        Scope<Shader> m_Shader;
+        Ref<VertexBuffer> m_VertexBuffer;
+        Ref<IndexBuffer> m_IndexBuffer;
+        Ref<VertexArray> m_VertexArray;
 
         bool m_Running = false;
         bool m_Minimized = false;

@@ -18,6 +18,7 @@ namespace CatEngine
     {
         int status = gladLoadGL();
         CE_API_ASSERT(status, "Failed to load Glad!");
+
     }
 
     void OpenGLGraphicsContext::SwapBuffers()
