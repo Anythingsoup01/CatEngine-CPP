@@ -9,16 +9,16 @@ extern bool g_ApplicationRunning;
 
 float vertices[6 * 4] =
 {
-    -0.5f, -0.5f, 0.0f, 1.0f, 0.25f, 0.15f, // 0 
-     0.5f, -0.5f, 0.0f, 0.15f, 1.0f, 0.25f, // 1
-     0.5f,  0.5f, 0.0f, 0.25f, 0.15f, 1.0f, // 2
-    -0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 1.0f,   // 3 
+    -0.25f, -0.25f, 0.0f, 1.0f, 0.25f, 0.15f, // 0 
+     0.25f, -0.25f, 0.0f, 0.15f, 1.0f, 0.25f, // 1
+     0.25f,  0.25f, 0.0f, 0.25f, 0.15f, 1.0f, // 2
+    -0.25f,  0.25f, 0.0f, 1.0f, 1.0f, 1.0f,   // 3
 };
 
 uint32_t indices[6]
 {
     0, 1, 2,
-    2, 3, 0
+    2, 3, 0,
 };
 
 namespace CatEngine
@@ -39,14 +39,19 @@ namespace CatEngine
         // Vertex Array
         m_VertexArray = VertexArray::Create();
         // Vertex Buffer
-        m_VertexBuffer = VertexBuffer::Create(vertices, 6 * 4);
+        m_VertexBuffer = VertexBuffer::Create(vertices, 6 * 8);
+        
 
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 6, nullptr);
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 6, (const void*)(sizeof(float) * 3));
+        m_VertexBuffer->SetLayout({
+            { ShaderDataType::Vec3 },
+            { ShaderDataType::Vec3 },
+        });
+
+        m_VertexArray->AddVertexBuffer(m_VertexBuffer);
+
         // Index Buffer
-        m_IndexBuffer = IndexBuffer::Create(indices, 6);
+        m_IndexBuffer = IndexBuffer::Create(indices, 12);
+        m_VertexArray->SetIndexBuffer(m_IndexBuffer);
         // Shader
         
         m_Shader = Shader::Create("resources/shader/vert.glsl", "resources/shader/frag.glsl");
@@ -69,7 +74,7 @@ namespace CatEngine
             // TODO Make a render command class for this
             glClear(GL_COLOR_BUFFER_BIT);
 
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+            glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
 
             float time = (float)glfwGetTime();
             float ts = time - m_LastFrameTime;
