@@ -2,17 +2,27 @@
 #include "Application.h"
 
 #include "CatEngine/Renderer/RenderAPI.h"
+#include "CatEngine/Renderer/Renderer.h"
+#include "CatEngine/Renderer/RenderCommand.h"
 
 extern bool g_ApplicationRunning;
 
 #include <glad/glad.h>
 
-float vertices[6 * 4] =
+float blueVertices[6 * 4] =
 {
-    -0.25f, -0.25f, 0.0f, 1.0f, 0.25f, 0.15f, // 0 
-     0.25f, -0.25f, 0.0f, 0.15f, 1.0f, 0.25f, // 1
-     0.25f,  0.25f, 0.0f, 0.25f, 0.15f, 1.0f, // 2
-    -0.25f,  0.25f, 0.0f, 1.0f, 1.0f, 1.0f,   // 3
+    -0.75f, -0.25f, 0.0f, 0.0f, 0.0f, 1.0f, // 0 
+    -0.50f, -0.25f, 0.0f, 0.0f, 0.0f, 1.0f, // 1
+    -0.50f,  0.00f, 0.0f, 0.0f, 0.0f, 1.0f, // 2
+    -0.75f,  0.00f, 0.0f, 0.0f, 0.0f, 1.0f, // 3
+};
+
+float redVertices[6 * 4] =
+{
+     0.50f,  0.25f, 0.0f, 1.0f, 0.0f, 0.0f, // 0 
+     0.75f,  0.25f, 0.0f, 1.0f, 0.0f, 0.0f, // 1
+     0.75f,  0.50f, 0.0f, 1.0f, 0.0f, 0.0f, // 2
+     0.50f,  0.50f, 0.0f, 1.0f, 0.0f, 0.0f, // 3
 };
 
 uint32_t indices[6]
@@ -29,6 +39,8 @@ namespace CatEngine
 
         RenderAPI::Set(RenderAPI::API::OpenGL);
 
+        Renderer::Init();
+
         m_Window.Init(WindowProps(spec.Name, 800, 800));
         m_Window.SetVSync(true);
         m_Window.SetEventCallback(BIND_EVENT_FN(Application::OnEvent));
@@ -36,24 +48,27 @@ namespace CatEngine
         m_ImGuiLayer = new ImGuiLayer();
         PushOverlay(m_ImGuiLayer);
 
-        // Vertex Array
-        m_VertexArray = VertexArray::Create();
-        // Vertex Buffer
-        m_VertexBuffer = VertexBuffer::Create(vertices, 6 * 8);
-        
-
-        m_VertexBuffer->SetLayout({
+        m_BlueVAO = VertexArray::Create();
+        m_BlueVBO = VertexBuffer::Create(blueVertices, 6 * 8);
+        m_BlueVBO->SetLayout({
             { ShaderDataType::Vec3 },
             { ShaderDataType::Vec3 },
         });
+        m_BlueVAO->AddVertexBuffer(m_BlueVBO);
+        m_BlueEBO = IndexBuffer::Create(indices, 12);
+        m_BlueVAO->SetIndexBuffer(m_BlueEBO);
 
-        m_VertexArray->AddVertexBuffer(m_VertexBuffer);
+        m_RedVAO = VertexArray::Create();
+        m_RedVBO = VertexBuffer::Create(redVertices, 6 * 8);
+        m_RedVBO->SetLayout({
+            { ShaderDataType::Vec3 },
+            { ShaderDataType::Vec3 },
+        });
+        m_RedVAO->AddVertexBuffer(m_RedVBO);
+        m_RedEBO = IndexBuffer::Create(indices, 12);
+        m_RedVAO->SetIndexBuffer(m_RedEBO);
 
-        // Index Buffer
-        m_IndexBuffer = IndexBuffer::Create(indices, 12);
-        m_VertexArray->SetIndexBuffer(m_IndexBuffer);
         // Shader
-        
         m_Shader = Shader::Create("resources/shader/vert.glsl", "resources/shader/frag.glsl");
         m_Shader->Bind();
 
@@ -71,10 +86,17 @@ namespace CatEngine
         m_Running = true;
         while(m_Running)
         {
-            // TODO Make a render command class for this
-            glClear(GL_COLOR_BUFFER_BIT);
+            // TODO Make a render command class for this e
+            RenderCommand::Clear({0.24f, 0.16f, 0.78f, 1.0f});
 
-            glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
+            Renderer::BeginScene();
+            m_Shader->Bind();
+            Renderer::Submit(m_BlueVAO);
+            Renderer::Submit(m_RedVAO);
+
+            Renderer::EndScene();
+
+            //glDrawElements(GL_TRIANGLES, m_VertexArray->GetIndexBuffer()->GetCount(), GL_UNSIGNED_INT, 0);
 
             float time = (float)glfwGetTime();
             float ts = time - m_LastFrameTime;

@@ -2,6 +2,8 @@ set(SRCS
     src/CatEngine/Renderer/RenderAPI.cpp
     src/CatEngine/Renderer/GraphicsContext.cpp
     src/CatEngine/Renderer/Shader.cpp
+    src/CatEngine/Renderer/RenderCommand.cpp
+    src/CatEngine/Renderer/Renderer.cpp
     src/CatEngine/Renderer/VertexArray.cpp
     src/CatEngine/Renderer/Buffer.cpp
     src/CatEngine/ImGui/ImGuiBuild.cpp
@@ -10,6 +12,7 @@ set(SRCS
     src/CatEngine/Platform/OpenGL/OpenGLBuffer.cpp
     src/CatEngine/Platform/OpenGL/OpenGLShader.cpp
     src/CatEngine/Platform/OpenGL/OpenGLGraphicsContext.cpp
+    src/CatEngine/Platform/OpenGL/OpenGLRenderAPI.cpp
     src/CatEngine/Layer/Layer.cpp
     src/CatEngine/Layer/LayerStack.cpp
     src/CatEngine/Core/Window.cpp
@@ -18,7 +21,9 @@ set(SRCS
     src/CatEngine/Core/Application.cpp
     src/CatEngine.h
     src/cepch.h
+    src/CatEngine/Renderer/Renderer.h
     src/CatEngine/Renderer/Buffer.h
+    src/CatEngine/Renderer/RenderCommand.h
     src/CatEngine/Renderer/VertexArray.h
     src/CatEngine/Renderer/RenderAPI.h
     src/CatEngine/Renderer/GraphicsContext.h
@@ -30,6 +35,7 @@ set(SRCS
     src/CatEngine/ImGui/ImGuiLayer.h
     src/CatEngine/Platform/OpenGL/OpenGLVertexArray.h
     src/CatEngine/Platform/OpenGL/OpenGLGraphicsContext.h
+    src/CatEngine/Platform/OpenGL/OpenGLRenderAPI.h
     src/CatEngine/Platform/OpenGL/OpenGLBuffer.h
     src/CatEngine/Platform/OpenGL/OpenGLShader.h
     src/CatEngine/Layer/LayerStack.h
@@ -43,6 +49,285 @@ set(SRCS
     src/CatEngine/Core/PlatformDetection.h
     src/CatEngine/Core/Window.h
     src/CatEngine/Core/Application.h
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/vec4.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/mat2x3.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/glm.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/mat4x2.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/exponential.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/mat4x3.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/trigonometric.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/mat3x2.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/vector_relational.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/fwd.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/integer.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/mat3x4.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/mat2x2.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/mat2x4.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/vec3.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/mat4x4.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/fast_exponential.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/rotate_vector.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/matrix_major_storage.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/io.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/quaternion.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/type_trait.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/exterior_product.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/easing.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/pca.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/extended_min_max.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/handed_coordinate_space.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/projection.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/texture.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/color_encoding.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/matrix_factorisation.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/fast_trigonometry.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/range.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/transform2.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/matrix_interpolation.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/extend.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/vector_angle.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/functions.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/raw_data.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/vec_swizzle.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/closest_point.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/string_cast.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/norm.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/matrix_transform_2d.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/scalar_relational.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/std_based_type.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/color_space_YCoCg.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/matrix_operation.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/compatibility.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/color_space.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/dual_quaternion.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/gradient_paint.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/scalar_multiplication.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/hash.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/fast_square_root.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/integer.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/euler_angles.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/bit.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/component_wise.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/wrap.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/common.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/vector_query.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/spline.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/normal.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/type_aligned.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/intersect.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/matrix_cross_product.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/matrix_query.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/rotate_normalized_axis.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/log_base.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/perpendicular.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/mixed_product.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/orthonormalize.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/optimum_pow.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/normalize_dot.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/number_precision.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/polar_coordinates.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/transform.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/associated_min_max.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtx/matrix_decompose.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/common.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/matrix.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/detail/type_float.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/detail/_fixes.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/detail/setup.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/detail/type_mat4x3.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/detail/_noise.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/detail/type_vec4.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/detail/compute_vector_decl.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/detail/type_mat3x2.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/detail/_swizzle.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/detail/qualifier.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/detail/type_vec1.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/detail/type_mat2x2.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/detail/_vectorize.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/detail/type_mat3x3.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/detail/type_mat2x3.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/detail/type_mat4x4.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/detail/type_mat4x2.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/detail/type_half.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/detail/_features.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/detail/compute_vector_relational.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/detail/compute_common.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/detail/_swizzle_func.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/detail/type_quat.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/detail/type_vec3.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/detail/type_vec2.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/detail/type_mat2x4.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/detail/type_mat3x4.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/geometric.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/vec2.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_int2_sized.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/scalar_common.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_uint2x3.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_float1_precision.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_projection.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_float2x3.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_uint2_sized.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_uint2x4_sized.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_uint4x4.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_double4x3_precision.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_float3x3.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_relational.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_uint4x3_sized.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_float3x3_precision.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_int3x2.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_float4x3_precision.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_double2x3.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_clip_space.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/scalar_reciprocal.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_uint3x3.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_int3x3.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_double2.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_double3x3_precision.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_common.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_int4x4_sized.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_uint3x4_sized.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_uint4.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_int2.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_bool1.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_uint3x2_sized.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_float3x2_precision.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/_matrix_vectorize.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_float2x2.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_transform.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_int1_sized.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_int3x3_sized.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_double2x4.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_double2x2.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/scalar_packing.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_int2x2_sized.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_double3x3.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_double2_precision.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_double4.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_int3x2_sized.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_double3x4.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/quaternion_double_precision.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_double4_precision.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_ulp.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_double2x4_precision.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/scalar_ulp.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/quaternion_exponential.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_float3x2.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_float3x4_precision.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_uint3x3_sized.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_float4x4.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_int4x4.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_double4x4_precision.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_uint4x3.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_double1.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/quaternion_float.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_integer.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_float2x4.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_int2x3_sized.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_relational.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_packing.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/scalar_relational.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_int3_sized.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_uint4x4_sized.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_float4.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_float2_precision.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/quaternion_transform.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_uint2x3_sized.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_bool2_precision.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_double2x3_precision.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_int2x3.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_double3_precision.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_uint3x2.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_uint2x4.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_bool4_precision.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_bool4.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_bool2.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_uint4x2_sized.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_float4x2_precision.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_float4_precision.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_int4x3_sized.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_double4x2_precision.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_int3.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_float3_precision.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_double3x4_precision.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/scalar_int_sized.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_bool3_precision.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/quaternion_double.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_int2x4_sized.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_float3x4.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_double2x2_precision.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_int3x4.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_double3x2_precision.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_uint1.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_double4x4.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_float3.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_integer.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/quaternion_float_precision.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_bool3.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_float2x4_precision.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_uint2.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_float1.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_common.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_uint4x2.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_uint2x2.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_int4_sized.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_double4x3.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_uint2x2_sized.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/scalar_uint_sized.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_float4x3.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_float2x2_precision.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/quaternion_relational.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_uint1_sized.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_bool1_precision.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_int4x2_sized.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_float4x2.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_float4x4_precision.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_int4x3.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_uint3.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_int3x4_sized.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_float2.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/scalar_constants.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_int1.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_float2x3_precision.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_double4x2.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_double1_precision.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_uint3_sized.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_int2x4.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_uint4_sized.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_int4.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/quaternion_common.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_double3.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_double3x2.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/scalar_integer.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_int4x2.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_uint3x4.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/vector_reciprocal.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/quaternion_trigonometric.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/matrix_int2x2.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/ext/quaternion_geometric.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtc/vec1.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtc/type_ptr.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtc/epsilon.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtc/quaternion.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtc/type_precision.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtc/matrix_transform.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtc/reciprocal.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtc/noise.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtc/matrix_integer.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtc/color_space.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtc/random.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtc/matrix_inverse.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtc/integer.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtc/constants.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtc/type_aligned.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtc/bitfield.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtc/matrix_access.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtc/packing.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtc/ulp.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/gtc/round.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/packing.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/mat3x3.hpp
+    ${CMAKE_SOURCE_DIR}/vendor/glm/glm/detail/glm.cpp
 )
 add_library(CatEngine STATIC ${SRCS})
 set_property(TARGET CatEngine PROPERTY CXX_STANDARD 20)
@@ -54,6 +339,7 @@ target_include_directories(CatEngine PRIVATE
     ${CMAKE_SOURCE_DIR}/vendor/glfw/include
     ${CMAKE_SOURCE_DIR}/vendor/Glad/include
     ${CMAKE_SOURCE_DIR}/vendor/imgui
+    ${CMAKE_SOURCE_DIR}/vendor/glm
 )
 
 target_link_libraries(CatEngine

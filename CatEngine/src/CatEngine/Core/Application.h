@@ -54,9 +54,14 @@ namespace CatEngine
     private:
 
         Scope<Shader> m_Shader;
-        Ref<VertexBuffer> m_VertexBuffer;
-        Ref<IndexBuffer> m_IndexBuffer;
-        Ref<VertexArray> m_VertexArray;
+        
+        Ref<VertexBuffer> m_BlueVBO;
+        Ref<IndexBuffer> m_BlueEBO;
+        Ref<VertexArray> m_BlueVAO;
+
+        Ref<VertexBuffer> m_RedVBO;
+        Ref<IndexBuffer> m_RedEBO;
+        Ref<VertexArray> m_RedVAO;
 
         bool m_Running = false;
         bool m_Minimized = false;
