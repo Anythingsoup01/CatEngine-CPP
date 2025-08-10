@@ -55,7 +55,7 @@ namespace CatEngine {
 		ImGui_ImplOpenGL3_Init("#version 430");
 	}
 
-	void ImGuiLayer::OnUpdate(float ts)
+	void ImGuiLayer::OnUpdate(Time ts)
 	{
 		ImGui::GetCurrentContext()->NavWindowingToggleLayer = false;
 	}

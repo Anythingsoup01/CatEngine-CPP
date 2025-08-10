@@ -8,10 +8,6 @@
 #include "CatEngine/ImGui/ImGuiLayer.h"
 #include "CatEngine/Layer/LayerStack.h"
 
-#include "CatEngine/Renderer/Shader.h"
-#include "CatEngine/Renderer/Buffer.h"
-#include "CatEngine/Renderer/VertexArray.h"
-
 namespace CatEngine
 {
 	struct ApplicationCommandLineArgs
@@ -52,16 +48,6 @@ namespace CatEngine
         bool OnWindowResize(WindowResizeEvent& e);
 
     private:
-
-        Scope<Shader> m_Shader;
-        
-        Ref<VertexBuffer> m_BlueVBO;
-        Ref<IndexBuffer> m_BlueEBO;
-        Ref<VertexArray> m_BlueVAO;
-
-        Ref<VertexBuffer> m_RedVBO;
-        Ref<IndexBuffer> m_RedEBO;
-        Ref<VertexArray> m_RedVAO;
 
         bool m_Running = false;
         bool m_Minimized = false;

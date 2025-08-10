@@ -11,6 +11,7 @@ target_include_directories(CatEditor PRIVATE
     ${CMAKE_SOURCE_DIR}/CatEngine/src
     ${CMAKE_SOURCE_DIR}/vendor/spdlog/include
     ${CMAKE_SOURCE_DIR}/vendor/imgui
+    ${CMAKE_SOURCE_DIR}/vendor/glm
 )
 
 target_link_libraries(CatEditor

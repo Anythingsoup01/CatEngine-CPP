@@ -7,6 +7,7 @@ namespace CatEngine
     class OrthographicCamera
     {
     public:
+        OrthographicCamera() = default;
         OrthographicCamera(float left, float right, float bottom, float top, float near = -1.0f, float far = 1.0f);
         
         void SetProjection(float left, float right, float bottom, float top, float near = -1.0f, float far = 1.0f);

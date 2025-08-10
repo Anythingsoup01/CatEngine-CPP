@@ -4,6 +4,8 @@ set(SRCS
     src/CatEngine/Renderer/Shader.cpp
     src/CatEngine/Renderer/RenderCommand.cpp
     src/CatEngine/Renderer/Renderer.cpp
+    src/CatEngine/Renderer/Camera.cpp
+    src/CatEngine/Renderer/Texture.cpp
     src/CatEngine/Renderer/VertexArray.cpp
     src/CatEngine/Renderer/Buffer.cpp
     src/CatEngine/ImGui/ImGuiBuild.cpp
@@ -15,7 +17,9 @@ set(SRCS
     src/CatEngine/Platform/OpenGL/OpenGLRenderAPI.cpp
     src/CatEngine/Layer/Layer.cpp
     src/CatEngine/Layer/LayerStack.cpp
+    src/CatEngine/Core/Input.cpp
     src/CatEngine/Core/Window.cpp
+    src/CatEngine/Core/TimeStep.cpp
     src/CatEngine/Core/Utils.cpp
     src/CatEngine/Core/Log.cpp
     src/CatEngine/Core/Application.cpp
@@ -24,10 +28,12 @@ set(SRCS
     src/CatEngine/Renderer/Renderer.h
     src/CatEngine/Renderer/Buffer.h
     src/CatEngine/Renderer/RenderCommand.h
+    src/CatEngine/Renderer/Camera.h
     src/CatEngine/Renderer/VertexArray.h
     src/CatEngine/Renderer/RenderAPI.h
     src/CatEngine/Renderer/GraphicsContext.h
     src/CatEngine/Renderer/Shader.h
+    src/CatEngine/Renderer/Texture.h
     src/CatEngine/Event/Event.h
     src/CatEngine/Event/MouseEvent.h
     src/CatEngine/Event/KeyEvent.h
@@ -40,6 +46,7 @@ set(SRCS
     src/CatEngine/Platform/OpenGL/OpenGLShader.h
     src/CatEngine/Layer/LayerStack.h
     src/CatEngine/Layer/Layer.h
+    src/CatEngine/Core/TimeStep.h
     src/CatEngine/Core/Entrypoint.h
     src/CatEngine/Core/Utils.h
     src/CatEngine/Core/Core.h
@@ -49,6 +56,7 @@ set(SRCS
     src/CatEngine/Core/PlatformDetection.h
     src/CatEngine/Core/Window.h
     src/CatEngine/Core/Application.h
+    src/CatEngine/Core/Input.h
     ${CMAKE_SOURCE_DIR}/vendor/glm/glm/vec4.hpp
     ${CMAKE_SOURCE_DIR}/vendor/glm/glm/mat2x3.hpp
     ${CMAKE_SOURCE_DIR}/vendor/glm/glm/glm.hpp
@@ -328,6 +336,8 @@ set(SRCS
     ${CMAKE_SOURCE_DIR}/vendor/glm/glm/packing.hpp
     ${CMAKE_SOURCE_DIR}/vendor/glm/glm/mat3x3.hpp
     ${CMAKE_SOURCE_DIR}/vendor/glm/glm/detail/glm.cpp
+    ${CMAKE_SOURCE_DIR}/vendor/stb/stb_image.h
+    ${CMAKE_SOURCE_DIR}/vendor/stb/stb_image.cpp
 )
 add_library(CatEngine STATIC ${SRCS})
 set_property(TARGET CatEngine PROPERTY CXX_STANDARD 20)
@@ -340,6 +350,7 @@ target_include_directories(CatEngine PRIVATE
     ${CMAKE_SOURCE_DIR}/vendor/Glad/include
     ${CMAKE_SOURCE_DIR}/vendor/imgui
     ${CMAKE_SOURCE_DIR}/vendor/glm
+    ${CMAKE_SOURCE_DIR}/vendor/stb
 )
 
 target_link_libraries(CatEngine

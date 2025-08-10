@@ -11,6 +11,8 @@ project "CatEngine"
         "src/*.h",
         "$(WORKSPACEDIR)/vendor/glm/glm/*.hpp",
         "$(WORKSPACEDIR)/vendor/glm/glm/*.cpp",
+        "$(WORKSPACEDIR)/vendor/stb/*.h",
+        "$(WORKSPACEDIR)/vendor/stb/*.cpp",
     }
 
     includedirs
@@ -21,6 +23,7 @@ project "CatEngine"
         "$(WORKSPACEDIR)/vendor/Glad/include",
         "$(WORKSPACEDIR)/vendor/imgui",
         "$(WORKSPACEDIR)/vendor/glm",
+        "$(WORKSPACEDIR)/vendor/stb",
     }
 
     links

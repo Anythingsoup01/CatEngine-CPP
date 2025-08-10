@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CatEngine/Event/Event.h"
+#include "CatEngine/Core/TimeStep.h"
 
 namespace CatEngine
 {
@@ -12,7 +13,7 @@ namespace CatEngine
 
         virtual void OnAttach() = 0;
         virtual void OnDetach() = 0;
-        virtual void OnUpdate(float ts) = 0;
+        virtual void OnUpdate(Time deltaTime) = 0;
         virtual void OnImGuiDraw() = 0;
         virtual void OnEvent(Event& e) = 0;
 

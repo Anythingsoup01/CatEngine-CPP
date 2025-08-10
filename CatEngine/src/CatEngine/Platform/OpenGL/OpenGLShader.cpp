@@ -3,6 +3,8 @@
 
 #include <glad/glad.h>
 
+#include <glm/gtc/type_ptr.hpp>
+
 namespace CatEngine
 {
     OpenGLShader::OpenGLShader(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath)
@@ -43,5 +45,70 @@ namespace CatEngine
     void OpenGLShader::Unbind() const
     {
         glUseProgram(0);
+    }
+
+    void OpenGLShader::SetMat4(const std::string& name, const glm::mat4& matrix)
+    {
+        glUseProgram(m_RendererID);
+        glUniformMatrix4fv(CacheUniformLocation(name), 1, GL_FALSE, glm::value_ptr(matrix));
+    }
+
+    void OpenGLShader::SetMat3(const std::string& name, const glm::mat3& matrix)
+    {
+        glUseProgram(m_RendererID);
+        glUniformMatrix3fv(CacheUniformLocation(name), 1, GL_FALSE, glm::value_ptr(matrix));
+    }
+
+    void OpenGLShader::SetMat2(const std::string& name, const glm::mat2& matrix)
+    {
+        glUseProgram(m_RendererID);
+        glUniformMatrix2fv(CacheUniformLocation(name), 1, GL_FALSE, glm::value_ptr(matrix));
+    }
+
+    void OpenGLShader::SetIntArray(const std::string& name, int* values, uint32_t count)
+    {
+        glUseProgram(m_RendererID);
+        glUniform1iv(CacheUniformLocation(name), count, values);
+    }
+
+    void OpenGLShader::SetInt(const std::string& name, int value)
+    {
+        glUseProgram(m_RendererID);
+        glUniform1i(CacheUniformLocation(name), value);
+    }
+
+    void OpenGLShader::SetVec4(const std::string& name, const glm::vec4& value)
+    {
+        glUseProgram(m_RendererID);
+        glUniform4fv(CacheUniformLocation(name), 1, glm::value_ptr(value));
+    }
+
+    void OpenGLShader::SetVec3(const std::string& name, const glm::vec3& value)
+    {
+        glUseProgram(m_RendererID);
+        glUniform3fv(CacheUniformLocation(name), 1, glm::value_ptr(value));
+    }
+
+    void OpenGLShader::SetVec2(const std::string& name, const glm::vec2& value)
+    {
+        glUseProgram(m_RendererID);
+        glUniform2fv(CacheUniformLocation(name), 1, glm::value_ptr(value));
+    }
+
+    void OpenGLShader::SetFloat(const std::string& name, float value)
+    {
+        glUseProgram(m_RendererID);
+        glUniform1fv(CacheUniformLocation(name), 1, &value);
+    }
+
+    uint32_t OpenGLShader::CacheUniformLocation(const std::string& name)
+    {
+        auto it = m_UniformCache.find(name);
+        if (it != m_UniformCache.end() && !m_UniformCache.empty())
+            return it->second;
+
+        uint32_t location = glGetUniformLocation(m_RendererID, name.c_str());
+        m_UniformCache.emplace(std::pair<std::string, uint32_t>(name, location));
+        return location;
     }
 }
