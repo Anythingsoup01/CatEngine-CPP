@@ -12,6 +12,7 @@ set(SRCS
     src/CatEngine/ImGui/ImGuiLayer.cpp
     src/CatEngine/Platform/OpenGL/OpenGLVertexArray.cpp
     src/CatEngine/Platform/OpenGL/OpenGLBuffer.cpp
+    src/CatEngine/Platform/OpenGL/OpenGLTexture2D.cpp
     src/CatEngine/Platform/OpenGL/OpenGLShader.cpp
     src/CatEngine/Platform/OpenGL/OpenGLGraphicsContext.cpp
     src/CatEngine/Platform/OpenGL/OpenGLRenderAPI.cpp
@@ -40,6 +41,7 @@ set(SRCS
     src/CatEngine/Event/ApplicationEvent.h
     src/CatEngine/ImGui/ImGuiLayer.h
     src/CatEngine/Platform/OpenGL/OpenGLVertexArray.h
+    src/CatEngine/Platform/OpenGL/OpenGLTexture2D.h
     src/CatEngine/Platform/OpenGL/OpenGLGraphicsContext.h
     src/CatEngine/Platform/OpenGL/OpenGLRenderAPI.h
     src/CatEngine/Platform/OpenGL/OpenGLBuffer.h

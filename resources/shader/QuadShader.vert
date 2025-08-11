@@ -1,4 +1,4 @@
-#version 430
+#version 430 core
 
 layout(location = 0) in vec3 aPosition;
 layout(location = 1) in vec3 aColor;
@@ -13,6 +13,6 @@ out vec2 oTexCoord;
 void main()
 {
     gl_Position = u_ViewProjection * u_ModelMatrix * vec4(aPosition, 1.0);
-    oColor = vec4(aColor, 1.0f);
+    oColor = vec4(aColor, 1.0);
     oTexCoord = aTexCoord;
 }

@@ -15,18 +15,15 @@ namespace CatEngine
         virtual void OnEvent(Event& event) override;
 
         static EditorLayer& Get() { return *s_Instance; }
-
     private:
-        Ref<Shader> m_Shader;
+        bool OnWindowResize(WindowResizeEvent& e);
+    private:
 
-
-        Ref<VertexBuffer> m_RedVBO;
-        Ref<IndexBuffer> m_RedEBO;
-        Ref<VertexArray> m_RedVAO;
+        Ref<Texture> m_Texture, m_TestTexture2;
+        Ref<Shader> m_TestShader;
+        Ref<VertexArray> m_TestVAO, m_TestVAO2;
 
         float m_DeltaTime = 0;
-
-        OrthographicCamera m_Camera;
 
         int m_GridSize[2] = { 1, 1 };
             

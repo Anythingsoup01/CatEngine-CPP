@@ -15,7 +15,8 @@ project "CatEditor"
         "$(WORKSPACEDIR)/CatEngine/src",
         "$(WORKSPACEDIR)/vendor/spdlog/include",
         "$(WORKSPACEDIR)/vendor/imgui",
-        "$(WORKSPACEDIR)/vendor/glm"
+        "$(WORKSPACEDIR)/vendor/glm",
+        "$(WORKSPACEDIR)/vendor/Glad/include"
     }
 
     links

@@ -75,7 +75,7 @@ namespace CatEngine
     class BufferLayout
     {
     public:
-        BufferLayout() {}
+        BufferLayout() = default;
 
         BufferLayout(const std::initializer_list<BufferElements>& elements)
             : m_Elements(elements)

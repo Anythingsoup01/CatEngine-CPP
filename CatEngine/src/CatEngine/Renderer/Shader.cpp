@@ -13,7 +13,7 @@ namespace CatEngine
         {
             case RenderAPI::API::OpenGL: return CreateRef<OpenGLShader>(vertShaderPath, fragShaderPath);
             case RenderAPI::API::Vulkan: CE_API_ASSERT(false, "Vulkan is currently unsupported!"); return nullptr;
-            default: CE_API_ASSERT(false, "CatEngine Headless not supported!");
+            default: CE_API_ASSERT(false, "CatEngine Headless not supported!"); return nullptr;
         }
     }
 }

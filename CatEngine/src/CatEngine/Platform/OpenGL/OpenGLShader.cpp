@@ -18,11 +18,36 @@ namespace CatEngine
         uint32_t vertShader = glCreateShader(GL_VERTEX_SHADER);
         glShaderSource(vertShader, 1, &vertCodeCStr, NULL);
         glCompileShader(vertShader);
+
+        GLint success;
+        glGetShaderiv(vertShader, GL_COMPILE_STATUS, &success);
+        if (success == GL_FALSE)
+        {
+            GLint logLength;
+            glGetShaderiv(vertShader, GL_INFO_LOG_LENGTH, &logLength);
+
+            std::vector<GLchar> infoLog(logLength);
+            glGetShaderInfoLog(vertShader, logLength, NULL, &infoLog[0]);
+
+            CE_API_CRITICAL("VERTEX SHADER COMPILE ERROR: {}", infoLog.data());
+        }
         
         uint32_t fragShader = glCreateShader(GL_FRAGMENT_SHADER);
         glShaderSource(fragShader, 1, &fragCodeCStr, NULL);
         glCompileShader(fragShader);
 
+        glGetShaderiv(fragShader, GL_COMPILE_STATUS, &success);
+        if (success == GL_FALSE)
+        {
+            GLint logLength;
+            glGetShaderiv(fragShader, GL_INFO_LOG_LENGTH, &logLength);
+
+            std::vector<GLchar> infoLog(logLength);
+            glGetShaderInfoLog(fragShader, logLength, NULL, &infoLog[0]);
+
+            CE_API_CRITICAL("FRAGMENT SHADER COMPILE ERROR: {}", infoLog.data());
+        }
+        
         m_RendererID = glCreateProgram();
         glAttachShader(m_RendererID, vertShader);
         glAttachShader(m_RendererID, fragShader);
@@ -98,7 +123,7 @@ namespace CatEngine
     void OpenGLShader::SetFloat(const std::string& name, float value)
     {
         glUseProgram(m_RendererID);
-        glUniform1fv(CacheUniformLocation(name), 1, &value);
+        glUniform1f(CacheUniformLocation(name), value);
     }
 
     uint32_t OpenGLShader::CacheUniformLocation(const std::string& name)

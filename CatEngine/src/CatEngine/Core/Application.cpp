@@ -20,7 +20,7 @@ namespace CatEngine
 
 
         m_Window.Init(WindowProps(spec.Name, 1280, 720));
-        m_Window.SetVSync(false);
+        m_Window.SetVSync(true);
         m_Window.SetEventCallback(BIND_EVENT_FN(Application::OnEvent));
 
         m_ImGuiLayer = new ImGuiLayer();
@@ -101,7 +101,7 @@ namespace CatEngine
             return false;
         }
 
-        m_Minimized = true;
+        m_Minimized = false;
 
         return false;
     }

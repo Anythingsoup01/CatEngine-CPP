@@ -1,49 +1,62 @@
 #include "EditorLayer.h"
-#include "imgui.h"
+#include "imgui.h" 
 
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/glm.hpp"
 
+#include <glad/glad.h>
 
-float redVertices[8 * 4] =
-{    // Vertex Positions //  Color Values  // Texture Coords
-     -0.50f, -0.50f, 0.0f, 1.0f, 0.0f, 0.0f,       0, 0, // 0 
-      0.50f, -0.50f, 0.0f, 1.0f, 0.0f, 0.0f,       1, 0, // 1
-      0.50f,  0.50f, 0.0f, 1.0f, 0.0f, 0.0f,       1, 1, // 2
-     -0.50f,  0.50f, 0.0f, 1.0f, 0.0f, 0.0f,       0, 1. // 3
+float vertices[8 * 4] = 
+{
+    // VERTEX POSITIONS   / VERTEX COLORS   / UV COORDS
+    -0.50f, -0.50f, 0.00f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+     0.50f, -0.50f, 0.00f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
+     0.50f,  0.50f, 0.00f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+    -0.50f,  0.50f, 0.00f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f,
 };
 
-uint32_t indices[6]
+float vertices2[8 * 4] = 
+{
+    // VERTEX POSITIONS   / VERTEX COLORS   / UV COORDS
+     0.50f,  0.50f, 0.00f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+     1.00f,  0.50f, 0.00f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
+     1.00f,  1.00f, 0.00f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+     0.50f,  1.00f, 0.00f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f,
+};
+
+uint32_t indices[6] = 
 {
     0, 1, 2,
-    2, 3, 0,
+    2, 3, 0
 };
 
 namespace CatEngine
 {
-
     void EditorLayer::OnAttach()
     {
         s_Instance = this;
 
         Renderer::Init();
+        m_CameraPos = Renderer::GetCameraPosition();
 
-        m_Camera.SetProjection(-1.6f, 1.6f, -0.9f, 0.9f);
-
-        m_RedVAO = VertexArray::Create();
-        m_RedVBO = VertexBuffer::Create(redVertices, 6 * 8);
-        m_RedVBO->SetLayout({
+        m_TestVAO = VertexArray::Create();
+        Ref<VertexBuffer> testVBO = VertexBuffer::Create(vertices, 8 * 4);
+        testVBO->SetLayout({
             { ShaderDataType::Vec3 },
             { ShaderDataType::Vec3 },
             { ShaderDataType::Vec2 },
         });
-        m_RedVAO->AddVertexBuffer(m_RedVBO);
-        m_RedEBO = IndexBuffer::Create(indices, 12);
-        m_RedVAO->SetIndexBuffer(m_RedEBO);
+        m_TestVAO->AddVertexBuffer(testVBO);
+        Ref<IndexBuffer> testEBO = IndexBuffer::Create(indices, 6);
+        m_TestVAO->SetIndexBuffer(testEBO);
 
-        // Shader
-        m_Shader = Shader::Create("resources/shader/QuadShader.vert", "resources/shader/QuadShader.frag");
-        m_Shader->Bind();
+        m_TestShader = Shader::Create("resources/shader/QuadShader.vert", "resources/shader/QuadShader.frag");
+
+        m_Texture = Texture2D::Create("resources/Textures/car.png");
+        m_Texture->Bind(0);
+
+        m_TestTexture2 = Texture2D::Create("resources/Textures/car2.jpeg");
+        m_TestTexture2->Bind(1);
 
     }
 
@@ -57,19 +70,26 @@ namespace CatEngine
 
         RenderCommand::Clear({0.24f, 0.16f, 0.78f, 1.0f});
 
-        Renderer::BeginScene(m_Camera);
+        Renderer::BeginScene();
+        
+        glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(0.25f));
 
-        glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(0.1f));
+        m_TestShader->SetInt("u_TextureID", 0);
 
         for (int y = 0; y < m_GridSize[1]; y++)
         {
             for (int x = 0; x < m_GridSize[0]; x++)
             {
-                glm::vec3 pos = glm::vec3(x * 0.11f, y * 0.11f, 0.0f);
+                glm::vec3 pos(x * 0.26f, y * 0.26f, 0.0f);
                 glm::mat4 transform = glm::translate(glm::mat4(1.0f), pos) * scale;
-                Renderer::Submit(m_Shader, m_RedVAO, transform);
+                Renderer::Submit(m_TestShader, m_TestVAO, transform);
             }
         }
+
+        glm::mat4 transform = glm::translate(glm::mat4(1.0f), glm::vec3(0,-1,0)) * glm::rotate(glm::mat4(1.0f), glm::radians(45.0f), glm::vec3(0,0,1.0f)) * 1.5f;
+
+        m_TestShader->SetInt("u_TextureID", 1);
+        Renderer::Submit(m_TestShader, m_TestVAO, transform);
 
         Renderer::EndScene();
         
@@ -88,7 +108,7 @@ namespace CatEngine
         m_DeltaTime = deltaTime;
 
 
-        m_Camera.SetPosition(m_CameraPos);
+        Renderer::SetCameraPosition(m_CameraPos);
 
     }
 
@@ -105,6 +125,7 @@ namespace CatEngine
     void EditorLayer::OnEvent(Event& e)
     {
         EventDispatcher dispatcher(e);
-
     }
+
+
 }

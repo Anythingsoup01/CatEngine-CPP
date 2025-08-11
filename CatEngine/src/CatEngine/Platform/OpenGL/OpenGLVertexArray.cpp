@@ -29,7 +29,7 @@ namespace CatEngine
 
     OpenGLVertexArray::OpenGLVertexArray()
     {
-        glGenVertexArrays(1, &m_RendererID);
+        glCreateVertexArrays(1, &m_RendererID);
         glBindVertexArray(m_RendererID);
     }
 
@@ -53,6 +53,8 @@ namespace CatEngine
 
         glBindVertexArray(m_RendererID);
         const auto& layout = vertexBuffer->GetLayout();
+
+        vertexBuffer->Bind();
 
         for(const auto& element : layout)
         {

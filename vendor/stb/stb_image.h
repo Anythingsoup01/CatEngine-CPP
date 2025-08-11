@@ -544,6 +544,11 @@ extern "C" {
 ////   end header file   /////////////////////////////////////////////////////
 #endif // STBI_INCLUDE_STB_IMAGE_H
 
+#if defined(__GNUC__) && !defined(NDEBUG) && defined(__OPTIMIZE__)
+    #warning "Undefing __OPTIMIZE__ because of fmt"
+    #undef __OPTIMIZE__
+#endif
+
 #ifdef STB_IMAGE_IMPLEMENTATION
 
 #if defined(STBI_ONLY_JPEG) || defined(STBI_ONLY_PNG) || defined(STBI_ONLY_BMP) \
