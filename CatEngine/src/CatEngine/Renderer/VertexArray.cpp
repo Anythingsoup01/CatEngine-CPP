@@ -9,6 +9,7 @@ namespace CatEngine
 {
     Ref<VertexArray> VertexArray::Create()
     {
+        CE_PROFILE_FUNCTION();
         switch (RenderAPI::Get())
         {
             case RenderAPI::API::OpenGL: return CreateRef<OpenGLVertexArray>();

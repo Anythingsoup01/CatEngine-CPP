@@ -6,125 +6,166 @@
 
 #include <glad/glad.h>
 
-float vertices[8 * 4] = 
-{
-    // VERTEX POSITIONS   / VERTEX COLORS   / UV COORDS
-    -0.50f, -0.50f, 0.00f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-     0.50f, -0.50f, 0.00f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
-     0.50f,  0.50f, 0.00f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-    -0.50f,  0.50f, 0.00f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f,
-};
-
-float vertices2[8 * 4] = 
-{
-    // VERTEX POSITIONS   / VERTEX COLORS   / UV COORDS
-     0.50f,  0.50f, 0.00f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-     1.00f,  0.50f, 0.00f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
-     1.00f,  1.00f, 0.00f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-     0.50f,  1.00f, 0.00f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f,
-};
-
-uint32_t indices[6] = 
-{
-    0, 1, 2,
-    2, 3, 0
-};
-
 namespace CatEngine
 {
     void EditorLayer::OnAttach()
     {
         s_Instance = this;
-
-        Renderer::Init();
-        m_CameraPos = Renderer::GetCameraPosition();
-
-        m_TestVAO = VertexArray::Create();
-        Ref<VertexBuffer> testVBO = VertexBuffer::Create(vertices, 8 * 4);
-        testVBO->SetLayout({
-            { ShaderDataType::Vec3 },
-            { ShaderDataType::Vec3 },
-            { ShaderDataType::Vec2 },
-        });
-        m_TestVAO->AddVertexBuffer(testVBO);
-        Ref<IndexBuffer> testEBO = IndexBuffer::Create(indices, 6);
-        m_TestVAO->SetIndexBuffer(testEBO);
-
-        m_TestShader = Shader::Create("resources/shader/QuadShader.vert", "resources/shader/QuadShader.frag");
+        
+        FramebufferSpecification fbSpec;
+        fbSpec.Attachments = { FramebufferTextureFormat::RGBA8, FramebufferTextureFormat::RED_INTEGER, FramebufferTextureFormat::Depth };
+        fbSpec.Width = 1280;
+        fbSpec.Height = 720;
+        m_Framebuffer = Framebuffer::Create(fbSpec);
 
         m_Texture = Texture2D::Create("resources/Textures/car.png");
-        m_Texture->Bind(0);
 
-        m_TestTexture2 = Texture2D::Create("resources/Textures/car2.jpeg");
-        m_TestTexture2->Bind(1);
+        m_ActiveScene = CreateRef<Scene>();
+
+        m_Car = m_ActiveScene->CreateEntity("Steve");
+        m_Car.AddComponent<SpriteRendererComponent>(glm::vec4(1.0f), m_Texture);
+
+        m_CarViewer = m_ActiveScene->CreateEntity("CarViewer");
+        m_CarViewer.AddComponent<CameraComponent>();
+
+        m_CarViewer.GetComponent<TransformComponent>().Position = {0, 0, -0.5f};
 
     }
 
     void EditorLayer::OnDetach()
     {
         s_Instance = nullptr;
+        
     }
 
     void EditorLayer::OnUpdate(Time deltaTime)
     {
-
-        RenderCommand::Clear({0.24f, 0.16f, 0.78f, 1.0f});
-
-        Renderer::BeginScene();
-        
-        glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(0.25f));
-
-        m_TestShader->SetInt("u_TextureID", 0);
-
-        for (int y = 0; y < m_GridSize[1]; y++)
-        {
-            for (int x = 0; x < m_GridSize[0]; x++)
-            {
-                glm::vec3 pos(x * 0.26f, y * 0.26f, 0.0f);
-                glm::mat4 transform = glm::translate(glm::mat4(1.0f), pos) * scale;
-                Renderer::Submit(m_TestShader, m_TestVAO, transform);
-            }
-        }
-
-        glm::mat4 transform = glm::translate(glm::mat4(1.0f), glm::vec3(0,-1,0)) * glm::rotate(glm::mat4(1.0f), glm::radians(45.0f), glm::vec3(0,0,1.0f)) * 1.5f;
-
-        m_TestShader->SetInt("u_TextureID", 1);
-        Renderer::Submit(m_TestShader, m_TestVAO, transform);
-
-        Renderer::EndScene();
-        
-        if (Input::IsKeyPressed(KeyCode::W))
-            m_CameraPos.y += 1.0f * deltaTime;
-
-        if (Input::IsKeyPressed(KeyCode::S))
-            m_CameraPos.y -= 1 * deltaTime;
-
-        if (Input::IsKeyPressed(KeyCode::A))
-            m_CameraPos.x -= 1 * deltaTime;
-
-        if (Input::IsKeyPressed(KeyCode::D))
-            m_CameraPos.x += 1 * deltaTime;
-
+        CE_PROFILE_FUNCTION();
         m_DeltaTime = deltaTime;
+		if (FramebufferSpecification spec = m_Framebuffer->GetSpecification();
+			m_ViewportSize.x > 0.0f && m_ViewportSize.y > 0.0f && // zero sized framebuffer is invalid
+			(spec.Width != m_ViewportSize.x || spec.Height != m_ViewportSize.y))
+		{
+			m_Framebuffer->Resize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
+            m_EditorCamera.SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
+        }
+        m_EditorCamera.OnUpdate(deltaTime);
+
+        m_Framebuffer->Bind();
+
+        RenderCommand::Clear({ 0.1, 0.1, 0.1, 1.0});
+        m_Framebuffer->ClearAttachment(1, -1);
+
+        m_ActiveScene->OnUpdateEditor(deltaTime, m_EditorCamera, m_UsingMainCamera);
 
 
-        Renderer::SetCameraPosition(m_CameraPos);
+        m_Framebuffer->Unbind();
 
     }
 
 
     void EditorLayer::OnImGuiDraw()
     {
-        ImGui::Begin("Stats");
-        ImGui::Text("Delta Time: %f", m_DeltaTime);
-        ImGui::Text("Rough FPS: %f", 1.0f / m_DeltaTime);
-        ImGui::DragInt2("Grid Size", m_GridSize, 0.5f, 1, 1000);
+
+        CE_PROFILE_FUNCTION();
+
+        static bool dockspaceOpen = true;
+        static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
+
+        ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
+
+        {
+            const ImGuiViewport* viewport = ImGui::GetMainViewport();
+            ImGui::SetNextWindowPos(viewport->WorkPos);
+            ImGui::SetNextWindowSize(viewport->WorkSize);
+            ImGui::SetNextWindowViewport(viewport->ID);
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+            window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+            window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+        }
+
+        if (dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode)
+            window_flags |= ImGuiWindowFlags_NoBackground;
+
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+        ImGui::Begin("MyDockSpace", &dockspaceOpen, window_flags);
+        ImGui::PopStyleVar(3);
+        {
+            // Submit the DockSpace
+            ImGuiIO& io = ImGui::GetIO();
+            if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable)
+            {
+                ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
+                ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
+            }
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0, 0 });
+
+            UI_Viewport();
+
+            ImGui::Begin("Console");
+            {
+                if (m_Car)
+                {
+                    ImGui::Text("Behold Car!");
+                    auto& carPos = m_Car.GetComponent<TransformComponent>().Position;
+                    auto& carRot = m_Car.GetComponent<TransformComponent>().Rotation;
+                    auto& carSize = m_Car.GetComponent<TransformComponent>().Scale;
+
+                    ImGui::DragFloat3("Position", &carPos.x, 0.25f);
+                    ImGui::DragFloat3("Rotation", &carRot.x, 0.25f);
+                    ImGui::DragFloat3("Size", &carSize.x, 0.25f);
+
+                }
+
+                Renderer2D::Statistics stats = Renderer2D::GetStats();
+                ImGui::Text("Draw Calls: %i", stats.DrawCalls);
+                ImGui::Text("Rendered Quads: %i", stats.QuadCount);
+                ImGui::Text("Ts: %f", m_DeltaTime);
+                ImGui::Text("Rough FPS: %f", 1.0f / m_DeltaTime);
+                Renderer2D::ResetStats();
+
+                ImGui::Checkbox("Use Main Camera", &m_UsingMainCamera);
+            }
+            ImGui::End();
+			
+			ImGui::PopStyleVar();
+
+
+        }
+        ImGui::End();
+    }
+
+    void EditorLayer::UI_Viewport()
+    {
+        CE_PROFILE_FUNCTION();
+        ImGui::Begin("Scene View");
+        auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
+        auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
+        auto viewportOffset = ImGui::GetWindowPos();
+
+
+        ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
+        m_ViewportSize = {viewportPanelSize.x, viewportPanelSize.y};
+
+        uint32_t textureID = m_Framebuffer->GetColorAttachmentRendererID(0);
+        ImGui::Image((void*)(uint64_t)textureID, viewportPanelSize, {0, 1}, {1, 0});
+
         ImGui::End();
     }
 
     void EditorLayer::OnEvent(Event& e)
     {
         EventDispatcher dispatcher(e);
+        m_EditorCamera.OnEvent(e);
+        dispatcher.Dispatch<WindowResizeEvent>(BIND_EVENT_FN(EditorLayer::OnWindowResize));
+    }
+
+    bool EditorLayer::OnWindowResize(WindowResizeEvent& e)
+    {
+        Renderer::OnWindowResize(e.GetWidth(), e.GetHeight());
+
+        return false;
     }
 
 

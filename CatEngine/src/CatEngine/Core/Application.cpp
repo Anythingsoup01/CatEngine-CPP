@@ -2,6 +2,7 @@
 #include "Application.h"
 
 #include "CatEngine/Renderer/RenderAPI.h"
+#include "CatEngine/Renderer/Renderer.h"
 
 #include "Input.h"
 #include "TimeStep.h"
@@ -14,14 +15,17 @@ namespace CatEngine
 {
     Application::Application(const ApplicationSpecification& spec)
     {
+        CE_PROFILE_FUNCTION();
         s_Instance = this;
 
         RenderAPI::Set(RenderAPI::API::OpenGL);
 
 
         m_Window.Init(WindowProps(spec.Name, 1280, 720));
-        m_Window.SetVSync(true);
+        m_Window.SetVSync(false);
         m_Window.SetEventCallback(BIND_EVENT_FN(Application::OnEvent));
+
+        Renderer::Init();
 
         m_ImGuiLayer = new ImGuiLayer();
         PushOverlay(m_ImGuiLayer);
@@ -30,13 +34,18 @@ namespace CatEngine
 
     Application::~Application()
     {
-        g_ApplicationRunning = false;
+        CE_PROFILE_FUNCTION();
+
+        Renderer::Shutdown();
 
         s_Instance = nullptr;
+
+        g_ApplicationRunning = false;
     }
 
     void Application::Run()
     {
+        CE_PROFILE_FUNCTION();
         m_Running = true;
         while(m_Running)
         {
@@ -63,6 +72,7 @@ namespace CatEngine
 
     void Application::OnEvent(Event& e)
     {
+        CE_PROFILE_FUNCTION();
         EventDispatcher dispatcher(e);
         dispatcher.Dispatch<WindowCloseEvent>(BIND_EVENT_FN(Application::OnWindowClose));
         dispatcher.Dispatch<WindowResizeEvent>(BIND_EVENT_FN(Application::OnWindowResize));
@@ -77,12 +87,14 @@ namespace CatEngine
 
     void Application::PushLayer(Layer* layer)
     {
+        CE_PROFILE_FUNCTION();
         m_LayerStack.PushLayer(layer);
         layer->OnAttach();
     }
 
     void Application::PushOverlay(Layer* layer)
     {
+        CE_PROFILE_FUNCTION();
         m_LayerStack.PushLayer(layer);
         layer->OnAttach();
     }
@@ -95,6 +107,7 @@ namespace CatEngine
 
     bool Application::OnWindowResize(WindowResizeEvent& e)
     {
+        CE_PROFILE_FUNCTION();
         if (e.GetWidth() == 0 || e.GetHeight() == 0)
         {
             m_Minimized = true;

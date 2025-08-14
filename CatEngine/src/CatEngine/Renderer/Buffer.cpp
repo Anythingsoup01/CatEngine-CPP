@@ -7,8 +7,20 @@
 
 namespace CatEngine
 {
+    Ref<VertexBuffer> VertexBuffer::Create(uint32_t size)
+    {
+        CE_PROFILE_FUNCTION();
+        switch (RenderAPI::Get())
+        {
+            case RenderAPI::API::OpenGL: return CreateRef<OpenGLVertexBuffer>(size);
+            case RenderAPI::API::Vulkan: CE_API_ASSERT(false, "Vulkan is currently unsupported!"); return nullptr;
+            default: CE_API_ASSERT(false, "CatEngine Headless not supported!"); return nullptr;
+        }
+    }
+
     Ref<VertexBuffer> VertexBuffer::Create(float* vertices, uint32_t size)
     {
+        CE_PROFILE_FUNCTION();
         switch (RenderAPI::Get())
         {
             case RenderAPI::API::OpenGL: return CreateRef<OpenGLVertexBuffer>(vertices, size);
@@ -19,6 +31,7 @@ namespace CatEngine
 
     Ref<IndexBuffer> IndexBuffer::Create(uint32_t* indices, uint32_t count)
     {
+        CE_PROFILE_FUNCTION();
         switch (RenderAPI::Get())
         {
             case RenderAPI::API::OpenGL: return CreateRef<OpenGLIndexBuffer>(indices, count);

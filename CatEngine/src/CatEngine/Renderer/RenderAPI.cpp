@@ -7,6 +7,7 @@ namespace CatEngine
 {
     Scope<RenderAPI> RenderAPI::Create()
     {
+        CE_PROFILE_FUNCTION();
         switch (s_API)
         {
             case API::OpenGL: return CreateScope<OpenGLRenderAPI>();

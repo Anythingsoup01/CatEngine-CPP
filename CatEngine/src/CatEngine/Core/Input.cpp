@@ -7,6 +7,7 @@
 namespace CatEngine {
 	bool Input::IsKeyPressed(KeyCode keycode)
 	{
+        CE_PROFILE_FUNCTION();
 		auto window = Application::Get().GetWindow().Get();
 		auto state = glfwGetKey(window, static_cast<int32_t>(keycode));
 		return state == GLFW_PRESS;
@@ -14,6 +15,7 @@ namespace CatEngine {
 
 	bool Input::IsKeyReleased(KeyCode keycode)
 	{
+        CE_PROFILE_FUNCTION();
 		auto window = Application::Get().GetWindow().Get();
 		auto state = glfwGetKey(window, static_cast<int32_t>(keycode));
 		return state == GLFW_RELEASE;
@@ -21,6 +23,7 @@ namespace CatEngine {
 
 	bool Input::IsMouseButtonPressed(MouseCode button)
 	{
+        CE_PROFILE_FUNCTION();
 		auto window = Application::Get().GetWindow().Get();
 		auto state = glfwGetMouseButton(window, static_cast<int32_t>(button));
 		return state == GLFW_PRESS;
@@ -28,6 +31,7 @@ namespace CatEngine {
 
 	bool Input::IsMouseButtonReleased(MouseCode button)
 	{
+        CE_PROFILE_FUNCTION();
 		auto window = Application::Get().GetWindow().Get();
 		auto state = glfwGetMouseButton(window, static_cast<int32_t>(button));
 		return state == GLFW_RELEASE;
@@ -35,6 +39,7 @@ namespace CatEngine {
 
 	std::pair<float, float> Input::GetMousePosition()
 	{
+        CE_PROFILE_FUNCTION();
 		auto window = Application::Get().GetWindow().Get();
 		double xpos, ypos;
 		glfwGetCursorPos(window, &xpos, &ypos);
@@ -44,6 +49,7 @@ namespace CatEngine {
 
 	float Input::GetMouseX()
 	{
+        CE_PROFILE_FUNCTION();
 		auto[x, y] = GetMousePosition();
 
 		return x;
@@ -51,11 +57,13 @@ namespace CatEngine {
 
 	float Input::GetMouseY()
 	{
+        CE_PROFILE_FUNCTION();
 		auto [x, y] = GetMousePosition();
 		return y;
 	}
 	float Input::GetMouseXOffset()
 	{
+        CE_PROFILE_FUNCTION();
 		float offset = 0;
 
 		if (m_MouseOffsetX == 0)
@@ -72,6 +80,7 @@ namespace CatEngine {
 	}
 	float Input::GetMouseYOffset()
 	{
+        CE_PROFILE_FUNCTION();
 		float offset = 0;
 
 		if (m_MouseOffsetY == 0)

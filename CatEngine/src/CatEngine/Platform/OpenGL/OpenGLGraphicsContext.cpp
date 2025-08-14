@@ -8,6 +8,7 @@ namespace CatEngine
 {
     void OpenGLGraphicsContext::MakeContextCurrent(GLFWwindow* window)
     {
+        CE_PROFILE_FUNCTION();
         CE_API_ASSERT(window, "Window Handle is null!");
         glfwMakeContextCurrent(window);
 
@@ -16,6 +17,7 @@ namespace CatEngine
 
     void OpenGLGraphicsContext::Init()
     {
+        CE_PROFILE_FUNCTION();
         int status = gladLoadGL();
         CE_API_ASSERT(status, "Failed to load Glad!");
 
@@ -23,6 +25,7 @@ namespace CatEngine
 
     void OpenGLGraphicsContext::SwapBuffers()
     {
+        CE_PROFILE_FUNCTION();
         glfwSwapBuffers(m_CurrentWindow);
     }
 }

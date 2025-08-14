@@ -7,6 +7,7 @@ namespace CatEngine
 {
     static GLenum ShaderDataTypeToGLBaseType(ShaderDataType type)
     {
+        CE_PROFILE_FUNCTION();
         switch(type)
         {
             case ShaderDataType::Vec:
@@ -29,26 +30,31 @@ namespace CatEngine
 
     OpenGLVertexArray::OpenGLVertexArray()
     {
+        CE_PROFILE_FUNCTION();
         glCreateVertexArrays(1, &m_RendererID);
         glBindVertexArray(m_RendererID);
     }
 
     OpenGLVertexArray::~OpenGLVertexArray()
     {
+        CE_PROFILE_FUNCTION();
         glDeleteVertexArrays(1, &m_RendererID);
     }
 
     void OpenGLVertexArray::Bind() const
     {
+        CE_PROFILE_FUNCTION();
         glBindVertexArray(m_RendererID);
     }
 
     void OpenGLVertexArray::Unbind() const
     {
+        CE_PROFILE_FUNCTION();
         glBindVertexArray(0);
     }
     void OpenGLVertexArray::AddVertexBuffer(const Ref<VertexBuffer>& vertexBuffer)
     {
+        CE_PROFILE_FUNCTION();
         CE_API_ASSERT(vertexBuffer->GetLayout().GetElements().size(), "Vertex Buffer has no layout!");
 
         glBindVertexArray(m_RendererID);
@@ -118,6 +124,7 @@ namespace CatEngine
 
     void OpenGLVertexArray::SetIndexBuffer(const Ref<IndexBuffer>& indexBuffer)
     {
+        CE_PROFILE_FUNCTION();
         glBindVertexArray(m_RendererID);
         indexBuffer->Bind();
 

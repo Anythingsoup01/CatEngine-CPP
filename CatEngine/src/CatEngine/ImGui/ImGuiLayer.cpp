@@ -21,6 +21,7 @@ namespace CatEngine {
 
 	void ImGuiLayer::OnAttach()
 	{
+        CE_PROFILE_FUNCTION();
 		// Setting up ImGui
 		IMGUI_CHECKVERSION();
 		ImGui::CreateContext();
@@ -57,11 +58,13 @@ namespace CatEngine {
 
 	void ImGuiLayer::OnUpdate(Time ts)
 	{
+        CE_PROFILE_FUNCTION();
 		ImGui::GetCurrentContext()->NavWindowingToggleLayer = false;
 	}
 
 	void ImGuiLayer::OnDetach()
 	{
+        CE_PROFILE_FUNCTION();
 		ImGui_ImplOpenGL3_Shutdown();
 		ImGui_ImplGlfw_Shutdown();
 		ImGui::DestroyContext();
@@ -69,6 +72,7 @@ namespace CatEngine {
 
 	void ImGuiLayer::OnEvent(Event& e)
 	{
+        CE_PROFILE_FUNCTION();
 		if (m_BlockKeyboardEvents) {
 			ImGuiIO& io = ImGui::GetIO();
 			e.Handled |= e.IsInCategory(KeyboardEventCategory) & io.WantCaptureKeyboard;
@@ -82,6 +86,7 @@ namespace CatEngine {
 	
 	void ImGuiLayer::Begin()
 	{
+        CE_PROFILE_FUNCTION();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui::NewFrame();
@@ -89,6 +94,7 @@ namespace CatEngine {
 	
 	void ImGuiLayer::End()
 	{
+        CE_PROFILE_FUNCTION();
 		ImGuiIO& io = ImGui::GetIO();
 		Application& app = Application::Get();
 		io.DisplaySize = ImVec2((float)app.GetWindow().GetWidth(), (float)app.GetWindow().GetHeight());
@@ -106,6 +112,7 @@ namespace CatEngine {
 	}
 	void ImGuiLayer::SetDarkThemeColors()
 	{
+        CE_PROFILE_FUNCTION();
 
 		auto& colors = ImGui::GetStyle().Colors;
 		colors[ImGuiCol_WindowBg] = ImVec4{ 0.13f, 0.13f, 0.13f, 1.0f };
@@ -144,6 +151,7 @@ namespace CatEngine {
 	}
 	void ImGuiLayer::SetDefaultEditorStyle()
 	{
+        CE_PROFILE_FUNCTION();
 		auto& style = ImGui::GetStyle();
 
 		style.WindowPadding = { 5, 5 };

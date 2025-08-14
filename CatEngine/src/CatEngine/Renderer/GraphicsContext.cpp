@@ -9,6 +9,7 @@ namespace CatEngine
 {
     Scope<GraphicsContext> GraphicsContext::Create()
     {
+        CE_PROFILE_FUNCTION();
         switch (RenderAPI::Get()) 
         {
             case RenderAPI::API::OpenGL:  return CreateScope<OpenGLGraphicsContext>();

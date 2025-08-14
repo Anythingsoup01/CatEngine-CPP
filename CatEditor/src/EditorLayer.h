@@ -2,6 +2,8 @@
 
 #include "CatEngine.h"
 
+#include "imgui.h"
+
 namespace CatEngine
 {
     class EditorLayer : public Layer
@@ -17,18 +19,28 @@ namespace CatEngine
         static EditorLayer& Get() { return *s_Instance; }
     private:
         bool OnWindowResize(WindowResizeEvent& e);
+
+        void UI_Viewport();
+
+
     private:
+        Ref<Texture2D> m_Texture, m_Texture2, m_Texture3;
+        EditorCamera m_EditorCamera;
 
-        Ref<Texture> m_Texture, m_TestTexture2;
-        Ref<Shader> m_TestShader;
-        Ref<VertexArray> m_TestVAO, m_TestVAO2;
+        Entity m_Car;
 
-        float m_DeltaTime = 0;
+        Entity m_CarViewer;
 
-        int m_GridSize[2] = { 1, 1 };
-            
-        glm::vec3 m_CameraPos;
+        bool m_UsingMainCamera = false;
+        float m_DeltaTime;
+
+        Ref<Scene> m_ActiveScene;
+        Ref<Framebuffer> m_Framebuffer;
+        glm::vec2 m_ViewportSize;
     private:
         static inline EditorLayer* s_Instance = nullptr;
     };
+
 }
+
+

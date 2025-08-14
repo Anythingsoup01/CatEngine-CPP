@@ -34,6 +34,7 @@
 #include "CatEngine/Core/Core.h"
 #include "CatEngine/Core/Log.h"
 #include "CatEngine/Core/Utils.h"
+#include "CatEngine/Debug/Instrumentor.h"
 
 #ifdef CE_PLATFORM_WINDOWS
 #include <Windows.h>

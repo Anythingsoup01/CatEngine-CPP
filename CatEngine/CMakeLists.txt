@@ -4,9 +4,12 @@ set(SRCS
     src/CatEngine/Renderer/Shader.cpp
     src/CatEngine/Renderer/RenderCommand.cpp
     src/CatEngine/Renderer/Renderer.cpp
+    src/CatEngine/Renderer/Renderer2D.cpp
     src/CatEngine/Renderer/Camera.cpp
     src/CatEngine/Renderer/Texture.cpp
+    src/CatEngine/Renderer/Framebuffer.cpp
     src/CatEngine/Renderer/VertexArray.cpp
+    src/CatEngine/Renderer/EditorCamera.cpp
     src/CatEngine/Renderer/Buffer.cpp
     src/CatEngine/ImGui/ImGuiBuild.cpp
     src/CatEngine/ImGui/ImGuiLayer.cpp
@@ -15,18 +18,26 @@ set(SRCS
     src/CatEngine/Platform/OpenGL/OpenGLTexture2D.cpp
     src/CatEngine/Platform/OpenGL/OpenGLShader.cpp
     src/CatEngine/Platform/OpenGL/OpenGLGraphicsContext.cpp
+    src/CatEngine/Platform/OpenGL/OpenGLFramebuffer.cpp
     src/CatEngine/Platform/OpenGL/OpenGLRenderAPI.cpp
     src/CatEngine/Layer/Layer.cpp
     src/CatEngine/Layer/LayerStack.cpp
+    src/CatEngine/Scene/Scene.cpp
+    src/CatEngine/Scene/Components/Components.cpp
+    src/CatEngine/Scene/SceneCamera.cpp
+    src/CatEngine/Scene/Entity.cpp
     src/CatEngine/Core/Input.cpp
     src/CatEngine/Core/Window.cpp
     src/CatEngine/Core/TimeStep.cpp
     src/CatEngine/Core/Utils.cpp
+    src/CatEngine/Core/UUID.cpp
     src/CatEngine/Core/Log.cpp
     src/CatEngine/Core/Application.cpp
     src/CatEngine.h
     src/cepch.h
     src/CatEngine/Renderer/Renderer.h
+    src/CatEngine/Renderer/Renderer2D.h
+    src/CatEngine/Renderer/EditorCamera.h
     src/CatEngine/Renderer/Buffer.h
     src/CatEngine/Renderer/RenderCommand.h
     src/CatEngine/Renderer/Camera.h
@@ -34,6 +45,7 @@ set(SRCS
     src/CatEngine/Renderer/RenderAPI.h
     src/CatEngine/Renderer/GraphicsContext.h
     src/CatEngine/Renderer/Shader.h
+    src/CatEngine/Renderer/Framebuffer.h
     src/CatEngine/Renderer/Texture.h
     src/CatEngine/Event/Event.h
     src/CatEngine/Event/MouseEvent.h
@@ -46,8 +58,19 @@ set(SRCS
     src/CatEngine/Platform/OpenGL/OpenGLRenderAPI.h
     src/CatEngine/Platform/OpenGL/OpenGLBuffer.h
     src/CatEngine/Platform/OpenGL/OpenGLShader.h
+    src/CatEngine/Platform/OpenGL/OpenGLFramebuffer.h
     src/CatEngine/Layer/LayerStack.h
     src/CatEngine/Layer/Layer.h
+    src/CatEngine/Debug/Instrumentor.h
+    src/CatEngine/Scene/Scene.h
+    src/CatEngine/Scene/Entity.h
+    src/CatEngine/Scene/Components/3D/TransformComponent.h
+    src/CatEngine/Scene/Components/Required/InformationComponents.h
+    src/CatEngine/Scene/Components/Renderer/CameraComponent.h
+    src/CatEngine/Scene/Components/Scripting/ScriptComponent.h
+    src/CatEngine/Scene/Components/2D/SpriteRenderer.h
+    src/CatEngine/Scene/Components/Components.h
+    src/CatEngine/Scene/SceneCamera.h
     src/CatEngine/Core/TimeStep.h
     src/CatEngine/Core/Entrypoint.h
     src/CatEngine/Core/Utils.h
@@ -57,6 +80,7 @@ set(SRCS
     src/CatEngine/Core/KeyCodes.h
     src/CatEngine/Core/PlatformDetection.h
     src/CatEngine/Core/Window.h
+    src/CatEngine/Core/UUID.h
     src/CatEngine/Core/Application.h
     src/CatEngine/Core/Input.h
     ${CMAKE_SOURCE_DIR}/vendor/glm/glm/vec4.hpp
@@ -340,6 +364,7 @@ set(SRCS
     ${CMAKE_SOURCE_DIR}/vendor/glm/glm/detail/glm.cpp
     ${CMAKE_SOURCE_DIR}/vendor/stb/stb_image.h
     ${CMAKE_SOURCE_DIR}/vendor/stb/stb_image.cpp
+    ${CMAKE_SOURCE_DIR}/vendor/entt/entt.hpp
 )
 add_library(CatEngine STATIC ${SRCS})
 set_property(TARGET CatEngine PROPERTY CXX_STANDARD 20)
@@ -353,6 +378,7 @@ target_include_directories(CatEngine PRIVATE
     ${CMAKE_SOURCE_DIR}/vendor/imgui
     ${CMAKE_SOURCE_DIR}/vendor/glm
     ${CMAKE_SOURCE_DIR}/vendor/stb
+    ${CMAKE_SOURCE_DIR}/vendor/entt
 )
 
 target_link_libraries(CatEngine

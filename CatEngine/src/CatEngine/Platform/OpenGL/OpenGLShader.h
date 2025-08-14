@@ -8,7 +8,7 @@ namespace CatEngine
     class OpenGLShader : public Shader
     {
     public:
-        OpenGLShader(const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath);
+        OpenGLShader(const std::string& name, const std::filesystem::path& vertShaderPath, const std::filesystem::path& fragShaderPath);
         ~OpenGLShader();
 
         virtual void Bind() const override;
@@ -26,12 +26,15 @@ namespace CatEngine
         virtual void SetVec2(const std::string& name, const glm::vec2& value) override;
         
         virtual void SetFloat(const std::string& name, float value) override;
+
+        virtual std::string GetName() const override { return m_Name; }
     private:
         uint32_t CacheUniformLocation(const std::string& name);
 
     private:
         RendererID m_RendererID;
-
         std::unordered_map<std::string, uint32_t> m_UniformCache;
+
+        std::string m_Name;
     };
 }

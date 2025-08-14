@@ -12,12 +12,21 @@
 #include "CatEngine/Layer/Layer.h"
 
 #include "CatEngine/Renderer/Renderer.h"
+#include "CatEngine/Renderer/Renderer2D.h"
 #include "CatEngine/Renderer/RenderCommand.h"
 
 #include "CatEngine/Renderer/Buffer.h"
 #include "CatEngine/Renderer/VertexArray.h"
 #include "CatEngine/Renderer/Shader.h"
 #include "CatEngine/Renderer/Texture.h"
+#include "CatEngine/Renderer/Framebuffer.h"
 
 #include "CatEngine/Renderer/Camera.h"
+#include "CatEngine/Renderer/EditorCamera.h"
+
+#include "CatEngine/Scene/Scene.h"
+#include "CatEngine/Scene/SceneCamera.h"
+#include "CatEngine/Scene/Entity.h"
+
+#include "CatEngine/Debug/Instrumentor.h"
 

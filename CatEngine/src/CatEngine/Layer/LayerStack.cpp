@@ -8,6 +8,7 @@ namespace CatEngine
 	}
 	LayerStack::~LayerStack()
 	{
+        CE_PROFILE_FUNCTION();
 		for (Layer* layer : m_Layers) {
 			layer->OnDetach();
 			delete layer;
@@ -15,15 +16,18 @@ namespace CatEngine
 	}
 	void LayerStack::PushLayer(Layer* layer)
 	{
+        CE_PROFILE_FUNCTION();
 		m_Layers.emplace(m_Layers.begin() + m_LayerInsertIndex, layer);
 		m_LayerInsertIndex++;
 	}
 	void LayerStack::PushOverlay(Layer* overlay)
 	{
+        CE_PROFILE_FUNCTION();
 		m_Layers.emplace_back(overlay);
 	}
 	void LayerStack::PopLayer(Layer* layer)
 	{
+        CE_PROFILE_FUNCTION();
 		auto it = std::find(m_Layers.begin(), m_Layers.end(), layer);
 		if (it != m_Layers.end()) 
 		{
@@ -34,6 +38,7 @@ namespace CatEngine
 	}
 	void LayerStack::PopOverlay(Layer* overlay)
 	{
+        CE_PROFILE_FUNCTION();
 		auto it = std::find(m_Layers.begin(), m_Layers.end(), overlay);
 		if (it != m_Layers.end()) 
 		{
