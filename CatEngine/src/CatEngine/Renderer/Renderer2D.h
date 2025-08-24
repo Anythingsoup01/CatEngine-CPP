@@ -7,6 +7,9 @@
 
 #include <glm/glm.hpp>
 
+#include "CatEngine/Scene/Components/2D/SpriteRenderer.h"
+#include "CatEngine/Scene/Components/2D/CircleRenderer.h"
+
 namespace CatEngine
 {
     class Renderer2D
@@ -25,8 +28,8 @@ namespace CatEngine
 
         static void NextBatch();
 
-        // Primitives
-        static void DrawQuad(const glm::mat4& transform, const glm::vec4& color = glm::vec4(1.0f), const Ref<Texture2D>& texture = nullptr, float tilingFactor = 1.0f, int entityID = 0);
+        static void DrawSprite(const glm::mat4& transform, SpriteRendererComponent& sprite, int entityID);
+		static void DrawCircle(const glm::mat4& transform, CircleRendererComponent& crc, int entityID);
 
         struct Statistics
         {

@@ -91,16 +91,26 @@ namespace CatEngine
     {
         CE_PROFILE_FUNCTION();
         Renderer2D::BeginScene(camera);
-        {
-            CE_PROFILE_SCOPE("Draw Sprites");
-            auto group = m_Registry.group<TransformComponent>(entt::get<SpriteRendererComponent>);
-            for(auto entity : group)
-            {
-                auto [transform, sprite] = group.get<TransformComponent, SpriteRendererComponent>(entity);
-                Renderer2D::DrawQuad(transform.GetTransform(), sprite.Color, sprite.Texture, sprite.TilingFactor, (int)entity);
-            }
-        }
+		// Draw Sprites
+		{
+			auto group = m_Registry.group<TransformComponent>(entt::get<SpriteRendererComponent>);
+			for (auto entity : group)
+			{
+				auto [transform, sprite] = group.get<TransformComponent, SpriteRendererComponent>(entity);
 
+				Renderer2D::DrawSprite(transform.GetTransform(), sprite, (int)entity);
+			}
+		}
+		// Draw Circles
+		{
+			auto view = m_Registry.view<TransformComponent, CircleRendererComponent>();
+			for (auto entity : view)
+			{
+				auto [transform, circle] = view.get<TransformComponent, CircleRendererComponent>(entity);
+
+				Renderer2D::DrawCircle(transform.GetTransform(), circle, (int)entity);
+			}
+		}
         Renderer2D::EndScene();
     }
     
@@ -129,15 +139,26 @@ namespace CatEngine
 		{
 			Renderer2D::BeginScene(mainCamera->GetProjection(), *cameraTransform);
 
-			{
-				auto group = m_Registry.group<TransformComponent>(entt::get<SpriteRendererComponent>);
-				for (auto entity : group)
-				{
-					auto [transform, sprite] = group.get<TransformComponent, SpriteRendererComponent>(entity);
+            // Draw Sprites
+            {
+                auto group = m_Registry.group<TransformComponent>(entt::get<SpriteRendererComponent>);
+                for (auto entity : group)
+                {
+                    auto [transform, sprite] = group.get<TransformComponent, SpriteRendererComponent>(entity);
 
-					Renderer2D::DrawQuad(transform.GetTransform(), sprite.Color, sprite.Texture, sprite.TilingFactor, (int)entity);
-				}
-			}
+                    Renderer2D::DrawSprite(transform.GetTransform(), sprite, (int)entity);
+                }
+            }
+            // Draw Circles
+            {
+                auto view = m_Registry.view<TransformComponent, CircleRendererComponent>();
+                for (auto entity : view)
+                {
+                    auto [transform, circle] = view.get<TransformComponent, CircleRendererComponent>(entity);
+    
+                    Renderer2D::DrawCircle(transform.GetTransform(), circle, (int)entity);
+                }
+            }
 			Renderer2D::EndScene();
 		}
     }
@@ -188,17 +209,26 @@ namespace CatEngine
 		if (mainCamera)
 		{
 			Renderer2D::BeginScene(mainCamera->GetProjection(), *cameraTransform);
+            // Draw Sprites
+            {
+                auto group = m_Registry.group<TransformComponent>(entt::get<SpriteRendererComponent>);
+                for (auto entity : group)
+                {
+                    auto [transform, sprite] = group.get<TransformComponent, SpriteRendererComponent>(entity);
 
-			// Draw Sprites
-			{
-				auto group = m_Registry.group<TransformComponent>(entt::get<SpriteRendererComponent>);
-				for (auto entity : group)
-				{
-					auto [transform, sprite] = group.get<TransformComponent, SpriteRendererComponent>(entity);
-
-					Renderer2D::DrawQuad(transform.GetTransform(), sprite.Color, sprite.Texture, sprite.TilingFactor, (int)entity);
-				}
-			}
+                    Renderer2D::DrawSprite(transform.GetTransform(), sprite, (int)entity);
+                }
+            }
+            // Draw Circles
+            {
+                auto view = m_Registry.view<TransformComponent, CircleRendererComponent>();
+                for (auto entity : view)
+                {
+                    auto [transform, circle] = view.get<TransformComponent, CircleRendererComponent>(entity);
+    
+                    Renderer2D::DrawCircle(transform.GetTransform(), circle, (int)entity);
+                }
+            }
 			Renderer2D::EndScene();
 		}
 	}
@@ -244,9 +274,20 @@ void Scene::OnRuntimeStop()
 			{
 				auto [transform, sprite] = group.get<TransformComponent, SpriteRendererComponent>(entity);
 
-				Renderer2D::DrawQuad(transform.GetTransform(), sprite.Color, sprite.Texture, sprite.TilingFactor, (int)entity);
+				Renderer2D::DrawSprite(transform.GetTransform(), sprite, (int)entity);
 			}
 		}
+		// Draw Circles
+		{
+			auto view = m_Registry.view<TransformComponent, CircleRendererComponent>();
+			for (auto entity : view)
+			{
+				auto [transform, circle] = view.get<TransformComponent, CircleRendererComponent>(entity);
+
+				Renderer2D::DrawCircle(transform.GetTransform(), circle, (int)entity);
+			}
+		}
+
 		Renderer2D::EndScene();
 
 	}
@@ -364,8 +405,12 @@ void Scene::OnRuntimeStop()
 		if (m_ViewportWidth > 0 && m_ViewportHeight > 0)
 			component.Camera.SetViewportSize(m_ViewportWidth, m_ViewportHeight);
 	}
-	template<>
+    template<>
 	void Scene::OnComponentAdded<SpriteRendererComponent>(Entity entity, SpriteRendererComponent& component)
+	{
+	}
+    template<>
+	void Scene::OnComponentAdded<CircleRendererComponent>(Entity entity, CircleRendererComponent& component)
 	{
 	}
 	template<>

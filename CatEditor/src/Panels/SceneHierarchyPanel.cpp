@@ -71,9 +71,9 @@ namespace CatEngine
 
 			ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (((float)contentRegionAvailable.x - ((float)contentRegionAvailable.x / 2.f)) * .5f));
 
-			bool Components2DAvaliable = ((!m_SelectionContext.HasComponent<SpriteRendererComponent>()));
-
-			if (ImGui::Button("Add Component", ImVec2{ contentRegionAvailable.x / 2.f, lineHeight }))
+            bool Components2DAvaliable = ((!m_SelectionContext.HasComponent<SpriteRendererComponent>() && !m_SelectionContext.HasComponent<CircleRendererComponent>()));
+			
+            if (ImGui::Button("Add Component", ImVec2{ contentRegionAvailable.x / 2.f, lineHeight }))
 				ImGui::OpenPopup("AddComponent");
 			
 			if (ImGui::BeginPopup("AddComponent"))
@@ -85,7 +85,7 @@ namespace CatEngine
 
 					if (opened)
 					{
-						DisplayAddComponentEntry<SpriteRendererComponent>("Sprite Renderer Component");
+						DisplayAddComponentEntries<SpriteRendererComponent, CircleRendererComponent>("Sprite Renderer Component", "Circle Renderer Component");
 						ImGui::TreePop();
 					}
 				}
@@ -259,6 +259,14 @@ namespace CatEngine
 			}
 
 			ImGuiDraw::DrawVec1Control("Tiling Factor", component.TilingFactor, 0.1f, 0.f, 100.f);
+		});
+		
+        DrawComponent<CircleRendererComponent>("Circle Renderer", selection, [](auto& component)
+		{
+			ImGuiDraw::DrawColorEdit4Control("Color", component.Color);
+
+			ImGuiDraw::DrawVec1Control("Thickness", component.Thickness, 0.025f, 0.f, 1.f);
+			ImGuiDraw::DrawVec1Control("Fade", component.Fade, 0.00025f, 0.f, 1.f);
 		});
 
         DrawComponent<CameraComponent>("Camera", selection, [](auto& component) 

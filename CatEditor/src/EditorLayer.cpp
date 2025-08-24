@@ -57,6 +57,7 @@ namespace CatEngine
         m_SceneCameraPanel = SceneViewportPanel(fbSpec);
 
 
+
         m_ActiveScene = CreateRef<Scene>();
 
         m_CurrentProjectName = "SampleProject";

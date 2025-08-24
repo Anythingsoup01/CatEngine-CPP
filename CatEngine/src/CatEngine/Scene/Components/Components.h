@@ -1,6 +1,7 @@
 #pragma once
 
 #include "2D/SpriteRenderer.h"
+#include "2D/CircleRenderer.h"
 
 #include "3D/TransformComponent.h"
 
@@ -21,6 +22,6 @@ namespace CatEngine
 
 	using AllComponents =
 		ComponentGroup<TagComponent, LayerComponent, TransformComponent, CameraComponent,
-		SpriteRendererComponent,
+		SpriteRendererComponent, CircleRendererComponent,
 		ScriptComponent>;
 }

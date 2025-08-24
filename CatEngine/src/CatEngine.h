@@ -33,6 +33,8 @@
 #include "CatEngine/Scene/Entity.h"
 #include "CatEngine/Scene/ScriptObject.h"
 
+#include "CatEngine/Scene/Components/Components.h"
+
 #include "CatEngine/FileDialog/FileDialog.h"
 
 #include "CatEngine/Debug/Instrumentor.h"

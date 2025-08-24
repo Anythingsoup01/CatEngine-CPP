@@ -14,11 +14,13 @@ namespace CatEngine
 
         static inline void DrawIndexed(const Ref<VertexArray>& vertexArray)
         {
+            vertexArray->Bind();
             s_RenderAPI->DrawIndexed(vertexArray);
         }
 
         static inline void DrawIndexed(const Ref<VertexArray>& vertexArray, const uint32_t& indexCount)
         {
+            vertexArray->Bind();
             s_RenderAPI->DrawIndexed(vertexArray, indexCount);
         }
 
