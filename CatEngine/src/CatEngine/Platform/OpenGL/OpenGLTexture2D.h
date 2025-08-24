@@ -27,6 +27,8 @@ namespace CatEngine
         }
 
         virtual uint32_t GetRendererID() const override { return m_RendererID; }
+
+        virtual std::filesystem::path& GetFilePath() override { return m_Path; }
     private:
         std::filesystem::path m_Path;
         bool m_IsLoaded = false;

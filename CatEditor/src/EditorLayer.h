@@ -4,6 +4,10 @@
 
 #include "imgui.h"
 
+#include "Panels/ContentBrowserPanel.h"
+#include "Panels/SceneHierarchyPanel.h"
+#include "Panels/SceneViewportPanel.h"
+
 namespace CatEngine
 {
     class EditorLayer : public Layer
@@ -19,24 +23,39 @@ namespace CatEngine
         static EditorLayer& Get() { return *s_Instance; }
     private:
         bool OnWindowResize(WindowResizeEvent& e);
+        bool OnKeyPressed(KeyPressedEvent& e);
+        bool OnMouseButtonPressed(MouseButtonPressedEvent& e);
+
+        void ImGuizmoDraw(Entity selectedEntity, const glm::mat4& cameraProjection, glm::mat4 cameraView);
 
         void UI_Viewport();
+        void UI_Gizmos();
 
+
+        void OpenScene(const std::filesystem::path& filePath);
+        void SaveScene(const std::filesystem::path& filePath); // TODO: STORE SCENE PATH
 
     private:
-        Ref<Texture2D> m_Texture, m_Texture2, m_Texture3;
+
+        std::filesystem::path m_SceneFilePath;
+
         EditorCamera m_EditorCamera;
-
-        Entity m_Car;
-
-        Entity m_CarViewer;
 
         bool m_UsingMainCamera = false;
         float m_DeltaTime;
 
         Ref<Scene> m_ActiveScene;
-        Ref<Framebuffer> m_Framebuffer;
-        glm::vec2 m_ViewportSize;
+        Ref<Scene> m_EditorScene;
+
+        Entity m_HoveredEntity;
+
+        SceneViewportPanel m_SceneViewportPanel;
+        SceneViewportPanel m_SceneCameraPanel;
+        SceneHierarchyPanel m_SceneHierarchyPanel;
+        ContentBrowserPanel m_ContentBrowserPanel;
+		
+        int m_GizmoType = -1;
+
     private:
         static inline EditorLayer* s_Instance = nullptr;
     };

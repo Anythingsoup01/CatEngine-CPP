@@ -25,6 +25,10 @@ namespace CatEngine
 		void DeleteEntity(Entity entity);
         
         void OnUpdateEditor(Time ts, EditorCamera& camera);
+        void OnUpdateMainCameraPreview(Time ts); // This is outside of the runtime, used for the camera preview
+
+        void OnSceneStart();
+        void OnUpdateRuntime(Time ts);
 
         void OnViewportResize(uint32_t width, uint32_t height);
 
@@ -41,6 +45,8 @@ namespace CatEngine
 		{
 			return m_Registry.view<Components...>();
 		}
+
+        entt::registry& GetReg() { return m_Registry; }
 
     private:
         template<typename T>

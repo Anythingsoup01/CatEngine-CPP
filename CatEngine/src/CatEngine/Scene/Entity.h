@@ -71,6 +71,62 @@ namespace CatEngine
 			T& component = m_Scene->m_Registry.emplace<T>(m_EntityHandle);
 			return component;
 		}
+        
+        template<typename T, typename... Args>
+		T& AddComponent(Args&&... args) const
+		{
+			CE_API_ASSERT(!HasComponent<T>(), "Entity already has component!");
+			T& component = m_Scene->m_Registry.emplace<T>(m_EntityHandle, std::forward<Args>(args)...);
+			m_Scene->OnComponentAdded<T>(*this, component);
+			return component;
+		}
+
+		template<typename T, typename... Args>
+		T& AddOrReplaceComponent(Args&&... args) const 
+		{
+			T& component = m_Scene->m_Registry.emplace_or_replace<T>(m_EntityHandle, std::forward<Args>(args)...);
+			m_Scene->OnComponentAdded<T>(*this, component);
+			return component;
+		}
+		
+		template<typename T>
+		T& GetComponent() const 
+		{
+			CE_API_ASSERT(HasComponent<T>(), "Entity does not have component!");
+
+			return m_Scene->m_Registry.get<T>(m_EntityHandle);
+		}
+
+		template<typename T>
+		T& GetOrAddComponent() const 
+		{
+			if (HasComponent<T>())
+			{
+				return GetComponent<T>();
+			}
+			return AddComponent<T>();
+		}
+
+		template<typename T>
+		void RemoveComponent() const 
+		{
+			CE_API_ASSERT(HasComponent<T>(), "Entity does not have component!");
+
+			m_Scene->m_Registry.remove<T>(m_EntityHandle);
+		}
+
+		template<typename T>
+		bool HasComponent() const 
+		{
+			return m_Scene->m_Registry.try_get<T>(m_EntityHandle);
+		}
+
+		template<typename T>
+		T& ResetComponent() const 
+		{
+			T& component = m_Scene->m_Registry.emplace<T>(m_EntityHandle);
+			return component;
+		}
 
 		operator bool() const { return m_EntityHandle != entt::null; }
 		operator uint32_t() const { return (uint32_t)m_EntityHandle; }

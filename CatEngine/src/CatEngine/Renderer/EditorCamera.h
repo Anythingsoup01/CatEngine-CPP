@@ -38,7 +38,7 @@ namespace CatEngine
 		void UpdateProjection();
 		void UpdateView();
 
-		bool OnMouseScrolled(MouseScrolledEvent& e);
+        bool OnMouseScrolled(MouseScrolledEvent& e);
 
 		void MousePan(const glm::vec2& delta);
 		void MouseRotate(const glm::vec2& delta);

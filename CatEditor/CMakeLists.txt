@@ -1,6 +1,14 @@
 set(SRCS
     src/CatEditorApp.cpp
+    src/ImGui/ImGuiDraw.cpp
+    src/Panels/SceneHierarchyPanel.cpp
+    src/Panels/SceneViewportPanel.cpp
+    src/Panels/ContentBrowserPanel.cpp
     src/EditorLayer.cpp
+    src/ImGui/ImGuiDraw.h
+    src/Panels/ContentBrowserPanel.h
+    src/Panels/SceneViewportPanel.h
+    src/Panels/SceneHierarchyPanel.h
     src/EditorLayer.h
 )
 add_executable(CatEditor ${SRCS})
@@ -14,6 +22,9 @@ target_include_directories(CatEditor PRIVATE
     ${CMAKE_SOURCE_DIR}/vendor/glm
     ${CMAKE_SOURCE_DIR}/vendor/entt
     ${CMAKE_SOURCE_DIR}/vendor/Glad/include
+    ${CMAKE_SOURCE_DIR}/vendor/NFD-E/src/include
+    ${CMAKE_SOURCE_DIR}/vendor/yaml/include
+    ${CMAKE_SOURCE_DIR}/vendor/ImGuizmo
 )
 
 target_link_libraries(CatEditor

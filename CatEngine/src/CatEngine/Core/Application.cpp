@@ -20,6 +20,11 @@ namespace CatEngine
 
         RenderAPI::Set(RenderAPI::API::OpenGL);
 
+        if (spec.CommandlineArgs.Count > 1)
+        {
+            std::filesystem::current_path(spec.CommandlineArgs[1]);
+        }
+
 
         m_Window.Init(WindowProps(spec.Name, 1280, 720));
         m_Window.SetVSync(false);

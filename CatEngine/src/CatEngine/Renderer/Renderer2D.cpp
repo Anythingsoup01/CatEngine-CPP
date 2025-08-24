@@ -4,6 +4,7 @@
 #include "VertexArray.h"
 #include "Buffer.h"
 #include "Shader.h"
+#include "UniformBuffer.h"
 
 #include "RenderCommand.h"
 
@@ -20,6 +21,7 @@ namespace CatEngine
         glm::vec2 TexCoord;
         float TexIndex;
         float TilingFactor;
+        int EntityID;
     };
 
     struct Renderer2DData
@@ -42,6 +44,13 @@ namespace CatEngine
         Ref<Texture2D> DefaultTexture; // Bound to slot 0 
         uint32_t TextureSlotIndex = 1;
 
+        struct CameraData
+        {
+            glm::mat4 ViewProjection;
+        };
+        CameraData CameraBuffer;
+        Ref<UniformBuffer> CameraUniformBuffer;
+
         ShaderLibrary Shaders;
 
         Renderer2D::Statistics Stats;
@@ -61,6 +70,7 @@ namespace CatEngine
             { ShaderDataType::Vec2, "a_TexCoord"     },
             { ShaderDataType::Vec,  "a_TexIndex"     },
             { ShaderDataType::Vec,  "a_TilingFactor" },
+            { ShaderDataType::Int,  "a_EntityID"     },
         });
         s_Data.QuadVertexArray->AddVertexBuffer(s_Data.QuadVertexBuffer);
 
@@ -92,7 +102,7 @@ namespace CatEngine
         s_Data.QuadVertexPositions[2] = {  0.5f,  0.5f, 0.0f, 1.0f };
         s_Data.QuadVertexPositions[3] = { -0.5f,  0.5f, 0.0f, 1.0f };
 
-        s_Data.Shaders.Load("QuadShader", "resources/shader/QuadShader.vert", "resources/shader/QuadShader.frag");
+        s_Data.Shaders.Load("QuadShader", "Resources/Shader/2D/QuadShader.vert", "Resources/Shader/2D/QuadShader.frag");
 
         int32_t samplers[s_Data.MaxTextureSlots];
         for (uint32_t i = 0; i < s_Data.MaxTextureSlots; i++)
@@ -106,6 +116,9 @@ namespace CatEngine
         s_Data.TextureSlots[0] = s_Data.DefaultTexture;
         for (uint32_t i = 0; i < s_Data.MaxTextureSlots; i++)
             s_Data.TextureSlots[i] = s_Data.DefaultTexture;
+
+
+        s_Data.CameraUniformBuffer = UniformBuffer::Create(sizeof(Renderer2DData::CameraBuffer), 0);
 
 
     }
@@ -124,7 +137,8 @@ namespace CatEngine
 
         m_SceneActive = true;
         
-        s_Data.Shaders.Get("QuadShader")->SetMat4("u_ViewProjection", camera.GetProjection());
+        s_Data.CameraBuffer.ViewProjection = camera.GetProjection() * glm::inverse(transform);
+        s_Data.CameraUniformBuffer->SetData(&s_Data.CameraBuffer, sizeof(Renderer2DData::CameraBuffer));
 
 		StartBatch();
 	}
@@ -136,23 +150,12 @@ namespace CatEngine
         if (m_SceneActive) CE_API_ASSERT(false, "No end scene!");
 
         m_SceneActive = true;
-		
-        s_Data.Shaders.Get("QuadShader")->SetMat4("u_ViewProjection", camera.GetViewProjection());
+
+        s_Data.CameraBuffer.ViewProjection = camera.GetViewProjection();
+        s_Data.CameraUniformBuffer->SetData(&s_Data.CameraBuffer, sizeof(Renderer2DData::CameraBuffer));
 
 		StartBatch();
 	}
-    
-    void Renderer2D::BeginScene(const OrthographicCamera& camera)
-    {
-        CE_PROFILE_FUNCTION();
-
-        if (m_SceneActive) CE_API_ASSERT(false, "No end scene!");
-
-        m_SceneActive = true;
-        s_Data.Shaders.Get("QuadShader")->SetMat4("u_ViewProjection", camera.GetViewProjectionMatrix());
-
-        StartBatch();
-    }
 
     void Renderer2D::EndScene()
     {
@@ -194,17 +197,7 @@ namespace CatEngine
         StartBatch();
     }
 
-    void Renderer2D::DrawQuad(const glm::vec3& position, float rotation, const glm::vec2& size, const glm::vec4& color, const Ref<Texture2D> texture, float tilingFactor)
-    {
-        CE_PROFILE_FUNCTION();
-
-        if (!m_SceneActive) CE_API_ASSERT(false, "No begin scene!");
-
-        glm::mat4 transform = glm::translate(glm::mat4(1.0f), position) * glm::rotate(glm::mat4(1.0f), glm::radians(rotation), glm::vec3(0,0,1)) * glm::scale(glm::mat4(1.0f), glm::vec3(size, 1.0f));
-        DrawQuad(transform, color, texture, tilingFactor);
-    }
-
-    void Renderer2D::DrawQuad(const glm::mat4& transform, const glm::vec4& color, const Ref<Texture2D> texture, float tilingFactor)
+    void Renderer2D::DrawQuad(const glm::mat4& transform, const glm::vec4& color, const Ref<Texture2D>& texture, float tilingFactor, int entityID)
     {
         CE_PROFILE_FUNCTION();
         if (!m_SceneActive) CE_API_ASSERT(false, "No begin scene!");
@@ -241,6 +234,7 @@ namespace CatEngine
             s_Data.QuadVertexBufferPtr->TexCoord = textureCoords[i];
             s_Data.QuadVertexBufferPtr->TexIndex = textureIndex;
             s_Data.QuadVertexBufferPtr->TilingFactor = tilingFactor;
+            s_Data.QuadVertexBufferPtr->EntityID = entityID;
 
             s_Data.QuadVertexBufferPtr++;
         }

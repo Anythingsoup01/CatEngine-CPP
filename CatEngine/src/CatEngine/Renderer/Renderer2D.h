@@ -26,8 +26,7 @@ namespace CatEngine
         static void NextBatch();
 
         // Primitives
-        static void DrawQuad(const glm::vec3& position, float rotation, const glm::vec2& size, const glm::vec4& color = glm::vec4(1.0f), const Ref<Texture2D> texture = nullptr, float tilingFactor = 1.0f);
-        static void DrawQuad(const glm::mat4& transform, const glm::vec4& color = glm::vec4(1.0f), Ref<Texture2D> texture = nullptr, float tilingFactor = 1.0f);
+        static void DrawQuad(const glm::mat4& transform, const glm::vec4& color = glm::vec4(1.0f), const Ref<Texture2D>& texture = nullptr, float tilingFactor = 1.0f, int entityID = 0);
 
         struct Statistics
         {

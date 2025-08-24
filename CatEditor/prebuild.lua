@@ -17,7 +17,10 @@ project "CatEditor"
         "$(WORKSPACEDIR)/vendor/imgui",
         "$(WORKSPACEDIR)/vendor/glm",
         "$(WORKSPACEDIR)/vendor/entt",
-        "$(WORKSPACEDIR)/vendor/Glad/include"
+        "$(WORKSPACEDIR)/vendor/Glad/include",
+        "$(WORKSPACEDIR)/vendor/NFD-E/src/include",
+        "$(WORKSPACEDIR)/vendor/yaml/include",
+        "$(WORKSPACEDIR)/vendor/ImGuizmo",
     }
 
     links

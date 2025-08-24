@@ -13,3 +13,6 @@
 [submodule "vendor/glm"]
 	path = vendor/glm
 	url = https://github.com/AnythingSoup01/glm
+[submodule "vendor/NFD-E"]
+	path = vendor/NFD-E
+	url = https://github.com/btzy/nativefiledialog-extended

@@ -14,6 +14,8 @@ project "CatEngine"
         "$(WORKSPACEDIR)/vendor/stb/*.h",
         "$(WORKSPACEDIR)/vendor/stb/*.cpp",
         "$(WORKSPACEDIR)/vendor/entt/*.hpp",
+        "$(WORKSPACEDIR)/vendor/ImGuizmo/*.cpp",
+        "$(WORKSPACEDIR)/vendor/ImGuizmo/*.h",
     }
 
     includedirs
@@ -26,6 +28,9 @@ project "CatEngine"
         "$(WORKSPACEDIR)/vendor/glm",
         "$(WORKSPACEDIR)/vendor/stb",
         "$(WORKSPACEDIR)/vendor/entt",
+        "$(WORKSPACEDIR)/vendor/NFD-E/src/include",
+        "$(WORKSPACEDIR)/vendor/yaml/include",
+        "$(WORKSPACEDIR)/vendor/ImGuizmo",
     }
 
     links
@@ -33,6 +38,8 @@ project "CatEngine"
         "ImGui",
         "glfw",
         "Glad",
+        "nfd",
+        "yaml-cpp",
         "GL",
     }
 

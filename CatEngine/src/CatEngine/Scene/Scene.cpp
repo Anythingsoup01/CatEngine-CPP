@@ -97,13 +97,89 @@ namespace CatEngine
             for(auto entity : group)
             {
                 auto [transform, sprite] = group.get<TransformComponent, SpriteRendererComponent>(entity);
-                Renderer2D::DrawQuad(transform.GetTransform(), sprite.Color, sprite.Texture, sprite.TilingFactor);
+                Renderer2D::DrawQuad(transform.GetTransform(), sprite.Color, sprite.Texture, sprite.TilingFactor, (int)entity);
             }
         }
 
         Renderer2D::EndScene();
     }
+    
+    void Scene::OnUpdateMainCameraPreview(Time ts)
+    {
+        CE_PROFILE_FUNCTION();
+		// Render 2D 
+		Camera* mainCamera = nullptr;
+		glm::mat4* cameraTransform = nullptr;
+		{
+			auto view = m_Registry.view<TransformComponent, CameraComponent>();
+			for (auto entity : view)
+			{
+				auto [transform, camera] = view.get<TransformComponent, CameraComponent>(entity);
 
+				if (camera.Primary)
+				{
+					mainCamera = &camera.Camera;
+					cameraTransform = &transform.GetTransform();
+					break;
+				}
+			}
+		}
+
+		if (mainCamera)
+		{
+			Renderer2D::BeginScene(mainCamera->GetProjection(), *cameraTransform);
+
+			{
+				auto group = m_Registry.group<TransformComponent>(entt::get<SpriteRendererComponent>);
+				for (auto entity : group)
+				{
+					auto [transform, sprite] = group.get<TransformComponent, SpriteRendererComponent>(entity);
+
+					Renderer2D::DrawQuad(transform.GetTransform(), sprite.Color, sprite.Texture, sprite.TilingFactor, (int)entity);
+				}
+			}
+			Renderer2D::EndScene();
+		}
+    }
+	void Scene::OnUpdateRuntime(Time time)
+	{
+		CE_PROFILE_FUNCTION();
+
+		// Render 2D 
+		Camera* mainCamera = nullptr;
+		glm::mat4* cameraTransform = nullptr;
+		{
+			auto view = m_Registry.view<TransformComponent, CameraComponent>();
+			for (auto entity : view)
+			{
+				auto [transform, camera] = view.get<TransformComponent, CameraComponent>(entity);
+
+				if (camera.Primary)
+				{
+					mainCamera = &camera.Camera;
+					cameraTransform = &transform.GetTransform();
+					break;
+				}
+			}
+		}
+
+		if (mainCamera)
+		{
+			Renderer2D::BeginScene(mainCamera->GetProjection(), *cameraTransform);
+
+			// Draw Sprites
+			{
+				auto group = m_Registry.group<TransformComponent>(entt::get<SpriteRendererComponent>);
+				for (auto entity : group)
+				{
+					auto [transform, sprite] = group.get<TransformComponent, SpriteRendererComponent>(entity);
+
+					Renderer2D::DrawQuad(transform.GetTransform(), sprite.Color, sprite.Texture, sprite.TilingFactor, (int)entity);
+				}
+			}
+			Renderer2D::EndScene();
+		}
+	}
     void Scene::OnViewportResize(uint32_t width, uint32_t height)
 	{
 		if (m_ViewportWidth == width && m_ViewportHeight == height)
@@ -178,7 +254,7 @@ namespace CatEngine
 	Entity Scene::CreateEntityWithUUID(UUID uuid, const std::string& name)
 	{
 		CE_PROFILE_FUNCTION();
-
+        CE_API_INFO("Created Entity with UUID : {}", static_cast<uint64_t>(uuid));
 		Entity entity = { m_Registry.create(), this };
 
 		entity.AddComponent<IDComponent>(uuid);
@@ -197,8 +273,8 @@ namespace CatEngine
 	}
 	void Scene::DeleteEntity(Entity entity)
 	{
-		m_Registry.destroy(entity);
 		m_EntityMap.erase(entity.GetUUID());
+		m_Registry.destroy(entity);
 	}
 
 
