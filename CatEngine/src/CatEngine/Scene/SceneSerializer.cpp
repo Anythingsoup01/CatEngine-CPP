@@ -189,7 +189,7 @@ namespace CatEngine
 			out << YAML::Key << "Tiling" << YAML::Value << src.TilingFactor;
 			out << YAML::EndMap; // SpriteRendererComponent
 		}
-        /*
+        
 		if (entity.HasComponent<CircleRendererComponent>())
 		{
 			out << YAML::Key << "CircleRendererComponent";
@@ -201,7 +201,7 @@ namespace CatEngine
 			out << YAML::Key << "Fade" << YAML::Value << src.Fade;
 			out << YAML::EndMap; // CircleRendererComponent
 		}
-        */
+
 		if (entity.HasComponent<CameraComponent>())
 		{
 			out << YAML::Key << "CameraComponent";
@@ -376,7 +376,7 @@ namespace CatEngine
 						src.Texture = nullptr;
 					src.TilingFactor = spriteRendererComponent["Tiling"].as<float>();
 				}
-                /*
+                
 				auto circleRendererComponent = entity["CircleRendererComponent"];
 				if (circleRendererComponent)
 				{
@@ -385,7 +385,7 @@ namespace CatEngine
 					src.Thickness = circleRendererComponent["Thickness"].as<float>();
 					src.Fade = circleRendererComponent["Fade"].as<float>();
 				}
-                */
+                
 				auto cameraComponent = entity["CameraComponent"];
 				if (cameraComponent)
 				{

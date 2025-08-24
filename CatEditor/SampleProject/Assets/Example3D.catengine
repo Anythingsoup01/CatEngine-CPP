@@ -1,34 +1,19 @@
 Scene: SampleScene
 Entities:
-  - Entity: 6828016386531878193
+  - Entity: 3727784810361066750
     TagComponent:
       Tag: None
     LayerComponent:
       Layer: Default
     NameComponent:
-      Name: TopFace
+      Name: FrontFace
     TransformComponent:
-      Position: [0.00618351251, 0.5, -0.5]
-      Rotation: [-1.57079637, 0, 0]
-      Scale: [1, 0.999996364, 0.999996364]
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
     SpriteRendererComponent:
-      Color: [0.950276256, 0.950276256, 0.950276256, 1]
-      Texture: SampleProject/Assets/Textures/car3.png
-      Tiling: 1
-  - Entity: 5010296427935919171
-    TagComponent:
-      Tag: None
-    LayerComponent:
-      Layer: Default
-    NameComponent:
-      Name: SideFace
-    TransformComponent:
-      Position: [0.5, 0, -0.5]
-      Rotation: [0, 1.57079637, 0]
-      Scale: [0.999859512, 1, 0.999859512]
-    SpriteRendererComponent:
-      Color: [0.723756909, 0.723756909, 0.723756909, 1]
-      Texture: SampleProject/Assets/Textures/car2.jpeg
+      Color: [1, 1, 1, 1]
+      Texture: SampleProject/Assets/Textures/car.png
       Tiling: 1
   - Entity: 16541780959127099958
     TagComponent:
@@ -52,18 +37,29 @@ Entities:
         OrthographicFar: 1
       Primary: true
       FixedAspectRatio: false
-  - Entity: 3727784810361066750
+  - Entity: 5010296427935919171
     TagComponent:
       Tag: None
     LayerComponent:
       Layer: Default
     NameComponent:
-      Name: FrontFace
+      Name: SideFace
     TransformComponent:
-      Position: [0, 0, 0]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
+      Position: [0.5, 0, -0.5]
+      Rotation: [0, 1.57079637, 0]
+      Scale: [0.999859512, 1, 0.999859512]
     SpriteRendererComponent:
-      Color: [1, 1, 1, 1]
-      Texture: SampleProject/Assets/Textures/car.png
+      Color: [0.723756909, 0.723756909, 0.723756909, 1]
+      Texture: SampleProject/Assets/Textures/car2.jpeg
       Tiling: 1
+  - Entity: 6828016386531878193
+    TagComponent:
+      Tag: None
+    LayerComponent:
+      Layer: Default
+    NameComponent:
+      Name: TopFace
+    TransformComponent:
+      Position: [0.00618351251, 0.5, -0.5]
+      Rotation: [-1.57079637, 0, 0]
+      Scale: [1, 0.999996364, 0.999996364]
