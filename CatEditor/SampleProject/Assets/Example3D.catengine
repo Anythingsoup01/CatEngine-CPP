@@ -13,7 +13,7 @@ Entities:
       Scale: [1, 0.999996364, 0.999996364]
     SpriteRendererComponent:
       Color: [0.950276256, 0.950276256, 0.950276256, 1]
-      Texture: ""
+      Texture: SampleProject/Assets/Textures/car3.png
       Tiling: 1
   - Entity: 5010296427935919171
     TagComponent:
@@ -28,7 +28,7 @@ Entities:
       Scale: [0.999859512, 1, 0.999859512]
     SpriteRendererComponent:
       Color: [0.723756909, 0.723756909, 0.723756909, 1]
-      Texture: ""
+      Texture: SampleProject/Assets/Textures/car2.jpeg
       Tiling: 1
   - Entity: 16541780959127099958
     TagComponent:
@@ -65,5 +65,5 @@ Entities:
       Scale: [1, 1, 1]
     SpriteRendererComponent:
       Color: [1, 1, 1, 1]
-      Texture: ""
+      Texture: SampleProject/Assets/Textures/car.png
       Tiling: 1

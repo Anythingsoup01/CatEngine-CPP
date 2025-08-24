@@ -239,13 +239,16 @@ namespace CatEngine
 		{
 			ImGuiDraw::DrawColorEdit4Control("Color", component.Color);
 			
-			ImGui::Button("Texture", ImVec2{100.f, 100.f});
+            if (component.Texture)
+                ImGui::ImageButton("##Texture", (void*)(uint64_t)component.Texture->GetRendererID(), {100, 100}, {0, 1}, {1, 0});
+            else
+                ImGui::Button("Texture", {100, 100});
 			if (ImGui::BeginDragDropTarget())
 			{
 				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSET_MANAGER_ITEM"))
 				{
 					const wchar_t* path = (const wchar_t*)payload->Data;
-					std::filesystem::path texturePath = std::filesystem::path("assets") / path;
+					std::filesystem::path texturePath = std::filesystem::path("SampleProject/Assets") / path;
 					Ref<Texture2D> texture = Texture2D::Create(texturePath.string());
 					if (texture->IsLoaded())
 						component.Texture = texture;

@@ -141,6 +141,28 @@ namespace CatEngine
 			Renderer2D::EndScene();
 		}
     }
+
+    void Scene::OnPauseStart()
+	{
+		m_IsPaused = true;
+	}
+
+	void Scene::OnPauseStop()
+	{
+		m_IsPaused = false;
+	}
+
+
+	void Scene::OnRuntimeStart()
+	{
+		m_IsRunning = true;
+
+		//OnScriptStart();
+
+		//OnPhysics2DStart();
+			
+	}
+
 	void Scene::OnUpdateRuntime(Time time)
 	{
 		CE_PROFILE_FUNCTION();
@@ -200,7 +222,39 @@ namespace CatEngine
 		}
 	}
 
+void Scene::OnRuntimeStop()
+	{
+		m_IsRunning = false;
+	}
 
+	void Scene::OnSimulationStart()
+	{
+	}
+
+	void Scene::OnUpdateSimulation(Time time, EditorCamera& camera)
+	{
+		CE_PROFILE_FUNCTION();
+
+		Renderer2D::BeginScene(camera);
+
+		// Draw Sprites
+		{
+			auto group = m_Registry.group<TransformComponent>(entt::get<SpriteRendererComponent>);
+			for (auto entity : group)
+			{
+				auto [transform, sprite] = group.get<TransformComponent, SpriteRendererComponent>(entity);
+
+				Renderer2D::DrawQuad(transform.GetTransform(), sprite.Color, sprite.Texture, sprite.TilingFactor, (int)entity);
+			}
+		}
+		Renderer2D::EndScene();
+
+	}
+
+	void Scene::OnSimulationStop()
+	{
+		//OnPhysics2DStop();
+	}
 
 	void Scene::DuplicateEntity(Entity entity)
 	{

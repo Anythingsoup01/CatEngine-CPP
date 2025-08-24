@@ -1,5 +1,7 @@
 #include "EditorLayer.h"
+
 #include "imgui.h" 
+#include <imgui_internal.h>
 
 #include "glm/glm.hpp"
 #include "glm/gtc/type_ptr.hpp"
@@ -38,7 +40,15 @@ namespace CatEngine
     void EditorLayer::OnAttach()
     {
         s_Instance = this;
- 
+ 		
+        m_IconStartRuntime = Texture2D::Create("Resources/Icons/Editor/Start-Runtime.png");
+		m_IconPauseRuntime = Texture2D::Create("Resources/Icons/Editor/Pause-Runtime.png");
+		m_IconPauseRuntimeSelected = Texture2D::Create("Resources/Icons/Editor/Pause-Runtime-Selected.png");
+		m_IconNextFrameRuntime = Texture2D::Create("Resources/Icons/Editor/NextFrame-Runtime.png");
+		m_IconStopRuntime = Texture2D::Create("Resources/Icons/Editor/Stop-Runtime.png");
+
+		m_IconStartSimulation = Texture2D::Create("Resources/Icons/Editor/Start-Simulation.png");
+
         FramebufferSpecification fbSpec;
         fbSpec.Attachments = { FramebufferTextureFormat::RGBA8, FramebufferTextureFormat::RED_INTEGER, FramebufferTextureFormat::Depth };
         fbSpec.Width = 1280;
@@ -48,6 +58,13 @@ namespace CatEngine
 
 
         m_ActiveScene = CreateRef<Scene>();
+
+        m_CurrentProjectName = "SampleProject";
+
+		m_ProjectAssetsDirectory = std::filesystem::path(m_CurrentProjectName + "/Assets");
+
+        m_MouseInUse = false;
+
 
         m_SceneHierarchyPanel.SetContext(m_ActiveScene);
         m_SceneViewportPanel.SetContext(m_ActiveScene);
@@ -66,52 +83,34 @@ namespace CatEngine
     {
         CE_PROFILE_FUNCTION();
         m_DeltaTime = deltaTime;
-
-        if (m_SceneViewportPanel.IsActive())
-        {
-            if (m_SceneViewportPanel.FramebufferResized())
+        switch (m_SceneState)
+		{
+		    case SceneState::Edit:
             {
-                m_EditorCamera.SetViewportSize((float)m_SceneViewportPanel.GetWidth(), (float)m_SceneViewportPanel.GetHeight());
+                OnUpdateEditor(deltaTime);
+                OnUpdateMainCameraPreview(deltaTime);
+                break;
             }
-
-            m_EditorCamera.OnUpdate(deltaTime);
-
-            m_SceneViewportPanel.BindFramebuffer();
-            
-            RenderCommand::Clear({ 0.1, 0.1, 0.1, 1.0});
-            m_SceneViewportPanel.ClearFramebufferAttachment(1, -1);
-
-            m_ActiveScene->OnUpdateEditor(deltaTime, m_EditorCamera);
-
-            auto [mx, my] = ImGui::GetMousePos();
-            const glm::vec2* viewportBounds = m_SceneViewportPanel.GetPanelBounds();
-            mx -= viewportBounds[0].x;
-            my -= viewportBounds[0].y;
-            glm::vec2 viewportSize = viewportBounds[1] - viewportBounds[0];
-            my = viewportSize.y - my;
-
-            int mouseX = (int)mx;
-            int mouseY = (int)my;
-
-            if ((mouseX >= 0 && mouseY >= 0 && mouseX < (int)viewportSize.x && mouseY < (int)viewportSize.y))
+            case SceneState::Play:
             {
-                int pixelData = m_SceneViewportPanel.ReadPixelData(1, mouseX, mouseY);
-                m_HoveredEntity = pixelData == -1 ? Entity() : Entity((entt::entity)pixelData, m_ActiveScene.get());
+                OnUpdateRuntime(deltaTime);
+                break;
             }
-            m_SceneViewportPanel.UnbindFramebuffer();
+            case SceneState::Simulate:
+            {
+                OnUpdateSimulation(deltaTime);
+                OnUpdateMainCameraPreview(deltaTime);
+                break;
+            }
+            case SceneState::Pause:
+            {
+                OnUpdateRuntime(deltaTime);
+                OnUpdateEditor(deltaTime);
+                break;
+            }
         }
-
-        if (m_SceneCameraPanel.IsActive())
-        {
-            m_SceneCameraPanel.FramebufferResized();
-
-
-            m_SceneCameraPanel.BindFramebuffer();
-            RenderCommand::Clear({ 0.1, 0.1, 0.1, 1.0});
-            m_ActiveScene->OnUpdateMainCameraPreview(deltaTime);
-
-            m_SceneCameraPanel.UnbindFramebuffer();
-        }
+         
+        
     }
 
 
@@ -153,11 +152,6 @@ namespace CatEngine
             }
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0, 0 });
 
-            UI_Viewport();
-            m_SceneHierarchyPanel.OnImGuiRender();
-            m_ContentBrowserPanel.OnImGuiRender();
-
-
             ImGui::Begin("Console");
             {
                 Renderer2D::Statistics stats = Renderer2D::GetStats();
@@ -167,10 +161,16 @@ namespace CatEngine
                 ImGui::Text("Rough FPS: %f", 1.0f / m_DeltaTime);
                 Renderer2D::ResetStats();
 
-                ImGui::Checkbox("Use Main Camera", &m_UsingMainCamera);
-
             }
             ImGui::End();
+
+            UI_MenuBar();
+            UI_Viewport();
+            m_SceneHierarchyPanel.OnImGuiRender();
+            m_ContentBrowserPanel.OnImGuiRender();
+            UI_Toolbar();
+
+
 			
 			ImGui::PopStyleVar();
 
@@ -207,6 +207,127 @@ namespace CatEngine
             tc.Scale = scale;
 
         }
+    }
+
+    void EditorLayer::OnUpdateEditor(Time deltaTime)
+    {
+        if (m_SceneViewportPanel.IsActive())
+        {
+            if (m_SceneViewportPanel.FramebufferResized())
+            {
+                m_EditorCamera.SetViewportSize((float)m_SceneViewportPanel.GetWidth(), (float)m_SceneViewportPanel.GetHeight());
+            }
+
+            if (!ImGuizmo::IsUsing() && (!m_BlockMouseEvents))
+                m_EditorCamera.OnUpdate(deltaTime);
+
+            m_SceneViewportPanel.BindFramebuffer();
+            
+            RenderCommand::Clear({ 0.1, 0.1, 0.1, 1.0});
+            m_SceneViewportPanel.ClearFramebufferAttachment(1, -1);
+
+            m_ActiveScene->OnUpdateEditor(deltaTime, m_EditorCamera);
+
+            auto [mx, my] = ImGui::GetMousePos();
+            const glm::vec2* viewportBounds = m_SceneViewportPanel.GetPanelBounds();
+            mx -= viewportBounds[0].x;
+            my -= viewportBounds[0].y;
+            glm::vec2 viewportSize = viewportBounds[1] - viewportBounds[0];
+            my = viewportSize.y - my;
+
+            int mouseX = (int)mx;
+            int mouseY = (int)my;
+
+            if ((mouseX >= 0 && mouseY >= 0 && mouseX < (int)viewportSize.x && mouseY < (int)viewportSize.y))
+            {
+                int pixelData = m_SceneViewportPanel.ReadPixelData(1, mouseX, mouseY);
+                m_HoveredEntity = pixelData == -1 ? Entity() : Entity((entt::entity)pixelData, m_ActiveScene.get());
+            }
+            m_SceneViewportPanel.UnbindFramebuffer();
+        }
+
+    }
+
+    void EditorLayer::OnUpdateMainCameraPreview(Time deltaTime)
+    {
+        if (m_SceneCameraPanel.IsActive())
+        {
+            m_SceneCameraPanel.FramebufferResized();
+
+
+            m_SceneCameraPanel.BindFramebuffer();
+            RenderCommand::Clear({ 0.1, 0.1, 0.1, 1.0});
+            m_ActiveScene->OnUpdateMainCameraPreview(deltaTime);
+
+            m_SceneCameraPanel.UnbindFramebuffer();
+        }
+
+    }
+
+    void EditorLayer::OnUpdateRuntime(Time deltaTime)
+    {
+        if (m_SceneCameraPanel.IsActive())
+        {
+            OnUpdateEditor(deltaTime);
+            m_SceneCameraPanel.FramebufferResized();
+
+
+            m_SceneCameraPanel.BindFramebuffer();
+            RenderCommand::Clear({ 0.1, 0.1, 0.1, 1.0});
+            m_ActiveScene->OnUpdateRuntime(deltaTime);
+
+            m_SceneCameraPanel.UnbindFramebuffer();
+        }
+        else if (m_SceneViewportPanel.IsActive())
+        {
+            m_SceneViewportPanel.BindFramebuffer();
+
+            RenderCommand::Clear({ 0.1, 0.1, 0.1, 1.0});
+
+            m_ActiveScene->OnUpdateRuntime(deltaTime);
+
+            m_SceneViewportPanel.UnbindFramebuffer();
+
+        }
+    }
+
+    void EditorLayer::OnUpdateSimulation(Time deltaTime)
+    {
+        if (m_SceneViewportPanel.IsActive())
+        {
+            if (m_SceneViewportPanel.FramebufferResized())
+            {
+                m_EditorCamera.SetViewportSize((float)m_SceneViewportPanel.GetWidth(), (float)m_SceneViewportPanel.GetHeight());
+            }
+
+            if (!ImGuizmo::IsUsing() && (!m_BlockMouseEvents))
+                m_EditorCamera.OnUpdate(deltaTime);
+
+            m_SceneViewportPanel.BindFramebuffer();
+            
+            RenderCommand::Clear({ 0.1, 0.1, 0.1, 1.0});
+            m_SceneViewportPanel.ClearFramebufferAttachment(1, -1);
+
+            m_ActiveScene->OnUpdateSimulation(deltaTime, m_EditorCamera);
+
+            auto [mx, my] = ImGui::GetMousePos();
+            const glm::vec2* viewportBounds = m_SceneViewportPanel.GetPanelBounds();
+            mx -= viewportBounds[0].x;
+            my -= viewportBounds[0].y;
+            glm::vec2 viewportSize = viewportBounds[1] - viewportBounds[0];
+            my = viewportSize.y - my;
+
+            int mouseX = (int)mx;
+            int mouseY = (int)my;
+
+            if ((mouseX >= 0 && mouseY >= 0 && mouseX < (int)viewportSize.x && mouseY < (int)viewportSize.y))
+            {
+                int pixelData = m_SceneViewportPanel.ReadPixelData(1, mouseX, mouseY);
+                m_HoveredEntity = pixelData == -1 ? Entity() : Entity((entt::entity)pixelData, m_ActiveScene.get());
+            }
+            m_SceneViewportPanel.UnbindFramebuffer();
+        }
+
     }
 
     void EditorLayer::UI_Viewport()
@@ -284,40 +405,281 @@ namespace CatEngine
 
 		}
 	}
+    
+    void EditorLayer::UI_Toolbar()
+    {
+		ImGuiWindowClass tabWindowClass;
+		tabWindowClass.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoTabBar | ImGuiDockNodeFlags_NoResizeFlagsMask_;
+		ImGui::SetNextWindowClass(&tabWindowClass);
 
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0, 2 });
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, { 0, 0 });
+		ImGuiWindowFlags tabStyle = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
+
+		
+		
+        ImGui::Begin("##toolbar", nullptr, tabStyle);
+        {
+            float size = ImGui::GetWindowHeight() - 4.f;
+            Ref<Texture2D> runtimeIcon = m_SceneState == SceneState::Play ? m_IconStopRuntime : m_IconStartRuntime;
+			Ref<Texture2D> pauseIcon;
+			if (m_SceneState == SceneState::Edit)
+				pauseIcon = m_IsScenePaused ? m_IconPauseRuntimeSelected : m_IconPauseRuntime;
+			else if (m_SceneState == SceneState::Play)
+				pauseIcon = m_IsScenePaused ? m_IconNextFrameRuntime : m_IconPauseRuntime;
+			else if (m_SceneState == SceneState::Simulate)
+				pauseIcon = m_IsScenePaused ? m_IconPauseRuntimeSelected : m_IconPauseRuntime; // TODO: Disable the play & pause buttons during simulation
+
+			Ref<Texture2D> simulationIcon = m_SceneState == SceneState::Simulate ? m_IconStopRuntime : m_IconStartSimulation;
+
+            ImGui::SetCursorPosX((ImGui::GetWindowContentRegionMax().x * 0.5f - (size * 0.5f)));
+            if (ImGui::ImageButton((ImTextureID)(uint64_t)runtimeIcon->GetRendererID(), ImVec2(size * 1.403f, size), {0, 0}, {1, 1}, 0))
+            {
+                if (m_SceneState == SceneState::Edit)
+                    OnScenePlay();
+                else if (m_SceneState == SceneState::Play)
+                    OnSceneStop();
+            }
+			ImGui::SameLine();
+			if (ImGui::ImageButton((ImTextureID)(uint64_t)pauseIcon->GetRendererID(), ImVec2(size * 1.403f, size), { 0, 0 }, { 1, 1 }, 0))
+			{
+				if (m_SceneState == SceneState::Edit)
+				{
+					m_IsScenePaused = !m_IsScenePaused;
+					OnScenePause(m_IsScenePaused);
+				}
+				else if (m_SceneState == SceneState::Play)
+				{
+					m_IsScenePaused = !m_IsScenePaused;
+					OnScenePause(m_IsScenePaused);
+				}
+				
+			}
+			ImGui::SameLine();
+			if (ImGui::ImageButton((ImTextureID)(uint64_t)simulationIcon->GetRendererID(), ImVec2(size * 1.403f, size), { 0, 0 }, { 1, 1 }, 0))
+			{
+				if (m_SceneState == SceneState::Edit)
+					OnSceneSimulateStart();
+				else if (m_SceneState == SceneState::Simulate)
+					OnSceneSimulateStop();
+			}
+
+            ImGui::PopStyleVar(2);
+        }
+        ImGui::End();
+
+    }
+	
+    void EditorLayer::UI_MenuBar()
+	{
+		if (ImGui::BeginMenuBar())
+		{
+			if (ImGui::BeginMenu("File"))
+			{
+				if (ImGui::MenuItem("New", "Ctrl+N")) NewScene();
+
+				if (ImGui::MenuItem("Open...", "Ctrl+O")) OpenScene();
+
+				if (ImGui::MenuItem("Save", "Ctrl+S")) SaveScene();
+
+				if (ImGui::MenuItem("Save As...", "Ctrl+Shift+S")) SaveSceneAs();
+
+
+                // TODO: Be able to close from here!
+				//if (ImGui::MenuItem("Exit")) Application::Get().CloseEditor();
+				ImGui::EndMenu();
+			}
+
+			if (ImGui::BeginMenu("Scene"))
+			{
+				const char* runtimeText = m_SceneState == SceneState::Edit ? "Start Runtime" : "Stop Runtime";
+				if (ImGui::MenuItem(runtimeText, "Ctrl+F5"))  m_SceneState == SceneState::Edit ? OnScenePlay() : OnSceneStop();
+
+				if (ImGui::MenuItem("Simulate Runtime", "Ctrl+F7")) m_SceneState == SceneState::Edit ? OnSceneSimulateStart() : OnSceneSimulateStop();
+
+				ImGui::EndMenu();
+			}
+			ImGui::EndMenuBar();
+		}
+	}
+
+    void EditorLayer::SaveSceneAs()
+    {
+		CE_PROFILE_FUNCTION();
+
+        if (m_SceneState == SceneState::Edit)
+        {
+            m_SceneFilePath = FileDialog::SaveFile({{"CatEngine Scene", "catengine"}});
+            if (!m_SceneFilePath.empty())
+            {
+                SceneSerializer serializer(m_ActiveScene);
+                serializer.Serialize(m_SceneFilePath.string());
+            }
+        }
+    }
+
+    void EditorLayer::SaveScene()
+    {
+		CE_PROFILE_FUNCTION();
+
+        if (m_SceneState == SceneState::Edit)
+        {
+            if (!m_SceneFilePath.empty())
+            {
+                SceneSerializer serializer(m_ActiveScene);
+
+                serializer.Serialize(m_SceneFilePath.string());
+            }
+            else SaveSceneAs();
+        }
+    }
+
+    void EditorLayer::OpenScene()
+    {
+		CE_PROFILE_FUNCTION();
+
+        m_SceneFilePath = FileDialog::OpenFile({{"CatEngine Scene", "catengine"}});
+        if (!m_SceneFilePath.empty())
+            OpenScene(m_SceneFilePath);
+    }
     void EditorLayer::OpenScene(const std::filesystem::path& filePath)
     {
+		CE_PROFILE_FUNCTION();
+
         if (filePath.extension().string() != ".catengine")
         {
-            CE_CLI_WARN("Could not load {} - Not a scene file!", filePath.filename().string());
+            CE_API_WARN("Could not load {0} - not a scene file", filePath.filename().string());
             return;
         }
 
         Ref<Scene> newScene = CreateRef<Scene>();
         SceneSerializer serializer(newScene);
-        if (serializer.Deserialize(filePath))
+        if (serializer.Deserialize(filePath.string()))
         {
             m_EditorScene = newScene;
 
             m_EditorScene->OnViewportResize(m_SceneViewportPanel.GetWidth(), m_SceneViewportPanel.GetHeight());
-            m_ActiveScene = Scene::Copy(m_EditorScene);
+            m_ActiveScene = m_EditorScene;
             m_SceneHierarchyPanel.SetContext(m_ActiveScene);
             m_SceneViewportPanel.SetContext(m_ActiveScene);
             m_SceneCameraPanel.SetContext(m_ActiveScene);
         }
     }
 
-    void EditorLayer::SaveScene(const std::filesystem::path& filePath)
+    void EditorLayer::NewScene()
     {
-        if (filePath.extension().string() != ".catengine")
-        {
-            CE_CLI_WARN("Could not load {} - Not a scene file!", filePath.filename().string());
-            return;
-        }
-        
-        SceneSerializer serializer(m_ActiveScene);
-        serializer.Serialize(filePath);
+		CE_PROFILE_FUNCTION();
 
+        m_SceneFilePath = std::filesystem::path();
+        m_EditorScene = CreateRef<Scene>();
+        m_EditorScene->OnViewportResize(m_SceneViewportPanel.GetWidth(), m_SceneViewportPanel.GetHeight());
+        m_ActiveScene = m_EditorScene;
+        m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+        m_SceneViewportPanel.SetContext(m_ActiveScene);
+        m_SceneCameraPanel.SetContext(m_ActiveScene);
+
+    }
+
+    void EditorLayer::OnScenePlay()
+    {
+		CE_PROFILE_FUNCTION();
+
+        m_SceneState = SceneState::Play;
+
+        m_EditorScene = Scene::Copy(m_ActiveScene);
+        m_ActiveScene->OnRuntimeStart();
+        m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+        m_SceneViewportPanel.SetContext(m_ActiveScene);
+        m_SceneCameraPanel.SetContext(m_ActiveScene);
+    }
+
+	void EditorLayer::OnScenePause(bool isPaused)
+	{
+		if (isPaused)
+			m_ActiveScene->OnPauseStart();
+		else
+			m_ActiveScene->OnPauseStop();
+	}
+
+    void EditorLayer::OnSceneStop()
+    {
+		CE_PROFILE_FUNCTION();
+
+        m_SceneState = SceneState::Edit;
+
+        m_ActiveScene->OnRuntimeStop();
+        m_ActiveScene = Scene::Copy(m_EditorScene);
+        m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+        m_SceneViewportPanel.SetContext(m_ActiveScene);
+        m_SceneCameraPanel.SetContext(m_ActiveScene);
+    }
+
+    void EditorLayer::OnSceneSimulateStart()
+    {
+		CE_PROFILE_FUNCTION();
+
+        m_SceneState = SceneState::Simulate;
+     
+		m_EditorScene = Scene::Copy(m_ActiveScene);
+        m_ActiveScene->OnSimulationStart();
+        m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+        m_SceneViewportPanel.SetContext(m_ActiveScene);
+        m_SceneCameraPanel.SetContext(m_ActiveScene);
+    }
+    void EditorLayer::OnSceneSimulateStop()
+    {
+		CE_PROFILE_FUNCTION();
+
+        m_SceneState = SceneState::Edit;
+        
+		m_ActiveScene->OnSimulationStop();
+        m_ActiveScene = Scene::Copy(m_EditorScene);
+        m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+        m_SceneViewportPanel.SetContext(m_ActiveScene);
+        m_SceneCameraPanel.SetContext(m_ActiveScene);
+    }
+
+    void EditorLayer::DuplicateEntity()
+    {
+		CE_PROFILE_FUNCTION();
+
+        Entity entity = m_SceneHierarchyPanel.GetSelectedEntity();
+        if (entity)
+        {
+            m_ActiveScene->DuplicateEntity(entity);
+        }
+    }
+    void EditorLayer::DeleteEntity()
+    {
+		CE_PROFILE_FUNCTION();
+
+        Entity entity = m_SceneHierarchyPanel.GetSelectedEntity();
+        if (entity)
+        {
+            m_ActiveScene->DeleteEntity(entity);
+            m_SceneHierarchyPanel.SetSelectedEntity();
+        }
+    }
+    void EditorLayer::CopyEntity()
+    {
+		CE_PROFILE_FUNCTION();
+
+        Entity entity = m_SceneHierarchyPanel.GetSelectedEntity();
+        if (entity)
+        {
+            m_CopiedEntity = entity;
+        }
+    }
+    void EditorLayer::PasteEntity()
+    {
+		CE_PROFILE_FUNCTION();
+
+        if (m_CopiedEntity)
+        {
+            // TODO : Make it to where entity doesn't need to exist
+            Entity pastedEntity = m_ActiveScene->PasteEntity(m_CopiedEntity);
+            m_SceneHierarchyPanel.SetSelectedEntity(pastedEntity);
+        }
     }
     
     void EditorLayer::OnEvent(Event& e)
@@ -336,75 +698,111 @@ namespace CatEngine
         return false;
     }
 
-    bool EditorLayer::OnKeyPressed(KeyPressedEvent& e)
-    {
-        bool isControl = Input::IsKeyPressed(KeyCode::LeftControl) || Input::IsKeyPressed(KeyCode::RightControl);
-        bool isShift = Input::IsKeyPressed(KeyCode::LeftShift) || Input::IsKeyPressed(KeyCode::RightShift);
+     bool EditorLayer::OnKeyPressed(KeyPressedEvent& e)
+    {   
 
+        bool control = Input::IsKeyPressed(KeyCode::LeftControl) || Input::IsKeyPressed(KeyCode::RightControl);
+		bool shift = Input::IsKeyPressed(KeyCode::LeftShift) || Input::IsKeyPressed(KeyCode::RightShift);
+		// Shortcuts
         switch (e.GetKeyCode())
         {
+            case KeyCode::C:
+            {
+                if (control && shift)
+                {
+                }
+                else if (control)
+                    CopyEntity();
+                break;
+            }
+            case KeyCode::D:
+            {
+                if (control && shift)
+                {
+                }
+                else if (control)
+                    DuplicateEntity();
+                break;
+            }
+            case KeyCode::V:
+            {
+                if (control && shift)
+                {
+                }
+                else if (control)
+                    PasteEntity();
+                break;
+            }
+            case KeyCode::S :
+            {
+                if (control && shift)
+                    SaveSceneAs();
+                else if (control)
+                    SaveScene();
+                break;
+            }
             case KeyCode::O:
             {
-                if (isControl)
-                {
-                    const std::string& filePath = FileDialog::OpenFile({{ "CatEngine", "catengine" }});
-                    if (!filePath.empty())
-                    {
-                        OpenScene(filePath);
-                    }
-                }
+                if (control)
+                    OpenScene();
                 break;
             }
-            case KeyCode::S:
+            case KeyCode::N:
             {
-                if (isControl)
-                {
-                    const std::string& filePath = FileDialog::SaveFile({{"CatEngine", "catengine"}});
-                    if(isShift)
-                    {
-
-                    }
-                    else
-                    {
-                        SaveScene(filePath);
-                    }
-                }
+                if (control) 
+                    NewScene();
                 break;
             }
-            case KeyCode::Q:
+            case KeyCode::F5:
+            {
+                if (control)
+                    m_SceneState == SceneState::Edit ? OnScenePlay() : OnSceneStop();
+                break;
+            }
+            case KeyCode::F7:
+            {
+                if (control)
+                    m_SceneState == SceneState::Edit ? OnSceneSimulateStart() : OnSceneSimulateStop();
+                break;
+            }
+			case KeyCode::Q:
 			{
-				if (m_SceneViewportPanel.IsFocused())
+				if (m_SceneViewportPanel.IsFocused() || m_SceneViewportPanel.IsHovered())
 					m_GizmoType = ImGuizmo::OPERATION::BOUNDS;
 				break;
 			}
             case KeyCode::W:
             {
-				if (m_SceneViewportPanel.IsFocused())
+				if (m_SceneViewportPanel.IsFocused() || m_SceneViewportPanel.IsHovered())
 					m_GizmoType = ImGuizmo::OPERATION::TRANSLATE;
                 break;
             }
             case KeyCode::E:
             {
-				if (m_SceneViewportPanel.IsFocused())
+				if (m_SceneViewportPanel.IsFocused() || m_SceneViewportPanel.IsHovered())
 					m_GizmoType = ImGuizmo::OPERATION::ROTATE;
                 break;
             }
             case KeyCode::R:
             {
-				if (isControl && isShift)
-                {
-
-                }
-				if (m_SceneViewportPanel.IsFocused())
+				if (m_SceneViewportPanel.IsFocused() || m_SceneViewportPanel.IsHovered())
 					m_GizmoType = ImGuizmo::OPERATION::SCALE;
                 break;
             }
-            default: break;
+            case KeyCode::Delete:
+            {
+                DeleteEntity();
+            }
+            default:
+                break;
         }
+
+		// Mouse in use checks
+	
 
         return false;
     }
-    
+
     bool EditorLayer::OnMouseButtonPressed(MouseButtonPressedEvent& e)
     {
 		bool alt = Input::IsKeyPressed(KeyCode::LeftAlt) || Input::IsKeyPressed(KeyCode::RightAlt);

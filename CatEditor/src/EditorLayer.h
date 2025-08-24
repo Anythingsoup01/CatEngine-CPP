@@ -26,28 +26,65 @@ namespace CatEngine
         bool OnKeyPressed(KeyPressedEvent& e);
         bool OnMouseButtonPressed(MouseButtonPressedEvent& e);
 
+        void OnUpdateEditor(Time deltaTime);
+        void OnUpdateMainCameraPreview(Time deltaTime);
+        void OnUpdateRuntime(Time deltaTime);
+        void OnUpdateSimulation(Time deltaTime);
+
         void ImGuizmoDraw(Entity selectedEntity, const glm::mat4& cameraProjection, glm::mat4 cameraView);
 
         void UI_Viewport();
         void UI_Gizmos();
+        void UI_Toolbar();
+        void UI_MenuBar();
 
 
-        void OpenScene(const std::filesystem::path& filePath);
-        void SaveScene(const std::filesystem::path& filePath); // TODO: STORE SCENE PATH
+		void SaveSceneAs();
+		void SaveScene();
+
+		void OpenScene();
+		void OpenScene(const std::filesystem::path& filePath);
+		
+		void NewScene();
+		
+		void OnScenePlay();
+		void OnScenePause(bool isPaused);
+		void OnSceneStop();
+
+		void OnSceneSimulateStart();
+		void OnSceneSimulateStop();
+		
+        void DuplicateEntity();
+		void DeleteEntity();
+		void CopyEntity();
+		void PasteEntity();
+
+		void OnOverlayRender();
 
     private:
 
-        std::filesystem::path m_SceneFilePath;
+		std::filesystem::path m_SceneFilePath;
+		std::filesystem::path m_ProjectAssetsDirectory;
+
+        std::string m_CurrentProjectName;
 
         EditorCamera m_EditorCamera;
 
-        bool m_UsingMainCamera = false;
+        bool m_BlockKeyboardEvents = false;
+		bool m_BlockMouseEvents = false;
+        
         float m_DeltaTime;
+
+        bool m_MouseInUse = false;
+		bool m_MouseInUseFlag = false;
+
+		bool m_IsScenePaused = false;
 
         Ref<Scene> m_ActiveScene;
         Ref<Scene> m_EditorScene;
 
         Entity m_HoveredEntity;
+        Entity m_CopiedEntity;
 
         SceneViewportPanel m_SceneViewportPanel;
         SceneViewportPanel m_SceneCameraPanel;
@@ -55,6 +92,18 @@ namespace CatEngine
         ContentBrowserPanel m_ContentBrowserPanel;
 		
         int m_GizmoType = -1;
+
+        enum class SceneState
+		{
+			Edit = 0,
+			Play = 1,
+			Simulate = 2,
+			Pause = 3
+		};
+		SceneState m_SceneState = SceneState::Edit;
+
+        Ref<Texture2D> m_IconStartRuntime, m_IconPauseRuntime, m_IconPauseRuntimeSelected, m_IconNextFrameRuntime, m_IconStopRuntime;
+		Ref<Texture2D> m_IconStartSimulation;
 
     private:
         static inline EditorLayer* s_Instance = nullptr;
