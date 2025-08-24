@@ -33,14 +33,24 @@ namespace CatEngine
         float Fade;
         int EntityID;
     };
+
+    struct LineVertex
+    {
+        glm::vec3 Position;
+        glm::vec4 Color;
+
+        int EntityID;
+    };
     
     struct Renderer2DData
     {
+        // TODO: Expose these to the editor & add Circle limits seperately
         static const uint32_t MaxQuads = 1000;
 		static const uint32_t MaxVertices = MaxQuads * 4;
 		static const uint32_t MaxIndices = MaxQuads * 6;
-		static const uint32_t MaxTextureSlots = 32; // TODO: RenderCaps
-        
+		static const uint32_t MaxTextureSlots = 32; 
+
+
         Ref<VertexArray> QuadVertexArray;
         Ref<VertexBuffer> QuadVertexBuffer;
 
@@ -55,6 +65,14 @@ namespace CatEngine
         CircleVertex* CircleVertexBufferBase = nullptr;
         CircleVertex* CircleVertexBufferPtr = nullptr;
 
+        Ref<VertexArray> LineVertexArray;
+        Ref<VertexBuffer> LineVertexBuffer;
+
+        uint32_t LineVertexCount = 0;
+        LineVertex* LineVertexBufferBase = nullptr;
+        LineVertex* LineVertexBufferPtr = nullptr;
+
+        float LineWidth = 2.0f;
 
         glm::vec4 QuadVertexPositions[4];
 
@@ -128,9 +146,22 @@ namespace CatEngine
 
         s_Data.CircleVertexArray->SetIndexBuffer(quadIndexBuffer);
 
+        s_Data.CircleVertexBufferBase = new CircleVertex[s_Data.MaxVertices];
+
+
+        // LINES 
+        s_Data.LineVertexArray = VertexArray::Create();
+        s_Data.LineVertexBuffer = VertexBuffer::Create(s_Data.MaxVertices * sizeof(LineVertex));
+        s_Data.LineVertexBuffer->SetLayout({
+            { ShaderDataType::Vec3, "a_Postion"           },
+            { ShaderDataType::Vec4, "a_Color"             },
+            { ShaderDataType::Int, "a_EntityID"           },
+        });
+        s_Data.LineVertexArray->AddVertexBuffer(s_Data.LineVertexBuffer);
+
         delete[] quadIndices; // Can cause issues later with referece depending on thread
 
-        s_Data.CircleVertexBufferBase = new CircleVertex[s_Data.MaxVertices];
+        s_Data.LineVertexBufferBase = new LineVertex[s_Data.MaxVertices];
 
 
         s_Data.QuadVertexPositions[0] = { -0.5f, -0.5f, 0.0f, 1.0f };
@@ -140,7 +171,8 @@ namespace CatEngine
 
         s_Data.Shaders.Load("QuadShader", "Resources/Shader/2D/QuadShader.vert", "Resources/Shader/2D/QuadShader.frag");
         s_Data.Shaders.Load("CircleShader", "Resources/Shader/2D/CircleShader.vert", "Resources/Shader/2D/CircleShader.frag");
-
+        s_Data.Shaders.Load("LineShader", "Resources/Shader/2D/LineShader.vert", "Resources/Shader/2D/LineShader.frag");
+        
         int32_t samplers[s_Data.MaxTextureSlots];
         for (uint32_t i = 0; i < s_Data.MaxTextureSlots; i++)
             samplers[i] = i;
@@ -157,7 +189,7 @@ namespace CatEngine
 
         s_Data.CameraUniformBuffer = UniformBuffer::Create(sizeof(Renderer2DData::CameraBuffer), 0);
 
-
+        SetLineThickness(2.0f);
     }
 
     void Renderer2D::Shutdown()
@@ -212,6 +244,9 @@ namespace CatEngine
         s_Data.CircleIndexCount = 0;
         s_Data.CircleVertexBufferPtr = s_Data.CircleVertexBufferBase;
         
+        s_Data.LineVertexCount = 0;
+        s_Data.LineVertexBufferPtr = s_Data.LineVertexBufferBase;
+
         s_Data.TextureSlotIndex = 1;
     }
 
@@ -237,6 +272,17 @@ namespace CatEngine
 
 			s_Data.Shaders.Get("CircleShader")->Bind();
 			RenderCommand::DrawIndexed(s_Data.CircleVertexArray, s_Data.CircleIndexCount);
+			s_Data.Stats.DrawCalls++;
+		}
+
+		if (s_Data.LineVertexCount)
+		{
+			uint32_t dataSize = (uint32_t)((uint8_t*)s_Data.LineVertexBufferPtr - (uint8_t*)s_Data.LineVertexBufferBase);
+			s_Data.LineVertexBuffer->SetData(s_Data.LineVertexBufferBase, dataSize);
+
+			s_Data.Shaders.Get("LineShader")->Bind();
+			SetLineThickness(s_Data.LineWidth);
+			RenderCommand::DrawLines(s_Data.LineVertexArray, s_Data.LineVertexCount);
 			s_Data.Stats.DrawCalls++;
 		}
     }
@@ -312,6 +358,42 @@ namespace CatEngine
 		s_Data.CircleIndexCount += 6;
 
 		s_Data.Stats.QuadCount++;
+    }
+
+	void Renderer2D::DrawLine(const glm::vec3& p0, const glm::vec3& p1, const glm::vec4& color, int entityID)
+	{
+		s_Data.LineVertexBufferPtr->Position = p0;
+		s_Data.LineVertexBufferPtr->Color = color;
+		s_Data.LineVertexBufferPtr->EntityID = entityID;
+		s_Data.LineVertexBufferPtr++;
+
+		s_Data.LineVertexBufferPtr->Position = p1;
+		s_Data.LineVertexBufferPtr->Color = color;
+		s_Data.LineVertexBufferPtr->EntityID = entityID;
+		s_Data.LineVertexBufferPtr++;
+
+		s_Data.LineVertexCount += 2;
+
+        s_Data.Stats.QuadCount++;
+	}
+
+    void Renderer2D::DrawRect(const glm::mat4& transform, const glm::vec4& color, int entityID)
+	{
+		glm::vec3 lineVertices[4];
+		for (size_t i = 0; i < 4; i++)
+			lineVertices[i] = transform * s_Data.QuadVertexPositions[i];
+
+		DrawLine(lineVertices[0], lineVertices[1], color, entityID);
+		DrawLine(lineVertices[1], lineVertices[2], color, entityID);
+		DrawLine(lineVertices[2], lineVertices[3], color, entityID);
+		DrawLine(lineVertices[3], lineVertices[0], color, entityID);
+		DrawLine(lineVertices[0], lineVertices[2], color, entityID);
+	}
+
+    void Renderer2D::SetLineThickness(float thickness)
+    {
+        s_Data.LineWidth = thickness;
+        RenderCommand::SetLineThickness(thickness);
     }
 
     void Renderer2D::ResetStats()

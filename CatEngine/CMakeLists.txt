@@ -79,7 +79,11 @@ set(SRCS
     src/CatEngine/Scene/Components/Required/InformationComponents.h
     src/CatEngine/Scene/Components/Renderer/CameraComponent.h
     src/CatEngine/Scene/Components/Scripting/ScriptComponent.h
+    src/CatEngine/Scene/Components/Physics/BoxCollider2D.h
+    src/CatEngine/Scene/Components/Physics/CircleCollider2D.h
+    src/CatEngine/Scene/Components/Physics/Rigidbody2D.h
     src/CatEngine/Scene/Components/2D/SpriteRenderer.h
+    src/CatEngine/Scene/Components/2D/CircleRenderer.h
     src/CatEngine/Scene/Components/Components.h
     src/CatEngine/Scene/SceneSerializer.h
     src/CatEngine/Scene/SceneCamera.h
@@ -405,6 +409,7 @@ target_include_directories(CatEngine PRIVATE
     ${CMAKE_SOURCE_DIR}/vendor/NFD-E/src/include
     ${CMAKE_SOURCE_DIR}/vendor/yaml/include
     ${CMAKE_SOURCE_DIR}/vendor/ImGuizmo
+    ${CMAKE_SOURCE_DIR}/vendor/Box2D/include
 )
 
 target_link_libraries(CatEngine
@@ -413,6 +418,7 @@ target_link_libraries(CatEngine
     Glad
     nfd
     yaml-cpp
+    Box2D
     GL
 )
 

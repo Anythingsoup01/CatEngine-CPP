@@ -7,6 +7,10 @@
 
 #include "Renderer/CameraComponent.h"
 
+#include "Physics/BoxCollider2D.h"
+#include "Physics/CircleCollider2D.h"
+#include "Physics/Rigidbody2D.h"
+
 #include "Required/InformationComponents.h"
 
 #include "Scripting/ScriptComponent.h"
@@ -23,5 +27,6 @@ namespace CatEngine
 	using AllComponents =
 		ComponentGroup<TagComponent, LayerComponent, TransformComponent, CameraComponent,
 		SpriteRendererComponent, CircleRendererComponent,
+        BoxCollider2DComponent, CircleCollider2DComponent, Rigidbody2DComponent,
 		ScriptComponent>;
 }

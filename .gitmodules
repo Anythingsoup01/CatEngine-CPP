@@ -16,3 +16,6 @@
 [submodule "vendor/NFD-E"]
 	path = vendor/NFD-E
 	url = https://github.com/btzy/nativefiledialog-extended
+[submodule "vendor/Box2D"]
+	path = vendor/Box2D
+	url = https://github.com/Anythingsoup01/box2d

@@ -31,13 +31,14 @@ namespace CatEngine
         void OnUpdateRuntime(Time deltaTime);
         void OnUpdateSimulation(Time deltaTime);
 
+        void OnOverlayDraw();
+
         void ImGuizmoDraw(Entity selectedEntity, const glm::mat4& cameraProjection, glm::mat4 cameraView);
 
         void UI_Viewport();
         void UI_Gizmos();
         void UI_Toolbar();
         void UI_MenuBar();
-
 
 		void SaveSceneAs();
 		void SaveScene();

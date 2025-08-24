@@ -179,6 +179,73 @@ namespace CatEngine
         }
         ImGui::End();
     }
+
+    void EditorLayer::OnOverlayRender()
+    {
+        Renderer2D::BeginScene(m_EditorCamera);
+        {
+            Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
+
+            if (selectedEntity)
+            {
+                auto& tc = selectedEntity.GetComponent<TransformComponent>();
+                glm::vec3 position = tc.Position;
+                glm::mat4 rotation = glm::toMat4(glm::quat(tc.Rotation));
+                glm::vec3 scale = tc.Scale;
+
+                glm::mat4 transform = glm::translate(glm::mat4(1.f), position) * rotation * glm::scale(glm::mat4(1.f), scale);
+                Renderer2D::DrawRect(transform, glm::vec4(0.85f, 0.1f, 0.85f, 1.0f));
+            }
+        }
+        
+        {
+            auto view = m_ActiveScene->GetAllComponentsWith<TransformComponent, CircleCollider2DComponent>();
+
+            for (auto entity : view)
+            {
+                auto [tc, cc2D] = view.get<TransformComponent, CircleCollider2DComponent>(entity);
+                if (cc2D.ShowColliderBounds)
+                {
+                    glm::vec3 position = tc.Position + glm::vec3(cc2D.Offset, 0.0001f);
+                    glm::vec3 scale = tc.Scale * glm::vec3(cc2D.Radius * 2.f);
+                    
+                    CircleRendererComponent crc;
+                    crc.Color = glm::vec4(0.2f, 0.2f, 0.95f, 1.0f);
+                    crc.Thickness = 0.025f;
+                    crc.Fade = 0.0001f;
+
+                    glm::mat4 transform = glm::translate(glm::mat4(1.f), position) * glm::scale(glm::mat4(1.f), scale);
+                    Renderer2D::DrawCircle(transform, crc, -1);
+
+                }
+            }
+        }
+
+        {
+            auto view = m_ActiveScene->GetAllComponentsWith<TransformComponent, BoxCollider2DComponent>();
+
+            for (auto entity : view)
+            {
+                auto [tc, bc2D] = view.get<TransformComponent, BoxCollider2DComponent>(entity);
+                if (bc2D.ShowColliderBounds)
+                {
+                    glm::vec3 scale = tc.Scale * glm::vec3(bc2D.Size * 2.f, 1.f);
+
+					// Thing to note - You have to translate & rotate Collider2D's after the objecct itself
+                    glm::mat4 transform = 
+						  glm::translate(glm::mat4(1.f), tc.Position)
+                        * glm::rotate(glm::mat4(1.0f), tc.Rotation.z, glm::vec3(0,0,1))
+						* glm::translate(glm::mat4(1.0f), glm::vec3(bc2D.Offset, 0.001f))
+						* glm::rotate(glm::mat4(1.0f), glm::radians(bc2D.Rotation), glm::vec3(0, 0, 1))
+                        * glm::scale(glm::mat4(1.f), scale);
+
+                    Renderer2D::DrawRect(transform, glm::vec4(0.2f, 0.2f, 0.95f, 1.0f));
+
+                }
+            }
+        }
+        Renderer2D::EndScene();
+}
     
     void EditorLayer::ImGuizmoDraw(Entity selectedEntity, const glm::mat4& cameraProjection, glm::mat4 cameraView)
     {
@@ -244,6 +311,9 @@ namespace CatEngine
                 int pixelData = m_SceneViewportPanel.ReadPixelData(1, mouseX, mouseY);
                 m_HoveredEntity = pixelData == -1 ? Entity() : Entity((entt::entity)pixelData, m_ActiveScene.get());
             }
+
+            OnOverlayRender();
+
             m_SceneViewportPanel.UnbindFramebuffer();
         }
 

@@ -21,6 +21,7 @@ project "CatEditor"
         "$(WORKSPACEDIR)/vendor/NFD-E/src/include",
         "$(WORKSPACEDIR)/vendor/yaml/include",
         "$(WORKSPACEDIR)/vendor/ImGuizmo",
+        "$(WORKSPACEDIR)/vendor/Box2D/include",
     }
 
     links

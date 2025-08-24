@@ -31,6 +31,7 @@ project "CatEngine"
         "$(WORKSPACEDIR)/vendor/NFD-E/src/include",
         "$(WORKSPACEDIR)/vendor/yaml/include",
         "$(WORKSPACEDIR)/vendor/ImGuizmo",
+        "$(WORKSPACEDIR)/vendor/Box2D/include",
     }
 
     links
@@ -40,6 +41,7 @@ project "CatEngine"
         "Glad",
         "nfd",
         "yaml-cpp",
+        "Box2D",
         "GL",
     }
 

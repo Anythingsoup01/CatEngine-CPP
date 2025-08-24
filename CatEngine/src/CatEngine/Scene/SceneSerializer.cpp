@@ -226,7 +226,7 @@ namespace CatEngine
 
 			out << YAML::EndMap; // CameraComponent
 		}
-        /*
+
 		if (entity.HasComponent<Rigidbody2DComponent>())
 		{
 			auto& rb2d = entity.GetComponent<Rigidbody2DComponent>();
@@ -271,7 +271,7 @@ namespace CatEngine
 			out << YAML::EndMap; // CircleCollider2DComponent
 
 		}
-        */
+        
 		if (entity.HasComponent<ScriptComponent>())
 		{
 			auto& sc = entity.GetComponent<ScriptComponent>();
@@ -405,7 +405,7 @@ namespace CatEngine
 					cc.Primary = cameraComponent["Primary"].as<bool>();
 					cc.FixedAspectRatio = cameraComponent["FixedAspectRatio"].as<bool>();
 				}
-                /*
+
 				auto rigidBody2DComponent = entity["Rigidbody2DComponent"];
 				if (rigidBody2DComponent)
 				{
@@ -444,7 +444,7 @@ namespace CatEngine
 					cc2d.RestitutionThreshold = circleCollider2D["RestitutionThreshold"].as<float>();
 
 				}
-                */
+
 				auto scriptComponent = entity["ScriptComponent"];
 				if (scriptComponent)
 				{

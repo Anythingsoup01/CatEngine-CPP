@@ -24,6 +24,10 @@ namespace CatEngine
         virtual void DrawIndexed(const Ref<VertexArray>& vertexArray) = 0;
         virtual void DrawIndexed(const Ref<VertexArray>& vertexArray, const uint32_t& indexCount) = 0;
 
+        virtual void DrawLines(const Ref<VertexArray>& vertexArray, const uint32_t vertexCount) = 0;
+
+        virtual void SetLineThickness(float thickness) = 0;
+
         static API Get() { return s_API; }
         static void Set(API api) { s_API = api; }
         static Scope<RenderAPI> Create();

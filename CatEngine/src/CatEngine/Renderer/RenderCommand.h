@@ -24,9 +24,20 @@ namespace CatEngine
             s_RenderAPI->DrawIndexed(vertexArray, indexCount);
         }
 
+        static inline void DrawLines(const Ref<VertexArray>& vertexArray, const uint32_t vertexCount)
+        {
+            vertexArray->Bind();
+            s_RenderAPI->DrawLines(vertexArray, vertexCount);
+        }
+
         static inline void Clear(const glm::vec4& clearColor)
         {
             s_RenderAPI->Clear(clearColor);
+        }
+
+        static inline void SetLineThickness(float thickness)
+        {
+            s_RenderAPI->SetLineThickness(thickness);
         }
     private:
         static inline Scope<RenderAPI> s_RenderAPI = nullptr;

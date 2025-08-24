@@ -25,6 +25,7 @@ target_include_directories(CatEditor PRIVATE
     ${CMAKE_SOURCE_DIR}/vendor/NFD-E/src/include
     ${CMAKE_SOURCE_DIR}/vendor/yaml/include
     ${CMAKE_SOURCE_DIR}/vendor/ImGuizmo
+    ${CMAKE_SOURCE_DIR}/vendor/Box2D/include
 )
 
 target_link_libraries(CatEditor

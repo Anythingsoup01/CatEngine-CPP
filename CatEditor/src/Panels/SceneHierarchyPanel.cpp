@@ -71,9 +71,9 @@ namespace CatEngine
 
 			ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (((float)contentRegionAvailable.x - ((float)contentRegionAvailable.x / 2.f)) * .5f));
 
-            bool Components2DAvaliable = ((!m_SelectionContext.HasComponent<SpriteRendererComponent>() && !m_SelectionContext.HasComponent<CircleRendererComponent>()));
-			
-            if (ImGui::Button("Add Component", ImVec2{ contentRegionAvailable.x / 2.f, lineHeight }))
+            bool Components2DAvaliable = ((!m_SelectionContext.HasComponent<SpriteRendererComponent>() && !m_SelectionContext.HasComponent<CircleRendererComponent>()) || !m_SelectionContext.HasComponent<Rigidbody2DComponent>() || (!m_SelectionContext.HasComponent<BoxCollider2DComponent>() && !m_SelectionContext.HasComponent<CircleCollider2DComponent>()));
+
+			if (ImGui::Button("Add Component", ImVec2{ contentRegionAvailable.x / 2.f, lineHeight }))
 				ImGui::OpenPopup("AddComponent");
 			
 			if (ImGui::BeginPopup("AddComponent"))
@@ -86,6 +86,8 @@ namespace CatEngine
 					if (opened)
 					{
 						DisplayAddComponentEntries<SpriteRendererComponent, CircleRendererComponent>("Sprite Renderer Component", "Circle Renderer Component");
+						DisplayAddComponentEntry<Rigidbody2DComponent>("Rigidbody 2D");
+						DisplayAddComponentEntries<BoxCollider2DComponent, CircleCollider2DComponent>("Box Collider 2D", "Circle Collider 2D");
 						ImGui::TreePop();
 					}
 				}
@@ -330,7 +332,69 @@ namespace CatEngine
             
 		});
 
+		DrawComponent<Rigidbody2DComponent>("Rigidbody 2D", selection, [](auto& component)
+			{
+				const char* bodyTypeString[] = { "Static", "Kinematic", "Dynamic" };
+				const char* currentBodyTypeString = bodyTypeString[(int)component.Type];
+				if (ImGui::BeginCombo("Body Type", currentBodyTypeString))
+				{
+					for (int i = 0; i < 3; i++)
+					{
+						bool isSelected = currentBodyTypeString == bodyTypeString[i];
+						if (ImGui::Selectable(bodyTypeString[i], &isSelected))
+						{
+							currentBodyTypeString = bodyTypeString[i];
+							component.Type = (Rigidbody2DComponent::BodyType)i;
+						}
 
+						if (isSelected)
+							ImGui::SetItemDefaultFocus();
+
+					}
+					ImGui::EndCombo();
+				}
+
+				ImGui::Checkbox("Fixed Rotation", &component.FixedRotation);
+			});
+
+		DrawComponent<BoxCollider2DComponent>("BoxCollider 2D", selection, [](auto& component)
+			{
+				glm::vec2& offset = component.Offset;
+				glm::vec2& size = component.Size;
+
+				float& density = component.Density;
+				float& friction = component.Friction;
+				float& restitution = component.Restitution;
+				float& restitutionThreshold = component.RestitutionThreshold;
+
+				ImGuiDraw::DrawVec2Control("Offset", component.Offset);
+				ImGuiDraw::DrawVec2Control("Size", component.Size, 0.025f, 0.0001f, 100000.f);
+				ImGuiDraw::DrawVec1Control("Rotation", component.Rotation, 0.025f, 0, 0);
+				ImGuiDraw::DrawCheckBox("Show Collider", component.ShowColliderBounds);
+				ImGuiDraw::DrawVec1Control("Density", component.Density, 0.025f, 0.0001f, 100000.f);
+				ImGuiDraw::DrawVec1Control("Friction", component.Friction, 0.025f, 0.0001f, 100000.f);
+				ImGuiDraw::DrawVec1Control("Restitution", component.Restitution, 0.025f, 0.0001f, 100000.f);
+				ImGuiDraw::DrawVec1Control("Restitution Threshold", component.RestitutionThreshold, 0.025f, 0.0001f, 100000.f);
+			});
+
+		DrawComponent<CircleCollider2DComponent>("CircleCollider 2D", selection, [](auto& component)
+			{
+				glm::vec2& offset = component.Offset;
+				float& size = component.Radius;
+
+				float& density = component.Density;
+				float& friction = component.Friction;
+				float& restitution = component.Restitution;
+				float& restitutionThreshold = component.RestitutionThreshold;
+
+				ImGuiDraw::DrawVec2Control("Offset", component.Offset);
+				ImGuiDraw::DrawVec1Control("Radius", component.Radius, 0.025f, 0.0001f, 100000.f);
+				ImGuiDraw::DrawCheckBox("Show Collider", component.ShowColliderBounds);
+				ImGuiDraw::DrawVec1Control("Density", component.Density, 0.025f, 0.0001f, 100000.f);
+				ImGuiDraw::DrawVec1Control("Friction", component.Friction, 0.025f, 0.0001f, 100000.f);
+				ImGuiDraw::DrawVec1Control("Restitution", component.Restitution, 0.025f, 0.0001f, 100000.f);
+				ImGuiDraw::DrawVec1Control("Restitution Threshold", component.RestitutionThreshold, 0.025f, 0.0001f, 100000.f);
+			});
 
 		DrawComponent<ScriptComponent>("Script", selection, [selection, this](auto& component) mutable
 		{

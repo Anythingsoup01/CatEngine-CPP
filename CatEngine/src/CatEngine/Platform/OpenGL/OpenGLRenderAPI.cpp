@@ -70,4 +70,16 @@ namespace CatEngine
         CE_PROFILE_FUNCTION();
         glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, nullptr);
     }
+
+    void OpenGLRenderAPI::DrawLines(const Ref<VertexArray>& vertexArray, const uint32_t vertexCount)
+    {
+        CE_PROFILE_FUNCTION();
+        glDrawArrays(GL_LINES, 0, vertexCount);
+    }
+
+    void OpenGLRenderAPI::SetLineThickness(float thickness)
+    {
+        CE_PROFILE_FUNCTION();
+        glLineWidth(thickness);
+    }
 }
