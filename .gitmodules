@@ -24,4 +24,4 @@
 	url = https://github.com/Anythingsoup01/yaml-cpp
 [submodule "vendor/ImGuizmo"]
 	path = vendor/ImGuizmo
-	url = https://github.com/CedricGuillemet/ImGuizmo
+	url = https://github.com/AnythingSoup/ImGuizmo
