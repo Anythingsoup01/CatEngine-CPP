@@ -354,7 +354,7 @@ namespace CatEngine
 	void ScriptEngine::ReloadBinaries()
 	{
 #ifdef CE_RELEASE
-		CE_CLI_TRACE(s_ScriptData->ReloadTimer.ElapsedMillis());
+		//CE_CLI_TRACE(s_ScriptData->ReloadTimer.ElapsedMillis());
 #endif
 		//CE_API_TRACE(s_ScriptData->ReloadTimer.ElapsedMillis());
         s_ScriptData->EntityClasses.clear();
