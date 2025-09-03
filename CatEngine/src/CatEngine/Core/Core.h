@@ -14,6 +14,9 @@
 #       include <signal.h>
 #       define CE_API_ASSERT(x, ...) if (!(x)) { CatEngine::Log::GetAPILogger()->critical(__VA_ARGS__); raise(SIGTRAP); }
 #       define CE_ASSERT(x) if(!(x)) raise(SIGTRAP);
+#   else
+#       define CE_API_ASSERT(x, ...)
+#       define CE_ASSERT(x)
 #   endif
 #endif
 

@@ -4,4 +4,4 @@
 
 exec git clone https://github.com/Anythingsoup01/ImGuizmo vendor/ImGuizmo
 
-mkdir build; cd build; cmake ..; cmake --build . -j 10;
+mkdir build; cd build; cmake ..; cmake -DCMAKE_BUILD_TYPE=Release.; cmake --build . -j 10;

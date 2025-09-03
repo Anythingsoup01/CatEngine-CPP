@@ -6,3 +6,5 @@ CatEngine-*
 
 prebuild
 core
+
+vendor/ImGuizmo/

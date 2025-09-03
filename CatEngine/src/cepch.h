@@ -33,6 +33,7 @@
 
 #include "CatEngine/Core/Core.h"
 #include "CatEngine/Core/Log.h"
+
 #ifndef CE_SCRIPT_COMPILATION
 #include "CatEngine/Core/Utils.h"
 #include "CatEngine/Debug/Instrumentor.h"
