@@ -15,6 +15,9 @@ namespace CatEngine
     class SourceFileCompiler
     {
     public:
+
+        static void Init();
+
         static void AddFile(const std::string& filePath);
         static void AddDirectory(const std::filesystem::path& directory);
         static void RemoveFile(const std::filesystem::path& filePath);

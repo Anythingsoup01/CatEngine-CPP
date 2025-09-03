@@ -267,6 +267,15 @@ namespace CatEngine
         }
     }
 
+    void SourceFileCompiler::Init()
+    {
+        if (!std::filesystem::exists("SampleProject/Assets/.build"))
+        {
+            std::filesystem::create_directory("SampleProject/Assets/.build");
+            system("cd SampleProject/Assets/.build; cmake ..; cmake -DCMAKE_BUILD_TYPE=Release .");
+        }
+    }
+
     std::unordered_map<std::filesystem::path, FileDescription> SourceFileCompiler::GetIntermediateFiles()
     {
         return m_CompiledFiles;

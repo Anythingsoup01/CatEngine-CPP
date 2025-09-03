@@ -606,7 +606,7 @@ void Scene::OnRuntimeStop()
     template<>
     void Scene::OnComponentAdded<IDComponent>(Entity entity, IDComponent& component)
     {
-        
+
     }
 
 

@@ -248,8 +248,8 @@ namespace CatEngine
     void ScriptEngine::Init()
 	{
 		s_ScriptData = new ScriptEngineData();
-
-        m_Compiler.AddDirectory("SampleProject/Assets/");
+        SourceFileCompiler::Init();
+        SourceFileCompiler::AddDirectory("SampleProject/Assets/");
         ReloadBinaries();
 
 	}
