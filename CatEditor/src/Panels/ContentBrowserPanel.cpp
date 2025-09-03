@@ -3,10 +3,12 @@
 
 #include <iostream>
 #include <string>
-#include <locale>
-#include <codecvt>
+
+#include "CatEngine/Scripting/SourceFileCompiler.h"
 
 const size_t MAX_FILE_PATH_LEN = 4096;
+
+bool createFile = false;
 
 namespace CatEngine
 {
@@ -76,11 +78,73 @@ namespace CatEngine
 			ImGui::NextColumn();
 			ImGui::PopID();
 		}
+        
+        if (ImGui::BeginPopupContextWindow(0, 1 | ImGuiPopupFlags_NoOpenOverItems))
+		{
+			if (ImGui::BeginMenu("Create"))
+			{
+				if (ImGui::MenuItem("New Source C++ File"))
+				{
+                    createFile = true;
+					ImGui::CloseCurrentPopup();
+				}
+
+                ImGui::EndMenu();
+			}
+
+			ImGui::EndPopup();
+		}
+
 
 		ImGui::Columns(1);
 
 		// TODO: status bar
 		ImGui::End();
+
+        if (createFile)
+        {
+            static char buffer[1024] = { 'N', 'e', 'w', 'C', 'l', 'a', 's', 's' };
+            ImGui::Begin("Create New Class");
+            {
+                ImGui::InputText("File Name: ", buffer, sizeof(buffer));
+                if (ImGui::Button("Confirm", {25, 15}))
+                {
+                    std::string filePath = m_CurrentDirectory.string().append("/");
+                    filePath.append(buffer).append(".cpp");
+                    
+                    std::ofstream out(filePath);
+                    if (!out.is_open())
+                    {
+                        CE_API_ERROR("Failed to generate file: {} !", filePath);
+                        createFile = false;
+                        return;
+                    }
+
+                    
+
+                    std::stringstream content;
+                    content << "#include <CatEngine/Scripting/ScriptInclude.h>\n"
+                            << "using namespace CatEngine;\n\n"
+                            << "class " << buffer << " : public IScriptObject\n"
+                            << "{\npublic:\n"
+                            << "    void Start() override\n    {\n        //Put here to start at runtime\n    }\n\n"
+                            << "    void Update(float ts) override\n    {\n        //Put here to run during runtime\n    }\n};";
+
+                    out << content.rdbuf();
+
+                    out.close();
+
+                    SourceFileCompiler::AddFile(filePath);
+                    createFile = false;
+                }
+            }
+            ImGui::End();
+        }
 	}
+
+    void ContentBrowserPanel::CreateTemplateSourceFile()
+    {
+        
+    }
 
 }

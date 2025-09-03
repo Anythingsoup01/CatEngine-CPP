@@ -12,6 +12,9 @@ set(SRCS
     src/CatEngine/Renderer/UniformBuffer.cpp
     src/CatEngine/Renderer/EditorCamera.cpp
     src/CatEngine/Renderer/Buffer.cpp
+    src/CatEngine/Scripting/ScriptGlue.cpp
+    src/CatEngine/Scripting/ScriptEngine.cpp
+    src/CatEngine/Scripting/SourceFileCompiler.cpp
     src/CatEngine/ImGui/ImGuiBuild.cpp
     src/CatEngine/ImGui/ImGuiLayer.cpp
     src/CatEngine/Platform/OpenGL/OpenGLVertexArray.cpp
@@ -53,6 +56,11 @@ set(SRCS
     src/CatEngine/Renderer/Shader.h
     src/CatEngine/Renderer/Framebuffer.h
     src/CatEngine/Renderer/Texture.h
+    src/CatEngine/Scripting/IScriptObject.h
+    src/CatEngine/Scripting/ScriptInclude.h
+    src/CatEngine/Scripting/ScriptEngine.h
+    src/CatEngine/Scripting/SourceFileCompiler.h
+    src/CatEngine/Scripting/ScriptGlue.h
     src/CatEngine/Event/Event.h
     src/CatEngine/Event/MouseEvent.h
     src/CatEngine/Event/KeyEvent.h
@@ -410,6 +418,7 @@ target_include_directories(CatEngine PRIVATE
     ${CMAKE_SOURCE_DIR}/vendor/yaml/include
     ${CMAKE_SOURCE_DIR}/vendor/ImGuizmo
     ${CMAKE_SOURCE_DIR}/vendor/Box2D/include
+    ${CMAKE_SOURCE_DIR}/vendor/FileWatch
 )
 
 target_link_libraries(CatEngine
@@ -439,4 +448,4 @@ PUBLIC
     CE_RELEASE
 )
 endif(CMAKE_BUILD_TYPE STREQUAL Release)
-target_compile_options(CatEngine PRIVATE -fpermissive)
+target_compile_options(CatEngine PRIVATE "-fpermissive")

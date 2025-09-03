@@ -15,7 +15,6 @@ namespace CatEngine
 		uint64_t m_UUID;
 	};
 }
-
 namespace std
 {
 	template<>

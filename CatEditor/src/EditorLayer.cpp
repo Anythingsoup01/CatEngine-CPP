@@ -10,6 +10,8 @@
 
 #include <glad/glad.h>
 
+#include "CatEngine/Scripting/ScriptEngine.h"
+
 namespace CatEngine
 {        
     class CameraController : public ScriptObject
@@ -57,7 +59,6 @@ namespace CatEngine
         m_SceneCameraPanel = SceneViewportPanel(fbSpec);
 
 
-
         m_ActiveScene = CreateRef<Scene>();
 
         m_CurrentProjectName = "SampleProject";
@@ -70,6 +71,7 @@ namespace CatEngine
         m_SceneHierarchyPanel.SetContext(m_ActiveScene);
         m_SceneViewportPanel.SetContext(m_ActiveScene);
         m_SceneCameraPanel.SetContext(m_ActiveScene);
+        ScriptEngine::SetSceneContext(m_ActiveScene);
 
         m_EditorCamera = EditorCamera(30.f, 1.778f, 0.1f, 1000.f);
     }
@@ -634,6 +636,7 @@ namespace CatEngine
             m_SceneHierarchyPanel.SetContext(m_ActiveScene);
             m_SceneViewportPanel.SetContext(m_ActiveScene);
             m_SceneCameraPanel.SetContext(m_ActiveScene);
+            ScriptEngine::SetSceneContext(m_ActiveScene);
         }
     }
 
@@ -648,7 +651,7 @@ namespace CatEngine
         m_SceneHierarchyPanel.SetContext(m_ActiveScene);
         m_SceneViewportPanel.SetContext(m_ActiveScene);
         m_SceneCameraPanel.SetContext(m_ActiveScene);
-
+        ScriptEngine::SetSceneContext(m_ActiveScene);
     }
 
     void EditorLayer::OnScenePlay()
@@ -662,6 +665,7 @@ namespace CatEngine
         m_SceneHierarchyPanel.SetContext(m_ActiveScene);
         m_SceneViewportPanel.SetContext(m_ActiveScene);
         m_SceneCameraPanel.SetContext(m_ActiveScene);
+        ScriptEngine::SetSceneContext(m_ActiveScene);
     }
 
 	void EditorLayer::OnScenePause(bool isPaused)
@@ -683,6 +687,7 @@ namespace CatEngine
         m_SceneHierarchyPanel.SetContext(m_ActiveScene);
         m_SceneViewportPanel.SetContext(m_ActiveScene);
         m_SceneCameraPanel.SetContext(m_ActiveScene);
+        ScriptEngine::SetSceneContext(m_ActiveScene);
     }
 
     void EditorLayer::OnSceneSimulateStart()
@@ -696,6 +701,7 @@ namespace CatEngine
         m_SceneHierarchyPanel.SetContext(m_ActiveScene);
         m_SceneViewportPanel.SetContext(m_ActiveScene);
         m_SceneCameraPanel.SetContext(m_ActiveScene);
+        ScriptEngine::SetSceneContext(m_ActiveScene);
     }
     void EditorLayer::OnSceneSimulateStop()
     {
@@ -708,6 +714,7 @@ namespace CatEngine
         m_SceneHierarchyPanel.SetContext(m_ActiveScene);
         m_SceneViewportPanel.SetContext(m_ActiveScene);
         m_SceneCameraPanel.SetContext(m_ActiveScene);
+        ScriptEngine::SetSceneContext(m_ActiveScene);
     }
 
     void EditorLayer::DuplicateEntity()

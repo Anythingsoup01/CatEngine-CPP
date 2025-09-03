@@ -12,6 +12,7 @@ namespace CatEngine
 		ContentBrowserPanel();
 
 		void OnImGuiRender();
+        void CreateTemplateSourceFile();
 	private:
 		std::filesystem::path m_CurrentDirectory;
 

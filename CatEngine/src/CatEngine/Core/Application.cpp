@@ -4,8 +4,11 @@
 #include "CatEngine/Renderer/RenderAPI.h"
 #include "CatEngine/Renderer/Renderer.h"
 
+#include "CatEngine/Scripting/ScriptEngine.h"
+
 #include "Input.h"
 #include "TimeStep.h"
+#include <filesystem>
 
 extern bool g_ApplicationRunning;
 
@@ -20,6 +23,9 @@ namespace CatEngine
 
         RenderAPI::Set(RenderAPI::API::OpenGL);
 
+        m_CatEngineFilesPath = std::filesystem::current_path();
+        CE_API_INFO("{}", m_CatEngineFilesPath.string());
+
         if (spec.CommandlineArgs.Count > 1)
         {
             std::filesystem::current_path(spec.CommandlineArgs[1]);
@@ -31,6 +37,7 @@ namespace CatEngine
         m_Window.SetEventCallback(BIND_EVENT_FN(Application::OnEvent));
 
         Renderer::Init();
+        ScriptEngine::Init();
 
         m_ImGuiLayer = new ImGuiLayer();
         PushOverlay(m_ImGuiLayer);
@@ -72,6 +79,8 @@ namespace CatEngine
             m_ImGuiLayer->End();
 
             m_Window.OnUpdate();
+
+            ExecuteMainThreadQueue();
         }
     }
 
@@ -104,6 +113,12 @@ namespace CatEngine
         layer->OnAttach();
     }
 
+    void Application::SubmitToMainThread(const std::function<void()>& function)
+	{
+		
+		m_MainThreadQueue.emplace_back(function);
+	}
+    
     bool Application::OnWindowClose(WindowCloseEvent& e)
     {
         m_Running = false;
@@ -123,4 +138,18 @@ namespace CatEngine
 
         return false;
     }
+
+    void Application::ExecuteMainThreadQueue()
+	{
+		std::vector<std::function<void()>> copy;
+		{
+			std::scoped_lock<std::mutex> lock(m_MainThreadQueueMutex);
+			copy = m_MainThreadQueue;
+			m_MainThreadQueue.clear();
+		}
+
+
+		for (auto& function : copy)
+			function();
+	}
 }

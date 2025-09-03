@@ -32,6 +32,7 @@ project "CatEngine"
         "$(WORKSPACEDIR)/vendor/yaml/include",
         "$(WORKSPACEDIR)/vendor/ImGuizmo",
         "$(WORKSPACEDIR)/vendor/Box2D/include",
+        "$(WORKSPACEDIR)/vendor/FileWatch",
     }
 
     links

@@ -1,144 +1,6 @@
 Scene: SampleScene
 Entities:
-  - Entity: 11514616426990885636
-    TagComponent:
-      Tag: None
-    LayerComponent:
-      Layer: Default
-    NameComponent:
-      Name: Ball
-    TransformComponent:
-      Position: [3.96584988, 0, 0]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    CircleRendererComponent:
-      Color: [0, 0.386740446, 1, 1]
-      Thickness: 0.5
-      Fade: 0.25
-    CameraComponent:
-      Camera:
-        ProjectionType: 1
-        PerspectiveFOV: 0.785398185
-        PerspectiveNear: 0.00999999978
-        PerspectiveFar: 10000
-        OrthographicSize: 10
-        OrthographicNear: -1
-        OrthographicFar: 1
-      Primary: false
-      FixedAspectRatio: false
-    Rigidbody2DComponent:
-      BodyType: 2
-      FixedRotation: false
-    CircleCollider2DComponent:
-      Offset: [0, 0]
-      Radius: 0.5
-      ShowColliderBounds: false
-      Density: 1
-      Friction: 0.5
-      Restitution: 1.25
-      RestitutionThreshold: 0.0299999993
-  - Entity: 9406056448204345023
-    TagComponent:
-      Tag: None
-    LayerComponent:
-      Layer: Default
-    NameComponent:
-      Name: Ball
-    TransformComponent:
-      Position: [1.08113861, 0, 0]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    CircleRendererComponent:
-      Color: [1, 0.430939198, 0, 1]
-      Thickness: 0.5
-      Fade: 0.25
-    CameraComponent:
-      Camera:
-        ProjectionType: 1
-        PerspectiveFOV: 0.785398185
-        PerspectiveNear: 0.00999999978
-        PerspectiveFar: 10000
-        OrthographicSize: 10
-        OrthographicNear: -1
-        OrthographicFar: 1
-      Primary: false
-      FixedAspectRatio: false
-    Rigidbody2DComponent:
-      BodyType: 2
-      FixedRotation: false
-    CircleCollider2DComponent:
-      Offset: [0, 0]
-      Radius: 0.5
-      ShowColliderBounds: false
-      Density: 1
-      Friction: 0.5
-      Restitution: 1.25
-      RestitutionThreshold: 0.0299999993
-  - Entity: 11764503533937378513
-    TagComponent:
-      Tag: None
-    LayerComponent:
-      Layer: Default
-    NameComponent:
-      Name: Obstacle
-    TransformComponent:
-      Position: [1.61283708, -2.22656393, 0]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    SpriteRendererComponent:
-      Color: [1, 1, 1, 1]
-      Texture: SampleProject/Assets/Textures/car3.png
-      Tiling: 1
-    Rigidbody2DComponent:
-      BodyType: 0
-      FixedRotation: false
-    BoxCollider2DComponent:
-      Offset: [0, 0]
-      Size: [0.5, 0.5]
-      Rotation: 0
-      ShowColliderBounds: true
-      Density: 1
-      Friction: 0.5
-      Restitution: 0
-      RestitutionThreshold: 0.5
-  - Entity: 4271555742586035406
-    TagComponent:
-      Tag: None
-    LayerComponent:
-      Layer: Default
-    NameComponent:
-      Name: Ball
-    TransformComponent:
-      Position: [2.49978614, 0, 0]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    CircleRendererComponent:
-      Color: [0, 1, 0.220994234, 1]
-      Thickness: 0.5
-      Fade: 0.25
-    CameraComponent:
-      Camera:
-        ProjectionType: 1
-        PerspectiveFOV: 0.785398185
-        PerspectiveNear: 0.00999999978
-        PerspectiveFar: 10000
-        OrthographicSize: 10
-        OrthographicNear: -1
-        OrthographicFar: 1
-      Primary: true
-      FixedAspectRatio: false
-    Rigidbody2DComponent:
-      BodyType: 2
-      FixedRotation: false
-    CircleCollider2DComponent:
-      Offset: [0, 0]
-      Radius: 0.5
-      ShowColliderBounds: false
-      Density: 1
-      Friction: 0.5
-      Restitution: 1.25
-      RestitutionThreshold: 0.0299999993
-  - Entity: 17257709809367614546
+  - Entity: 3378624591391743349
     TagComponent:
       Tag: None
     LayerComponent:
@@ -146,36 +8,9 @@ Entities:
     NameComponent:
       Name: Wall
     TransformComponent:
-      Position: [-0.5, 0, 0]
+      Position: [5.5, 0, 0]
       Rotation: [0, 0, 0]
       Scale: [0.5, 5, 1]
-    SpriteRendererComponent:
-      Color: [0.961325943, 0.711699903, 0.711699903, 1]
-      Texture: ""
-      Tiling: 1
-    Rigidbody2DComponent:
-      BodyType: 0
-      FixedRotation: false
-    BoxCollider2DComponent:
-      Offset: [0, 0]
-      Size: [0.5, 0.5]
-      Rotation: 0
-      ShowColliderBounds: false
-      Density: 1
-      Friction: 0.5
-      Restitution: 0
-      RestitutionThreshold: 0.5
-  - Entity: 7426549726108403996
-    TagComponent:
-      Tag: None
-    LayerComponent:
-      Layer: Default
-    NameComponent:
-      Name: Wall
-    TransformComponent:
-      Position: [2.4346993, 3, 0]
-      Rotation: [0, 0, -1.57079637]
-      Scale: [0.499954134, 4.99924994, 1]
     SpriteRendererComponent:
       Color: [0.961325943, 0.711699903, 0.711699903, 1]
       Texture: ""
@@ -219,7 +54,7 @@ Entities:
       Friction: 0.5
       Restitution: 0
       RestitutionThreshold: 0.5
-  - Entity: 3378624591391743349
+  - Entity: 7426549726108403996
     TagComponent:
       Tag: None
     LayerComponent:
@@ -227,7 +62,34 @@ Entities:
     NameComponent:
       Name: Wall
     TransformComponent:
-      Position: [5.5, 0, 0]
+      Position: [2.4346993, 3, 0]
+      Rotation: [0, 0, -1.57079637]
+      Scale: [0.499954134, 4.99924994, 1]
+    SpriteRendererComponent:
+      Color: [0.961325943, 0.711699903, 0.711699903, 1]
+      Texture: ""
+      Tiling: 1
+    Rigidbody2DComponent:
+      BodyType: 0
+      FixedRotation: false
+    BoxCollider2DComponent:
+      Offset: [0, 0]
+      Size: [0.5, 0.5]
+      Rotation: 0
+      ShowColliderBounds: false
+      Density: 1
+      Friction: 0.5
+      Restitution: 0
+      RestitutionThreshold: 0.5
+  - Entity: 17257709809367614546
+    TagComponent:
+      Tag: None
+    LayerComponent:
+      Layer: Default
+    NameComponent:
+      Name: Wall
+    TransformComponent:
+      Position: [-0.5, 0, 0]
       Rotation: [0, 0, 0]
       Scale: [0.5, 5, 1]
     SpriteRendererComponent:
@@ -246,3 +108,143 @@ Entities:
       Friction: 0.5
       Restitution: 0
       RestitutionThreshold: 0.5
+  - Entity: 4271555742586035406
+    TagComponent:
+      Tag: None
+    LayerComponent:
+      Layer: Default
+    NameComponent:
+      Name: Ball
+    TransformComponent:
+      Position: [2.49978614, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    CircleRendererComponent:
+      Color: [0, 1, 0.220994234, 1]
+      Thickness: 0.5
+      Fade: 0.25
+    CameraComponent:
+      Camera:
+        ProjectionType: 1
+        PerspectiveFOV: 0.785398185
+        PerspectiveNear: 0.00999999978
+        PerspectiveFar: 10000
+        OrthographicSize: 10
+        OrthographicNear: -1
+        OrthographicFar: 1
+      Primary: true
+      FixedAspectRatio: false
+    Rigidbody2DComponent:
+      BodyType: 2
+      FixedRotation: false
+    CircleCollider2DComponent:
+      Offset: [0, 0]
+      Radius: 0.5
+      ShowColliderBounds: false
+      Density: 1
+      Friction: 0.5
+      Restitution: 1.25
+      RestitutionThreshold: 0.0299999993
+    ScriptComponent:
+      ClassName: Test
+  - Entity: 11764503533937378513
+    TagComponent:
+      Tag: None
+    LayerComponent:
+      Layer: Default
+    NameComponent:
+      Name: Obstacle
+    TransformComponent:
+      Position: [1.61283708, -2.22656393, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      Texture: SampleProject/Assets/Textures/car3.png
+      Tiling: 1
+    Rigidbody2DComponent:
+      BodyType: 0
+      FixedRotation: false
+    BoxCollider2DComponent:
+      Offset: [0, 0]
+      Size: [0.5, 0.5]
+      Rotation: 0
+      ShowColliderBounds: true
+      Density: 1
+      Friction: 0.5
+      Restitution: 0
+      RestitutionThreshold: 0.5
+  - Entity: 9406056448204345023
+    TagComponent:
+      Tag: None
+    LayerComponent:
+      Layer: Default
+    NameComponent:
+      Name: Ball
+    TransformComponent:
+      Position: [1.08113861, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    CircleRendererComponent:
+      Color: [1, 0.430939198, 0, 1]
+      Thickness: 0.5
+      Fade: 0.25
+    CameraComponent:
+      Camera:
+        ProjectionType: 1
+        PerspectiveFOV: 0.785398185
+        PerspectiveNear: 0.00999999978
+        PerspectiveFar: 10000
+        OrthographicSize: 10
+        OrthographicNear: -1
+        OrthographicFar: 1
+      Primary: false
+      FixedAspectRatio: false
+    Rigidbody2DComponent:
+      BodyType: 2
+      FixedRotation: false
+    CircleCollider2DComponent:
+      Offset: [0, 0]
+      Radius: 0.5
+      ShowColliderBounds: false
+      Density: 1
+      Friction: 0.5
+      Restitution: 1.25
+      RestitutionThreshold: 0.0299999993
+  - Entity: 11514616426990885636
+    TagComponent:
+      Tag: None
+    LayerComponent:
+      Layer: Default
+    NameComponent:
+      Name: Ball
+    TransformComponent:
+      Position: [3.96584988, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    CircleRendererComponent:
+      Color: [0, 0.386740446, 1, 1]
+      Thickness: 0.5
+      Fade: 0.25
+    CameraComponent:
+      Camera:
+        ProjectionType: 1
+        PerspectiveFOV: 0.785398185
+        PerspectiveNear: 0.00999999978
+        PerspectiveFar: 10000
+        OrthographicSize: 10
+        OrthographicNear: -1
+        OrthographicFar: 1
+      Primary: false
+      FixedAspectRatio: false
+    Rigidbody2DComponent:
+      BodyType: 2
+      FixedRotation: false
+    CircleCollider2DComponent:
+      Offset: [0, 0]
+      Radius: 0.5
+      ShowColliderBounds: false
+      Density: 1
+      Friction: 0.5
+      Restitution: 1.25
+      RestitutionThreshold: 0.0299999993

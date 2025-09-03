@@ -42,11 +42,14 @@ namespace CatEngine
 
         static Application& Get() { return *s_Instance; }
         Window& GetWindow() { return m_Window; }
+		void SubmitToMainThread(const std::function<void()>& function);
+
+        const std::filesystem::path& GetMainPath() const { return m_CatEngineFilesPath; }
 
     private:
         bool OnWindowClose(WindowCloseEvent& e);
         bool OnWindowResize(WindowResizeEvent& e);
-
+		void ExecuteMainThreadQueue();
     private:
 
         bool m_Running = false;
@@ -58,7 +61,12 @@ namespace CatEngine
         ImGuiLayer* m_ImGuiLayer;
         LayerStack m_LayerStack;
 
+		std::vector<std::function<void()>> m_MainThreadQueue;
+		std::mutex m_MainThreadQueueMutex;
+
         static inline Application* s_Instance = nullptr;
+
+        std::filesystem::path m_CatEngineFilesPath;
     };
 
     Application* CreateApplication(const ApplicationCommandLineArgs& args);

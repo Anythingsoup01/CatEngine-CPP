@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.30)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpic -rdynamic") 
 project(CatEngine LANGUAGES C CXX)
 add_subdirectory(vendor/Box2D)
 add_subdirectory(vendor/yaml)

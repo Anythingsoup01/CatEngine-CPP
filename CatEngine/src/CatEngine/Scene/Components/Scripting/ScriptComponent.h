@@ -8,6 +8,8 @@ namespace CatEngine
 	{
 		std::string ClassName;
 
+        int SelectedScript = 0;
+
 		ScriptComponent() = default;
 		ScriptComponent(const ScriptComponent&) = default;
 

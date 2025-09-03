@@ -58,6 +58,8 @@ namespace CatEngine
 
         entt::registry& GetReg() { return m_Registry; }
 
+        bool IsRunning() { return m_IsRunning; }
+
     private:
         template<typename T>
 		    void OnComponentAdded(Entity entity, T& component);
@@ -65,6 +67,8 @@ namespace CatEngine
 		void OnPhysics2DStart();
 		void OnPhysics2DStop();
         void OnPhysics2DAdd();
+
+        void OnScriptStart();
     private:
         entt::registry m_Registry;
         uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;

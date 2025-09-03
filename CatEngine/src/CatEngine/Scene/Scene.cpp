@@ -14,6 +14,8 @@
 #include <box2d/b2_polygon_shape.h>
 #include <box2d/b2_circle_shape.h>
 
+#include "CatEngine/Scripting/ScriptEngine.h"
+
 namespace CatEngine
 {
     static b2BodyType Rigidbody2DTypeToBox2DType(Rigidbody2DComponent::BodyType bodyType)
@@ -35,6 +37,7 @@ namespace CatEngine
 
     Scene::~Scene()
     {
+        m_IsRunning = false;
     }
 
     template<typename... Component>
@@ -197,7 +200,7 @@ namespace CatEngine
 	{
 		m_IsRunning = true;
 
-		//OnScriptStart();
+		OnScriptStart();
 
 		OnPhysics2DStart();
 			
@@ -209,7 +212,14 @@ namespace CatEngine
         if (!m_IsPaused)
         {
             // Update Scripts
-
+			{
+				auto view = m_Registry.view<ScriptComponent>();
+				for (auto e : view)
+				{
+					Entity entity = { e, this };
+					ScriptEngine::OnUpdateEntity(entity, time.deltaTime());
+				}
+			}
 			// Physics 2D
 
 			{
@@ -306,6 +316,7 @@ void Scene::OnRuntimeStop()
 	{
 		m_IsRunning = false;
         OnPhysics2DStop();
+        ScriptEngine::OnRuntimeStop();
 	}
 
 	void Scene::OnSimulationStart()
@@ -443,6 +454,16 @@ void Scene::OnRuntimeStop()
                     body->CreateFixture(&fixtureDef);
                 }
             }
+        }
+    }
+
+    void Scene::OnScriptStart()
+    {
+        auto view = m_Registry.view<ScriptComponent>();
+        for (auto& e : view)
+        {
+            Entity entity = { e, this };
+			ScriptEngine::OnStartEntity(entity);
         }
     }
 
