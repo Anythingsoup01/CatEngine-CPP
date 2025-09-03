@@ -1,23 +1,22 @@
 #include <CatEngine/Scripting/ScriptInclude.h>
 using namespace CatEngine;
 
-extern "C" int m_Test = 0;
+extern "C" Rigidbody2DComponent m_RB2D = Rigidbody2DComponent();
+
+extern "C" glm::vec2 m_Impulse = {1, 1};
+extern "C" glm::vec2 m_Point = {0, 0};
 
 class PlayerController : public IScriptObject
 {
 public:
     void Start() override
     {
+        m_RB2D = GetComponent<Rigidbody2DComponent>();
     }
 
     void Update(float ts) override
     {
-        glm::vec3 pos = GetPosition();
-        if (KeyPressed(KeyCode::I))
-            pos.x += 1 * ts;
-
-        SetPosition(pos);
-        int i = 0;
+        ApplyForce(m_RB2D, m_Impulse, m_Point, true);
     }
 };
 extern "C" CatEngine::IScriptObject* create() { return new PlayerController; }

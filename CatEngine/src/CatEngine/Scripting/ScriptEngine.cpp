@@ -127,7 +127,7 @@ namespace CatEngine
 
         while (std::getline(in, line))
         {
-            if (strncmp(line.c_str(), "extern \"C\" ScriptObject* create()", 33) == 0)
+            if (strncmp(line.c_str(), "extern \"C\" CatEngine::IScriptObject* create()", 33) == 0)
                 break;
 
             else if (strncmp(line.c_str(), "extern \"C\"", 10) == 0)
@@ -145,14 +145,15 @@ namespace CatEngine
                     linePos = space + 1;
                 }
 
+
                 space = line.find_first_of(" ", linePos);
                 std::string variableName = line.substr(linePos, space - linePos);
 
-                variables.emplace(std::pair<std::string, std::string>(variableType, variableName));
+                variables.emplace(std::pair<std::string, std::string>(variableName, variableType));
             }
         }
 
-        for (auto& [type, name] : variables)
+        for (auto& [name, type] : variables)
         {
             ScriptField sf;
             sf.Type = StringToScriptFieldType(type);

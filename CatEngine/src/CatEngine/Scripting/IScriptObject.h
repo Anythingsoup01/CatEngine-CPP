@@ -29,6 +29,14 @@ namespace CatEngine
 
         void SetScale(const glm::vec3& scale) { ScriptGlue::Transform_SetScale(m_UUID, scale); }
         glm::vec3 GetScale() { return ScriptGlue::Transform_GetScale(m_UUID); }
+
+        template<typename T>
+        T GetComponent() { return ScriptGlue::Object_GetComponent<T>(m_UUID); }
+        template<typename T>
+        void HasComponent() { ScriptGlue::Object_HasComponent(m_UUID, T()); }
+
+        void ApplyForce(Rigidbody2DComponent& rb2d, glm::vec2& impulse, glm::vec2& point, bool wake) { ScriptGlue::Rigidbody2D_ApplyForce(rb2d, &impulse, &point, wake); }
+
     private:
         void SetUUID(UUID entityID) { m_UUID = entityID; }
 

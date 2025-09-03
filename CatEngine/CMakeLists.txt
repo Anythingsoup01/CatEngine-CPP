@@ -77,6 +77,7 @@ set(SRCS
     src/CatEngine/Layer/LayerStack.h
     src/CatEngine/Layer/Layer.h
     src/CatEngine/FileDialog/FileDialog.h
+    src/CatEngine/Physics/Physics2D.h
     src/CatEngine/Math/Math.h
     src/CatEngine/Math/Vector.h
     src/CatEngine/Debug/Instrumentor.h

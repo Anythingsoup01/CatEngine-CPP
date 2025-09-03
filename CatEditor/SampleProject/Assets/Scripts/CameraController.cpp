@@ -3,12 +3,12 @@ using namespace CatEngine;
 
 float m_CameraSpeed = 1.0f;
 
+
 class CameraController : public IScriptObject
 {
 public:
     void Start() override
     {
-        
     }
 
     void Update(float ts) override

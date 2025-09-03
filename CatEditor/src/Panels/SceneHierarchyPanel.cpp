@@ -401,7 +401,6 @@ namespace CatEngine
 		DrawComponent<ScriptComponent>("Script", selection, [selection, this](auto& component) mutable
         {
             auto& sc = component;
-			bool scriptClassExists = ScriptEngine::ScriptClassExists(sc.ClassName);
 			const auto& entityClasses = ScriptEngine::GetScriptClasses();
 
 			//UI::ScopedStyleColor textColor(ImGuiCol_Text, ImVec4(0.9f, 0.2f, 0.3f, 1.0f), !scriptClassExists);
@@ -414,11 +413,25 @@ namespace CatEngine
 
             if (ImGui::Combo("Class", &sc.SelectedScript, classes.data(), classes.size()))
             {
-                sc.ClassName = classes.at(sc.SelectedScript);
+                sc.ClassName = sc.SelectedScript != 0 ? classes.at(sc.SelectedScript) : "";
             }
 
+            if (!sc.Loaded && !sc.ClassName.empty())
+            {
+                int i = 0;
+                for (auto& [className, scriptClass] : entityClasses)
+                {
+                    i++;
+                    if (sc.ClassName == className)
+                    {
+                        sc.SelectedScript = i;
+                    }
+                }
+            }
 
+            sc.Loaded = true;
 
+			bool scriptClassExists = ScriptEngine::ScriptClassExists(sc.ClassName);
 			bool sceneRunning = m_Context->IsRunning();
 			if (sceneRunning)
 			{

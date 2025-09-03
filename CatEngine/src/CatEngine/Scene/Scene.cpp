@@ -199,11 +199,8 @@ namespace CatEngine
 	void Scene::OnRuntimeStart()
 	{
 		m_IsRunning = true;
-
-		OnScriptStart();
-
 		OnPhysics2DStart();
-			
+		OnScriptStart();
 	}
 
 	void Scene::OnUpdateRuntime(Time time)
