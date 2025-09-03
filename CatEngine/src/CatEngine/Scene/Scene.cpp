@@ -141,7 +141,7 @@ namespace CatEngine
         CE_PROFILE_FUNCTION();
 		// Render 2D 
 		Camera* mainCamera = nullptr;
-		glm::mat4* cameraTransform = nullptr;
+		glm::mat4 cameraTransform;
 		{
 			auto view = m_Registry.view<TransformComponent, CameraComponent>();
 			for (auto entity : view)
@@ -151,7 +151,7 @@ namespace CatEngine
 				if (camera.Primary)
 				{
 					mainCamera = &camera.Camera;
-					cameraTransform = &transform.GetTransform();
+					cameraTransform = transform.GetTransform();
 					break;
 				}
 			}
@@ -159,7 +159,7 @@ namespace CatEngine
 
 		if (mainCamera)
 		{
-			Renderer2D::BeginScene(mainCamera->GetProjection(), *cameraTransform);
+			Renderer2D::BeginScene(mainCamera->GetProjection(), cameraTransform);
 
             // Draw Sprites
             {
@@ -247,7 +247,7 @@ namespace CatEngine
 		}
 		// Render 2D 
 		Camera* mainCamera = nullptr;
-		glm::mat4* cameraTransform = nullptr;
+		glm::mat4 cameraTransform;
 		{
 			auto view = m_Registry.view<TransformComponent, CameraComponent>();
 			for (auto entity : view)
@@ -257,7 +257,7 @@ namespace CatEngine
 				if (camera.Primary)
 				{
 					mainCamera = &camera.Camera;
-					cameraTransform = &transform.GetTransform();
+					cameraTransform = transform.GetTransform();
 					break;
 				}
 			}
@@ -265,7 +265,7 @@ namespace CatEngine
 
 		if (mainCamera)
 		{
-			Renderer2D::BeginScene(mainCamera->GetProjection(), *cameraTransform);
+			Renderer2D::BeginScene(mainCamera->GetProjection(), cameraTransform);
             // Draw Sprites
             {
                 auto group = m_Registry.group<TransformComponent>(entt::get<SpriteRendererComponent>);
@@ -516,7 +516,6 @@ void Scene::OnRuntimeStop()
 	Entity Scene::CreateEntityWithUUID(UUID uuid, const std::string& name)
 	{
 		CE_PROFILE_FUNCTION();
-        CE_API_INFO("Created Entity with UUID : {}", static_cast<uint64_t>(uuid));
 		Entity entity = { m_Registry.create(), this };
 
 		entity.AddComponent<IDComponent>(uuid);
