@@ -13,6 +13,9 @@ namespace CatEngine
 
 		void OnImGuiRender();
         void CreateTemplateSourceFile();
+
+        void ResetProjectDirectory();
+
 	private:
 		std::filesystem::path m_CurrentDirectory;
 

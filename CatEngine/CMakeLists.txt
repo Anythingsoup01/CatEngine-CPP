@@ -38,6 +38,7 @@ set(SRCS
     src/CatEngine/Scene/Entity.cpp
     src/CatEngine/Core/Input.cpp
     src/CatEngine/Core/Window.cpp
+    src/CatEngine/Core/System.cpp
     src/CatEngine/Core/TimeStep.cpp
     src/CatEngine/Core/Utils.cpp
     src/CatEngine/Core/UUID.cpp
@@ -111,6 +112,7 @@ set(SRCS
     src/CatEngine/Core/Window.h
     src/CatEngine/Core/UUID.h
     src/CatEngine/Core/Application.h
+    src/CatEngine/Core/System.h
     src/CatEngine/Core/Input.h
     ${CMAKE_SOURCE_DIR}/vendor/glm/glm/vec4.hpp
     ${CMAKE_SOURCE_DIR}/vendor/glm/glm/mat2x3.hpp

@@ -47,8 +47,10 @@ namespace CatEngine
         {
             auto projectFilePath = commandLineArgs[1];
             OpenProject(projectFilePath);
+            m_ProjectActive = true;
         }
-        m_ContentBrowserPanel = ContentBrowserPanel();
+
+        m_ContentBrowserPanel.ResetProjectDirectory();
         m_EditorCamera = EditorCamera(30.f, 1.778f, 0.1f, 1000.f);
     }
 
@@ -66,31 +68,38 @@ namespace CatEngine
         m_BlockMouseEvents = m_SceneViewportPanel.IsHovered();
         m_BlockKeyboardEvents = m_SceneViewportPanel.IsFocused();
 
-        switch (m_SceneState)
-		{
-		    case SceneState::Edit:
+        if (m_ProjectActive)
+        {
+            switch (m_SceneState)
             {
-                OnUpdateEditor(deltaTime);
-                OnUpdateMainCameraPreview(deltaTime);
-                break;
+                case SceneState::Edit:
+                {
+                    OnUpdateEditor(deltaTime);
+                    OnUpdateMainCameraPreview(deltaTime);
+                    break;
+                }
+                case SceneState::Play:
+                {
+                    OnUpdateRuntime(deltaTime);
+                    break;
+                }
+                case SceneState::Simulate:
+                {
+                    OnUpdateSimulation(deltaTime);
+                    OnUpdateMainCameraPreview(deltaTime);
+                    break;
+                }
+                case SceneState::Pause:
+                {
+                    OnUpdateRuntime(deltaTime);
+                    OnUpdateEditor(deltaTime);
+                    break;
+                }
             }
-            case SceneState::Play:
-            {
-                OnUpdateRuntime(deltaTime);
-                break;
-            }
-            case SceneState::Simulate:
-            {
-                OnUpdateSimulation(deltaTime);
-                OnUpdateMainCameraPreview(deltaTime);
-                break;
-            }
-            case SceneState::Pause:
-            {
-                OnUpdateRuntime(deltaTime);
-                OnUpdateEditor(deltaTime);
-                break;
-            }
+        }
+        else
+        {
+            OpenProject();
         }
          
         
@@ -401,8 +410,7 @@ namespace CatEngine
                     if (filePath.extension().string() == ".catscene")
                     {
                         OpenScene(filePath);
-                        m_SceneFilePath = filePath;
-                        CE_CLI_INFO("{}", m_SceneFilePath.string());
+                        SaveProject();
                     }
                     else if (filePath.extension().string() == ".png" || filePath.extension().string() == ".jpeg")
                     {
@@ -567,10 +575,7 @@ namespace CatEngine
         {
             m_SceneFilePath = FileDialog::SaveFile({{"CatEngine Scene", "catscene"}});
             if (!m_SceneFilePath.empty())
-            {
-                SceneSerializer serializer(m_ActiveScene);
-                serializer.Serialize(m_SceneFilePath.string());
-            }
+                SaveScene();
         }
     }
 
@@ -583,8 +588,8 @@ namespace CatEngine
             if (!m_SceneFilePath.empty())
             {
                 SceneSerializer serializer(m_ActiveScene);
-
                 serializer.Serialize(m_SceneFilePath.string());
+                m_RelativeScenePath = std::filesystem::relative(m_SceneFilePath, Project::GetAssetFileSystemPath());
             }
             else SaveSceneAs();
         }
@@ -620,6 +625,9 @@ namespace CatEngine
             m_SceneViewportPanel.SetContext(m_ActiveScene);
             m_SceneCameraPanel.SetContext(m_ActiveScene);
             ScriptEngine::SetSceneContext(m_ActiveScene);
+            m_SceneFilePath = filePath;
+
+            m_RelativeScenePath = std::filesystem::relative(m_SceneFilePath, Project::GetAssetFileSystemPath());
         }
     }
 
@@ -639,6 +647,7 @@ namespace CatEngine
 
     void EditorLayer::SaveProject()
     {
+        Project::SetCurrentScene(m_RelativeScenePath);
         Project::Save(m_CurrentProjectPath);
     }
 
@@ -660,11 +669,14 @@ namespace CatEngine
         if(Project::Load(filePath))
         {
             m_CurrentProjectPath = filePath;
+            m_ProjectActive = true;
             auto startScenePath = Project::GetAssetFileSystemPath(Project::GetConfig().StartScene);
-            OpenScene(startScenePath);
+            if (!startScenePath.empty())
+                OpenScene(startScenePath);
             SourceFileCompiler::Init();
             SourceFileCompiler::AddDirectory(Project::GetAssetFileSystemPath());
             ScriptEngine::ReloadBinaries();
+            m_ContentBrowserPanel.ResetProjectDirectory();
         }
     }
 
@@ -836,15 +848,24 @@ namespace CatEngine
             case KeyCode::S :
             {
                 if (control && shift)
+                {
                     SaveSceneAs();
+                    SaveProject();
+                }
                 else if (control)
+                {
                     SaveScene();
+                    SaveProject();
+                }
                 break;
             }
             case KeyCode::O:
             {
                 if (control)
+                {
                     OpenScene();
+                    SaveProject();
+                }
                 break;
             }
             case KeyCode::N:

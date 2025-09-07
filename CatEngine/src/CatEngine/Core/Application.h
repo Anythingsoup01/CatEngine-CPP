@@ -48,6 +48,8 @@ namespace CatEngine
 
         const ApplicationSpecification& GetSpecification() const { return m_Specification; }
 
+        void Close() { m_Running = false; }
+
     private:
         bool OnWindowClose(WindowCloseEvent& e);
         bool OnWindowResize(WindowResizeEvent& e);

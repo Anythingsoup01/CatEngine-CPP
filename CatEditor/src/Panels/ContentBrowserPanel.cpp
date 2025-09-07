@@ -6,6 +6,8 @@
 
 #include "CatEngine/Scripting/SourceFileCompiler.h"
 
+#include "CatEngine/Core/System.h" 
+
 const size_t MAX_FILE_PATH_LEN = 4096;
 
 enum class CreateType
@@ -55,33 +57,39 @@ namespace CatEngine
 			const auto& path = directoryEntry.path();
 			std::string filenameString = path.filename().string();
 
-			ImGui::PushID(filenameString.c_str());
-			Ref<Texture2D> icon = directoryEntry.is_directory() ? m_DirectoryIcon : m_FileIcon;
-			ImGui::ImageButton((ImTextureID)(uint64_t)icon->GetRendererID(), { thumbnailSize, thumbnailSize }, { 0, 1 }, { 1, 0 });
+            if (strncmp(filenameString.c_str(), ".", 1) != 0)
+            {
+                ImGui::PushID(filenameString.c_str());
+                Ref<Texture2D> icon = directoryEntry.is_directory() ? m_DirectoryIcon : m_FileIcon;
+                ImGui::ImageButton((ImTextureID)(uint64_t)icon->GetRendererID(), { thumbnailSize, thumbnailSize }, { 0, 1 }, { 1, 0 });
 
-			if (ImGui::BeginDragDropSource())
-			{
-                std::setlocale(LC_ALL, "");
-				auto relativePath = std::filesystem::relative(path, Project::GetAssetFileSystemPath());
-                
-                wchar_t itemPath[MAX_FILE_PATH_LEN] = { 0 };
-                const char* path = relativePath.c_str();
-                mbsrtowcs(itemPath, &path, MAX_FILE_PATH_LEN, NULL);
-				ImGui::SetDragDropPayload("ASSET_MANAGER_ITEM", itemPath, (wcslen(itemPath) + 1) * sizeof(wchar_t), ImGuiCond_Once);
-				ImGui::EndDragDropSource();
-			}
+                if (ImGui::BeginDragDropSource())
+                {
+                    std::setlocale(LC_ALL, "");
+                    auto relativePath = std::filesystem::relative(path, Project::GetAssetFileSystemPath());
+
+                    wchar_t itemPath[MAX_FILE_PATH_LEN] = { 0 };
+                    const char* path = relativePath.c_str();
+                    mbsrtowcs(itemPath, &path, MAX_FILE_PATH_LEN, NULL);
+                    ImGui::SetDragDropPayload("ASSET_MANAGER_ITEM", itemPath, (wcslen(itemPath) + 1) * sizeof(wchar_t), ImGuiCond_Once);
+                    ImGui::EndDragDropSource();
+                }
 
 
-			if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
-			{
-				if (directoryEntry.is_directory())
-					m_CurrentDirectory /= path.filename();
+                if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+                {
+                    if (directoryEntry.is_directory())
+                        m_CurrentDirectory /= path.filename();
 
-			}
-			ImGui::TextWrapped("%s", filenameString.c_str());
+                    if (directoryEntry.is_regular_file())
+                        System::OpenFile(m_CurrentDirectory / path.filename());
 
-			ImGui::NextColumn();
-			ImGui::PopID();
+                }
+                ImGui::TextWrapped("%s", filenameString.c_str());
+
+                ImGui::NextColumn();
+                ImGui::PopID();
+            }
 		}
         
         if (ImGui::BeginPopupContextWindow(0, 1 | ImGuiPopupFlags_NoOpenOverItems))
@@ -177,6 +185,11 @@ namespace CatEngine
     void ContentBrowserPanel::CreateTemplateSourceFile()
     {
         
+    }
+
+    void ContentBrowserPanel::ResetProjectDirectory()
+    {
+        m_CurrentDirectory = Project::GetAssetFileSystemPath();
     }
 
 }

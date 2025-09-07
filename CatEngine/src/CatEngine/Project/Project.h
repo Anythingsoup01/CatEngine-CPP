@@ -43,6 +43,12 @@ namespace CatEngine
             return GetProjectDirectory() / GetAssetDirectory();
         }
 
+        static void SetCurrentScene(const std::filesystem::path& path)
+        {
+            CE_API_ASSERT(s_ActiveProject, "No Active Project");
+            s_ActiveProject->m_Config.StartScene = path;
+        }
+
         static Ref<Project> New();
         static Ref<Project> Load(const std::filesystem::path& filePath); // TODO: Possibly make a bool
         static bool Save(const std::filesystem::path& filePath);

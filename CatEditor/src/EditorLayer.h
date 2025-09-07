@@ -74,6 +74,8 @@ namespace CatEngine
 		std::filesystem::path m_SceneFilePath;
         std::filesystem::path m_CurrentProjectPath;
 
+        std::filesystem::path m_RelativeScenePath;
+
         EditorCamera m_EditorCamera;
 
         bool m_BlockKeyboardEvents = false;
@@ -85,6 +87,8 @@ namespace CatEngine
 		bool m_MouseInUseFlag = false;
 
 		bool m_IsScenePaused = false;
+
+        bool m_ProjectActive = false;
 
         Ref<Scene> m_ActiveScene;
         Ref<Scene> m_EditorScene;
