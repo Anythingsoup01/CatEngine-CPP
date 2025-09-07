@@ -10,6 +10,14 @@
 
 namespace CatEngine
 {
+
+    enum class KeyWordType
+    {
+        None = 0,
+        Digit, String, Char, Bool, Vec2, Vec3, Vec4,
+        TransformComponent, Rigidbody2DComponent
+    };
+
     static std::vector<const char*> s_Keywords =
     {
         "float", "double",
@@ -36,6 +44,79 @@ namespace CatEngine
                 return true;
         }
 
+        return false;
+    }
+
+    KeyWordType GetKeyWord(const char* line)
+    {
+        for (auto& keyword : s_Keywords)
+        {
+            if (InLine(line, keyword))
+            {
+                if (InLine(keyword, "char"))
+                    return KeyWordType::Char;
+                if (InLine(keyword, "float") || InLine(keyword, "double") || InLine(keyword, "int16_t") || InLine(keyword, "int32_t") || InLine(keyword, "int") || InLine(keyword, "int64_t") || InLine(keyword, "uint16_t") || InLine(keyword, "uint32_t") || InLine(keyword, "unsigned int") || InLine(keyword, "uint64_t"))
+                    return KeyWordType::Digit;
+                if (InLine(keyword, "bool"))
+                    return KeyWordType::Bool;
+                if (InLine(keyword, "std::string"))
+                    return KeyWordType::String;
+                if (InLine(keyword, "glm::vec2"))
+                    return KeyWordType::Vec2;
+                if (InLine(keyword, "glm::vec3"))
+                    return KeyWordType::Vec3;
+                if (InLine(keyword, "glm::vec4"))
+                    return KeyWordType::Vec4;
+                if (InLine(keyword, "Rigidbody2DComponent"))
+                    return KeyWordType::Rigidbody2DComponent;
+                if (InLine(keyword, "TransformComponent"))
+                    return KeyWordType::TransformComponent;
+            }
+
+        }
+        return KeyWordType::None;
+    }
+
+    bool NeedsDefaultVariable(const std::string& line, std::string& defaultVariable)
+    {
+        size_t equalSign = line.find("=");
+        if (equalSign == std::string::npos)
+        {
+            KeyWordType keyword = GetKeyWord(line.c_str());
+            switch (keyword) 
+            {
+                case KeyWordType::Char:
+                    defaultVariable = " = \'\';";
+                    return true;
+                case KeyWordType::Digit:
+                    defaultVariable = " = 0;";
+                    return true;
+                case KeyWordType::Bool:
+                    defaultVariable = " = false;";
+                    return true;
+                case KeyWordType::String:
+                    defaultVariable = " = \"\";";
+                    return true;
+                case KeyWordType::Vec2:
+                    defaultVariable = " = glm::vec2(0);";
+                    return true;
+                case KeyWordType::Vec3:
+                    defaultVariable = " = glm::vec3(0);";
+                    return true;
+                case KeyWordType::Vec4:
+                    defaultVariable = " = glm::vec4(0);";
+                    return true;
+                case KeyWordType::TransformComponent:
+                    defaultVariable = " = TransformComponent();";
+                    return true;
+                case KeyWordType::Rigidbody2DComponent:
+                    defaultVariable = " = Rigidbody2DComponent();";
+                    return true;
+
+                default: break;
+            }
+        }
+        defaultVariable = ";";
         return false;
     }
     
@@ -154,7 +235,12 @@ namespace CatEngine
                     if (IsVariable(lineParse.c_str()))
                     {
                         std::stringstream ss;
+
+                        line.erase(line.length() - 1);
                         ss << "extern \"C\" " << line;
+                        std::string defaultVariable;
+                        NeedsDefaultVariable(line, defaultVariable);
+                        ss << defaultVariable;
                         line = ss.str();
                     }
 
