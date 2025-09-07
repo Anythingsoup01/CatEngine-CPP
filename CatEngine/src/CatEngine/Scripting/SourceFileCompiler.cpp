@@ -39,71 +39,74 @@ namespace CatEngine
         return false;
     }
     
-    void SourceFileCompiler::AddFile(const std::string& filePath)
+    void SourceFileCompiler::AddFile(const std::filesystem::path& filePath)
     {
-        size_t strLen = filePath.length();
-        std::string extension = filePath.substr(strLen - 4);
+        std::string extension = filePath.extension();
+        std::string fileName = filePath.filename();
 
-        if (strncmp(extension.c_str(), ".cpp", 4) == 0)
+        if (extension.length() > 4)
+            return;
+
+        if (strncmp(extension.c_str(), ".cpp", 4) != 0)
+            return;
+
+        size_t fileNameLen = fileName.length();
+
+        for (const auto& entry : std::filesystem::recursive_directory_iterator(Project::GetAssetFileSystemPath()))
         {
-            m_FilesToBePrepared.push_back(filePath);
-            CopyAndPrepareFiles();
-            CompileFiles();
-        }
-    }
+            std::string path = entry.path().string();
+            size_t hidden = path.find(".build");
 
+            if (entry.is_regular_file() && hidden == std::string::npos)
+            {
+                std::string entryFileName = entry.path().filename();
+                size_t entryFileNameLen = entryFileName.length();
+
+                if (entryFileNameLen != fileNameLen)
+                    continue;
+
+                if (strncmp(entryFileName.c_str(), fileName.c_str(), fileNameLen) != 0)
+                    continue;
+
+                m_FilesToBePrepared.push_back(entry.path());
+
+            }
+
+        }
+
+    }
+    // TODO: When switching to Asset Manager, Only look for .catscript files!
     void SourceFileCompiler::AddDirectory(const std::filesystem::path& directory) 
     {
         for (const auto& entry : std::filesystem::recursive_directory_iterator(directory)) 
         {
             std::string path = entry.path().string();
             size_t hidden = path.find(".build");
-            if (entry.is_regular_file() && entry.path().extension() == ".cpp" && (hidden == std::string::npos)) 
+
+            if (entry.is_regular_file() && hidden == std::string::npos)
             {
-                m_FilesToBePrepared.push_back(entry.path());
+                auto& filePath = entry.path();
+                std::string extension = filePath.extension();
+                std::string fileName = filePath.filename();
+
+                if (strncmp(extension.c_str(), ".cpp", 4) == 0)
+                {
+                    fileName.erase(fileName.length() - 4); // erases .cpp
+                    std::string intermediate = fileName.substr(fileName.length() - 4);
+                    if (strncmp(intermediate.c_str(), "-int", 4) != 0)
+                        m_FilesToBePrepared.push_back(filePath);
+                }
+
             }
 
         }
     }
 
-    void SourceFileCompiler::RemoveFile(const std::filesystem::path &filePath)
-    {
-        m_FilesToBePrepared.erase(std::remove(m_FilesToBePrepared.begin(), m_FilesToBePrepared.end(), filePath), m_FilesToBePrepared.end());
-        auto it = m_FilesToBeCompiled.find(filePath);
-        if (it != m_FilesToBeCompiled.end())
-            m_FilesToBeCompiled.erase(it);
-    }
-    
     void SourceFileCompiler::CopyAndPrepareFiles()
     {
-        CE_API_INFO("CompileAndPrepare");
-        if (m_Preparing)
-            return;
-
-        m_Preparing = true;
         for (auto& path : m_FilesToBePrepared)
         {
             CE_API_WARN(path.string());
-            {
-                if (path.extension() != ".cpp")
-                    continue;
-
-                std::filesystem::path pf = path;
-                std::string fileNameStr = pf.filename();
-                if (fileNameStr.find("-int") != std::string::npos)
-                    continue;
-
-
-                std::filesystem::file_time_type lastModified = std::filesystem::last_write_time(path);
-                std::optional<std::filesystem::file_time_type> lastCompiled;
-
-                if (m_CompiledFiles.find(path) != m_CompiledFiles.end())
-                    lastCompiled = std::filesystem::last_write_time(m_CompiledFiles[path].Path);
-
-                if (lastModified <= lastCompiled)
-                    continue;
-
-            }
             std::ifstream in(path);
             if (!in.is_open())
                 CE_API_ASSERT(false, "Failed to open file: {}", path.string().c_str());
@@ -196,37 +199,25 @@ namespace CatEngine
             outStream << out.str();
             outStream.close();
 
-            if (out.str() != inCheckSS.str() || m_NeedsRecompiled)
-            {
-                CE_API_INFO("NEEDS RECOMPILED!");
-                m_NeedsRecompiled = true;
-            }
-
             fd.FileName = fileName;
             fd.RelativePath = filePath;
-            std::filesystem::path compilePath = Project::GetAssetFileSystemPath(".build");
-            std::string compileName = "lib"; compileName.append(fd.Name).append(".so");
 
+            std::filesystem::path compilePath = Project::GetAssetFileSystemPath(".build");
+            std::string objName = fd.Name; objName.append("-int.o");
+            std::string compileName = "lib"; compileName.append(fd.Name).append("-int.so");
+
+            fd.ObjPath = compilePath / objName;
             fd.CompilePath = compilePath / compileName;
+
 
             m_FilesToBeCompiled[fd.Path] = fd;
         }
-        m_Preparing = false;
+        m_FilesToBePrepared.clear();
 
-        RegenerateCmakeFile();
     }
 
-    void SourceFileCompiler::RegenerateCmakeFile()
+    std::string SourceFileCompiler::GetBuildCommandVariables(const FileDescription& fd)
     {
-        CE_API_INFO("RegenerateCmakeFile");
-        std::stringstream inSS;
-        std::ifstream in(Project::GetAssetFileSystemPath("CMakeLists.txt"));
-        if (in.is_open())
-            inSS << in.rdbuf();
-
-        std::ofstream out(Project::GetAssetFileSystemPath("CMakeLists.txt"));
-        if (!out.is_open())
-            CE_API_ASSERT(false, "Failed to generate file!");
 
         std::filesystem::path rootCatEnginePath = Application::Get().GetMainPath();
         std::string CatEngineSRC = rootCatEnginePath.string();
@@ -235,48 +226,42 @@ namespace CatEngine
         CatEngineVND.append("/vendor");
 
         std::stringstream ss;
-        ss << "cmake_minimum_required(VERSION 3.15)\n"
-           << "project(" << "SampleProject" << ")\n"
-           << "set(INCLUDEDIRS\n"
-           << "    " << CatEngineSRC << "\n"
-           << "    " << CatEngineVND << "/spdlog/include\n"
-           << "    " << CatEngineVND << "/glm\n"
-           << "    " << CatEngineVND << "/entt\n"
-           << "    " << CatEngineVND << "/Glad/include)\n\n"
-           << "set(PRECOMPILEDHEADER " << CatEngineSRC << "/cepch.h)\n"
-           << "set(CATENGINELIB " << rootCatEnginePath.string() << "/build/CatEngine/libCatEngine.a dl)\n"
-           << "set(COMPILEFLAGS CE_SCRIPT_COMPILATION)\n"
-           << "set(CMAKE_CXX_FLAGS \"${CMAKE_CXX_FLAGS} -fPIC\")\n";
+        ss << "gcc -c " << fd.Path.string() << " -o " << fd.ObjPath.string() << " \\\n"
+           << "-I" << CatEngineSRC << " \\\n"
+           << "-I" << CatEngineVND << "/spdlog/include \\\n"
+           << "-I" << CatEngineVND << "/glm \\\n"
+           << "-I" << CatEngineVND << "/entt \\\n"
+           << "-I" << CatEngineVND << "/Glad/include \\\n"
+           << "-DCE_SCRIPT_COMPILATION \\\n"
+           << "-fPIC; \n";
+     
 
-        for (auto& [path, fd] : m_FilesToBeCompiled)
-        {
-            ss << "add_library(" << fd.Name << " SHARED " << fd.RelativePath.string() << ")\n"
-               << "target_include_directories(" << fd.Name << " PRIVATE ${INCLUDEDIRS})\n"
-               << "target_precompile_headers(" << fd.Name << " PRIVATE ${PRECOMPILEDHEADER})\n"
-               << "target_link_libraries(" << fd.Name << " PRIVATE ${CATENGINELIB})\n"
-               << "target_compile_definitions(" << fd.Name << " PRIVATE ${COMPILEFLAGS})\n\n";
-            CE_API_INFO("{}", path.string());
-        }
+        ss << "gcc -shared " << fd.ObjPath << " -o " << fd.CompilePath << " -L" << rootCatEnginePath.string() << "/build/CatEngine -lCatEngine -ldl\\\n";
         
-        out << ss.str();
+        return ss.str();
 
-        out.close();
     }
 
     void SourceFileCompiler::CompileFiles()
     {
-        if (m_NeedsRecompiled)
-        {
             CE_API_INFO("RECOMPILING!");
             Application::Get().SubmitToMainThread([](){
-                std::stringstream ss;
-                ss << "cd " << Project::GetAssetFileSystemPath() << "; cmake --build .build -j 10;";
-                system(ss.str().c_str());
+                for (auto& [path, fd] : m_FilesToBeCompiled)
+                {
+                    CE_API_INFO("COMILING: {}", fd.Name);
+                    std::stringstream ss;
+                    ss << "cd " << Project::GetAssetFileSystemPath() << "; " << GetBuildCommandVariables(fd);
+                    system(ss.str().c_str());
+
+                    auto it = m_CompiledFiles.find(path);
+                    if (it == m_CompiledFiles.end())
+                    {
+                        m_CompiledFiles.emplace(std::pair<std::filesystem::path, FileDescription>(path, fd));
+                    }
+                }
+                m_FilesToBeCompiled.clear();
             });
-            m_CompiledFiles = m_FilesToBeCompiled;
-            m_FilesToBeCompiled.clear();
-            m_NeedsRecompiled = false;
-        }
+
     }
 
     void SourceFileCompiler::Init()

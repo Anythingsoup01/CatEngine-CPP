@@ -18,6 +18,8 @@
 
 namespace CatEngine
 {
+
+
 	template<typename... Component>
 	struct ComponentGroup
 	{

@@ -919,12 +919,14 @@ namespace CatEngine
 	
 	void SceneHierarchyPanel::DisplayAddScriptComponent(const std::string& name)
 	{
-
-		if (ImGui::MenuItem(name.c_str()))
-		{
-			m_SelectionContext.AddComponent<ScriptComponent>();
-			ImGui::CloseCurrentPopup();
-		}
+        if (!m_SelectionContext.HasComponent<ScriptComponent>())
+        {
+            if (ImGui::MenuItem(name.c_str()))
+            {
+                m_SelectionContext.AddComponent<ScriptComponent>();
+                ImGui::CloseCurrentPopup();
+            }
+        }
 	}
 	
 }

@@ -110,7 +110,7 @@ namespace CatEngine
     ScriptClass::ScriptClass(const std::filesystem::path& path)
         : m_Path(path)
     {
-        m_Instance = dlopen(path.c_str(), RTLD_NOW | RTLD_GLOBAL);
+        m_Instance = dlopen(path.c_str(), RTLD_LAZY | RTLD_LOCAL);
         CE_API_ASSERT(m_Instance, dlerror());
 
         m_CreateScript = (create_t*)dlsym(m_Instance, "create");
@@ -309,11 +309,12 @@ namespace CatEngine
 				if (!s_ScriptData->SourceFileReloadPending)
 				{
 					s_ScriptData->SourceFileReloadPending = true;
-					Application::Get().SubmitToMainThread([]()
+					Application::Get().SubmitToMainThread([path]()
 					{
                         for (auto& fileWatcher : s_ScriptData->SourceFileWatchers)
                             fileWatcher.reset();
                         s_ReloadFileWatcher = true;
+                        SourceFileCompiler::AddFile(path);
 						ScriptEngine::ReloadBinaries();
 					});
 				}
@@ -370,10 +371,12 @@ namespace CatEngine
         SourceFileCompiler::CopyAndPrepareFiles();
         SourceFileCompiler::CompileFiles();
 
-        std::unordered_map<std::filesystem::path, FileDescription> intermediates = SourceFileCompiler::GetIntermediateFiles();
+        
 
+        Application::Get().SubmitToMainThread([](){
+            
+            std::unordered_map<std::filesystem::path, FileDescription> intermediates = SourceFileCompiler::GetIntermediateFiles();
 
-        Application::Get().SubmitToMainThread([intermediates](){
             for (auto& [path, fd] : intermediates)
             {
                 auto it = s_ScriptData->EntityClasses.find(fd.Name);

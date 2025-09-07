@@ -1,5 +1,4 @@
 #pragma once
-#include "cepch.h"
 
 #pragma warning(push, 0)
 #include <spdlog/spdlog.h>
@@ -54,7 +53,7 @@ namespace CatEngine {
 
 #endif // CE_DEBUG
 
-#ifdef CE_TEST_LOG
+#ifdef CE_SCRIPT_COMPILATION
 #define CE_API_CRITICAL(...)
 #define CE_API_ERROR(...)
 #define CE_API_WARN(...)
