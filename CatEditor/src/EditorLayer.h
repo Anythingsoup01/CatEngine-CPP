@@ -47,6 +47,13 @@ namespace CatEngine
 		void OpenScene(const std::filesystem::path& filePath);
 		
 		void NewScene();
+
+		void SaveProject();
+
+		void OpenProject();
+		void OpenProject(const std::filesystem::path& filePath);
+		
+		void NewProject();
 		
 		void OnScenePlay();
 		void OnScenePause(bool isPaused);
@@ -65,9 +72,7 @@ namespace CatEngine
     private:
 
 		std::filesystem::path m_SceneFilePath;
-		std::filesystem::path m_ProjectAssetsDirectory;
-
-        std::string m_CurrentProjectName;
+        std::filesystem::path m_CurrentProjectPath;
 
         EditorCamera m_EditorCamera;
 

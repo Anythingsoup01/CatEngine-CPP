@@ -14,6 +14,10 @@
 
 #include "CatEngine/Scene/Components/Components.h"
 
+#include "CatEngine/Project/Project.h"
+
+static bool s_ReloadFileWatcher = false;
+
 namespace CatEngine
 {
     static std::unordered_map<std::string, ScriptFieldType> s_ScriptFieldTypeMap =
@@ -53,6 +57,7 @@ namespace CatEngine
     void* GetVariableSymbol(void* handle, ScriptFieldType type, const std::string& symbolName)
     {
         void* out = nullptr;
+
         switch (type)
         {
             case ScriptFieldType::Float: out = (float*)dlsym(handle, symbolName.c_str()); break;
@@ -105,11 +110,17 @@ namespace CatEngine
     ScriptClass::ScriptClass(const std::filesystem::path& path)
         : m_Path(path)
     {
-        m_Instance = dlopen(path.c_str(), RTLD_LAZY);
+        m_Instance = dlopen(path.c_str(), RTLD_NOW | RTLD_GLOBAL);
         CE_API_ASSERT(m_Instance, dlerror());
 
         m_CreateScript = (create_t*)dlsym(m_Instance, "create");
         m_DestroyScript = (destroy_t*)dlsym(m_Instance, "destroy");
+    }
+
+    ScriptClass::~ScriptClass()
+    {
+        dlclose(m_Instance);
+        m_Instance = nullptr;
     }
 
     void ScriptClass::SetFieldsFromFile(const std::filesystem::path& filePath)
@@ -159,20 +170,15 @@ namespace CatEngine
             sf.Type = StringToScriptFieldType(type);
             sf.Name = name;
             sf.ClassField = GetVariableSymbol(m_Instance, sf.Type, name);
-
+            if (sf.ClassField == nullptr)
+            {
+                CE_API_CRITICAL("NULL DETECTED: {0}:{1}", type, name);
+            }
             m_Fields.emplace(std::pair<std::string, ScriptField>(name, sf));
         }
 
     }
 
-    CatScriptMethod* ScriptClass::GetMethod(const std::string& methodName)
-    {
-        CatScriptMethod* method = (CatScriptMethod*)dlsym(m_Instance, methodName.c_str());
-        CE_API_ASSERT(method, "Could Not Load: {}", dlerror());
-
-        return method;
-    }
-    
     ///////////////////////////////////////////////////////
 	// SCRIPT INSTANCE ////////////////////////////////////
 	///////////////////////////////////////////////////////
@@ -199,6 +205,11 @@ namespace CatEngine
 	{
         m_Instance->Start();
     }
+    void ScriptInstance::InvokeDeleteScript()
+    {
+        m_ScriptClass->DeleteScript(m_Instance);
+    }
+
 	bool ScriptInstance::GetFieldDataInternal(const std::string& name, void* buffer)
     {
         const auto& fields = m_ScriptClass->GetFields();
@@ -248,10 +259,6 @@ namespace CatEngine
     void ScriptEngine::Init()
 	{
 		s_ScriptData = new ScriptEngineData();
-        SourceFileCompiler::Init();
-        SourceFileCompiler::AddDirectory("SampleProject/Assets/");
-        ReloadBinaries();
-
 	}
 	void ScriptEngine::Shutdown()
 	{
@@ -306,7 +313,7 @@ namespace CatEngine
 					{
                         for (auto& fileWatcher : s_ScriptData->SourceFileWatchers)
                             fileWatcher.reset();
-                        ScriptEngine::LoadFileWatcher("SampleProject/Assets/");
+                        s_ReloadFileWatcher = true;
 						ScriptEngine::ReloadBinaries();
 					});
 				}
@@ -320,7 +327,6 @@ namespace CatEngine
 
 	bool ScriptEngine::LoadFileWatcher(const std::filesystem::path& filePath)
 	{
-
         for (const auto& entry : std::filesystem::recursive_directory_iterator(filePath)) 
         {
             std::string path = entry.path().string();
@@ -338,13 +344,16 @@ namespace CatEngine
 
 	void ScriptEngine::SetSceneContext(Ref<Scene> scene)
 	{
-		s_ScriptData->SceneContext = scene;	    
-        LoadFileWatcher("SampleProject/Assets/");
+		s_ScriptData->SceneContext = scene;
 	}
 
 	void ScriptEngine::OnRuntimeStop()
 	{
 		s_ScriptData->SceneContext = nullptr;
+        for (auto& [uuid, instance] : s_ScriptData->EntityInstances)
+        {
+            instance->InvokeDeleteScript();
+        }
 		s_ScriptData->EntityInstances.clear();
 		
 		if (s_ScriptData->SourceFileReloadPending || !s_ScriptData->MainThreadQueue.empty())
@@ -357,21 +366,26 @@ namespace CatEngine
 		//CE_CLI_TRACE(s_ScriptData->ReloadTimer.ElapsedMillis());
 #endif
 		//CE_API_TRACE(s_ScriptData->ReloadTimer.ElapsedMillis());
-        s_ScriptData->EntityClasses.clear();
-        m_Compiler.CopyAndPrepareFiles();
-        m_Compiler.CompileFiles();
+        CE_API_INFO("BINARIES RELOADED!");
+        SourceFileCompiler::CopyAndPrepareFiles();
+        SourceFileCompiler::CompileFiles();
 
-        std::unordered_map<std::filesystem::path, FileDescription> intermediates = m_Compiler.GetIntermediateFiles();
+        std::unordered_map<std::filesystem::path, FileDescription> intermediates = SourceFileCompiler::GetIntermediateFiles();
+
 
         Application::Get().SubmitToMainThread([intermediates](){
             for (auto& [path, fd] : intermediates)
             {
+                auto it = s_ScriptData->EntityClasses.find(fd.Name);
+                if (it != s_ScriptData->EntityClasses.end())
+                    s_ScriptData->EntityClasses.erase(it);
                 s_ScriptData->EntityClasses[fd.Name] = CreateRef<ScriptClass>(fd.CompilePath);
                 s_ScriptData->EntityClasses[fd.Name]->SetFieldsFromFile(fd.Path);
             }
         });
 
         s_ScriptData->SourceFileReloadPending = false;
+        LoadFileWatcher(Project::GetAssetFileSystemPath());
 	}
 
 	bool ScriptEngine::ScriptClassExists(const std::string& fullClassName)

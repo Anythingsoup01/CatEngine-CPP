@@ -34,6 +34,8 @@ namespace CatEngine
 
 		float GetPitch() const { return m_Pitch; }
 		float GetYaw() const { return m_Yaw; }
+
+        void AllowEvents(bool allow) { m_AllowEvents = allow; }
 	private:
 		void UpdateProjection();
 		void UpdateView();
@@ -51,6 +53,7 @@ namespace CatEngine
 		float ZoomSpeed() const;
 
 	private:
+        bool m_AllowEvents;
 
 		float m_FOV = 45.f, m_AspectRatio = 1.778f, m_NearClip = 0.1f, m_FarClip = 1000.f;
 

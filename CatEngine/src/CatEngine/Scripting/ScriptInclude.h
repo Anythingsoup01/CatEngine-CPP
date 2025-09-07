@@ -1,4 +1,19 @@
 #pragma once
+#ifdef CE_SCRIPT_COMPILATION
+#include <iostream>
+#include <memory>
+#include <utility>
+#include <algorithm>
+#include <functional>
+#include <filesystem>
+
+#include <string>
+#include <sstream>
+#include <array>
+#include <vector>
+#include <unordered_map>
+#include <unordered_set>
+#endif
 
 #include "CatEngine/Core/Input.h"
 #include "CatEngine/Core/KeyCodes.h"

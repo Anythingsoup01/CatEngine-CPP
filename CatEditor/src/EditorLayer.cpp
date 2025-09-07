@@ -13,36 +13,11 @@
 #include "CatEngine/Scripting/ScriptEngine.h"
 
 namespace CatEngine
-{        
-    class CameraController : public ScriptObject
-    {
-    public:
-
-        void OnStart() override
-        {
-        }
-
-        void OnUpdate(Time ts) override
-        {
-            auto& position = GetComponent<TransformComponent>().Position;
-            float speed = 5.0f;
-
-            if (Input::IsKeyPressed(KeyCode::W))
-                position.y += speed * ts;
-            if (Input::IsKeyPressed(KeyCode::S))
-                position.y -= speed * ts;
-            if (Input::IsKeyPressed(KeyCode::A))
-                position.x -= speed * ts;
-            if (Input::IsKeyPressed(KeyCode::D))
-                position.x += speed * ts;
-        }
-
-    };
-
+{
     void EditorLayer::OnAttach()
     {
         s_Instance = this;
- 		
+
         m_IconStartRuntime = Texture2D::Create("Resources/Icons/Editor/Start-Runtime.png");
 		m_IconPauseRuntime = Texture2D::Create("Resources/Icons/Editor/Pause-Runtime.png");
 		m_IconPauseRuntimeSelected = Texture2D::Create("Resources/Icons/Editor/Pause-Runtime-Selected.png");
@@ -58,21 +33,22 @@ namespace CatEngine
         m_SceneViewportPanel = SceneViewportPanel(fbSpec);
         m_SceneCameraPanel = SceneViewportPanel(fbSpec);
 
-
         m_ActiveScene = CreateRef<Scene>();
 
-        m_CurrentProjectName = "SampleProject";
-
-		m_ProjectAssetsDirectory = std::filesystem::path(m_CurrentProjectName + "/Assets");
-
         m_MouseInUse = false;
-
 
         m_SceneHierarchyPanel.SetContext(m_ActiveScene);
         m_SceneViewportPanel.SetContext(m_ActiveScene);
         m_SceneCameraPanel.SetContext(m_ActiveScene);
         ScriptEngine::SetSceneContext(m_ActiveScene);
 
+        auto commandLineArgs = Application::Get().GetSpecification().CommandlineArgs;
+        if (commandLineArgs.Count > 1)
+        {
+            auto projectFilePath = commandLineArgs[1];
+            OpenProject(projectFilePath);
+        }
+        m_ContentBrowserPanel = ContentBrowserPanel();
         m_EditorCamera = EditorCamera(30.f, 1.778f, 0.1f, 1000.f);
     }
 
@@ -86,6 +62,10 @@ namespace CatEngine
     {
         CE_PROFILE_FUNCTION();
         m_DeltaTime = deltaTime;
+
+        m_BlockMouseEvents = m_SceneViewportPanel.IsHovered();
+        m_BlockKeyboardEvents = m_SceneViewportPanel.IsFocused();
+
         switch (m_SceneState)
 		{
 		    case SceneState::Edit:
@@ -153,6 +133,7 @@ namespace CatEngine
                 ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
                 ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
             }
+            io.FontGlobalScale = 1.25f;
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0, 0 });
 
             ImGui::Begin("Console");
@@ -247,7 +228,7 @@ namespace CatEngine
             }
         }
         Renderer2D::EndScene();
-}
+    }
     
     void EditorLayer::ImGuizmoDraw(Entity selectedEntity, const glm::mat4& cameraProjection, glm::mat4 cameraView)
     {
@@ -288,8 +269,9 @@ namespace CatEngine
                 m_EditorCamera.SetViewportSize((float)m_SceneViewportPanel.GetWidth(), (float)m_SceneViewportPanel.GetHeight());
             }
 
-            if (!ImGuizmo::IsUsing() && (!m_BlockMouseEvents))
-                m_EditorCamera.OnUpdate(deltaTime);
+            m_EditorCamera.AllowEvents(!ImGuizmo::IsUsing() && m_BlockMouseEvents);
+
+            m_EditorCamera.OnUpdate(deltaTime);
 
             m_SceneViewportPanel.BindFramebuffer();
             
@@ -414,16 +396,17 @@ namespace CatEngine
                 if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSET_MANAGER_ITEM"))
                 {
                     const wchar_t* path = (const wchar_t*)payload->Data;
-                    std::filesystem::path filePath = std::filesystem::path("SampleProject/Assets") / path;
+                    std::filesystem::path filePath = Project::GetAssetFileSystemPath(path);
     
-                    if (filePath.extension().string() == ".catengine")
+                    if (filePath.extension().string() == ".catscene")
                     {
                         OpenScene(filePath);
                         m_SceneFilePath = filePath;
+                        CE_CLI_INFO("{}", m_SceneFilePath.string());
                     }
                     else if (filePath.extension().string() == ".png" || filePath.extension().string() == ".jpeg")
                     {
-                        std::filesystem::path texturePath = std::filesystem::path("SampleProject/Assets") / path;
+                        std::filesystem::path texturePath = Project::GetAssetFileSystemPath(path);
                         Ref<Texture2D> texture = Texture2D::Create(texturePath.string());
                         if (texture->IsLoaded())
                         {
@@ -582,7 +565,7 @@ namespace CatEngine
 
         if (m_SceneState == SceneState::Edit)
         {
-            m_SceneFilePath = FileDialog::SaveFile({{"CatEngine Scene", "catengine"}});
+            m_SceneFilePath = FileDialog::SaveFile({{"CatEngine Scene", "catscene"}});
             if (!m_SceneFilePath.empty())
             {
                 SceneSerializer serializer(m_ActiveScene);
@@ -611,7 +594,7 @@ namespace CatEngine
     {
 		CE_PROFILE_FUNCTION();
 
-        m_SceneFilePath = FileDialog::OpenFile({{"CatEngine Scene", "catengine"}});
+        m_SceneFilePath = FileDialog::OpenFile({{"CatEngine Scene", "catscene"}});
         if (!m_SceneFilePath.empty())
             OpenScene(m_SceneFilePath);
     }
@@ -619,9 +602,9 @@ namespace CatEngine
     {
 		CE_PROFILE_FUNCTION();
 
-        if (filePath.extension().string() != ".catengine")
+        if (filePath.extension().string() != ".catscene")
         {
-            CE_API_WARN("Could not load {0} - not a scene file", filePath.filename().string());
+            CE_CLI_WARN("Could not load {0} - not a scene file", filePath.filename().string());
             return;
         }
 
@@ -653,6 +636,45 @@ namespace CatEngine
         m_SceneCameraPanel.SetContext(m_ActiveScene);
         ScriptEngine::SetSceneContext(m_ActiveScene);
     }
+
+    void EditorLayer::SaveProject()
+    {
+        Project::Save(m_CurrentProjectPath);
+    }
+
+    void EditorLayer::OpenProject()
+    {
+        std::filesystem::path filePath = FileDialog::OpenFile({{"CatEngine Project", "catproj"}});
+        if (!filePath.empty())
+            OpenProject(filePath);
+
+    }
+
+    void EditorLayer::OpenProject(const std::filesystem::path& filePath)
+    {
+        if (filePath.extension().string() != ".catproj")
+        {
+            CE_CLI_WARN("Could not load {0} - Not a project file!", filePath.filename().string());
+            return;
+        }
+        if(Project::Load(filePath))
+        {
+            m_CurrentProjectPath = filePath;
+            auto startScenePath = Project::GetAssetFileSystemPath(Project::GetConfig().StartScene);
+            OpenScene(startScenePath);
+            SourceFileCompiler::Init();
+            SourceFileCompiler::AddDirectory(Project::GetAssetFileSystemPath());
+            ScriptEngine::ReloadBinaries();
+        }
+    }
+
+    void EditorLayer::NewProject()
+    {
+        Project::New();
+    }
+
+
+
 
     void EditorLayer::OnScenePlay()
     {
@@ -845,25 +867,25 @@ namespace CatEngine
             }
 			case KeyCode::Q:
 			{
-				if (m_SceneViewportPanel.IsFocused() || m_SceneViewportPanel.IsHovered())
+				if (m_BlockKeyboardEvents) // if false, block events
 					m_GizmoType = ImGuizmo::OPERATION::BOUNDS;
 				break;
 			}
             case KeyCode::W:
             {
-				if (m_SceneViewportPanel.IsFocused() || m_SceneViewportPanel.IsHovered())
+				if (m_BlockKeyboardEvents)
 					m_GizmoType = ImGuizmo::OPERATION::TRANSLATE;
                 break;
             }
             case KeyCode::E:
             {
-				if (m_SceneViewportPanel.IsFocused() || m_SceneViewportPanel.IsHovered())
+				if (m_BlockKeyboardEvents)
 					m_GizmoType = ImGuizmo::OPERATION::ROTATE;
                 break;
             }
             case KeyCode::R:
             {
-				if (m_SceneViewportPanel.IsFocused() || m_SceneViewportPanel.IsHovered())
+				if (m_BlockKeyboardEvents)
 					m_GizmoType = ImGuizmo::OPERATION::SCALE;
                 break;
             }
@@ -874,9 +896,6 @@ namespace CatEngine
             default:
                 break;
         }
-
-		// Mouse in use checks
-	
 
         return false;
     }
@@ -892,7 +911,5 @@ namespace CatEngine
 
         return false;
     }
-
-
 
 }

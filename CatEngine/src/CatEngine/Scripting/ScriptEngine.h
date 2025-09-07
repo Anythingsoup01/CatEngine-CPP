@@ -73,10 +73,11 @@ namespace CatEngine
         ScriptClass() = default;
         ScriptClass(const std::filesystem::path& path);
 
+        ~ScriptClass();
+
         void SetFieldsFromFile(const std::filesystem::path& filePath);
 
         CatScriptObject* Instantiate() { return m_CreateScript(); }
-        CatScriptMethod* GetMethod(const std::string& methodName);
 
         void DeleteScript(IScriptObject* scriptObject) { delete scriptObject; }
 
@@ -102,6 +103,7 @@ namespace CatEngine
 
 		void InvokeUpdateMethod(float ts);
 		void InvokeStartMethod();
+        void InvokeDeleteScript();
 
 		Ref<ScriptClass> GetScriptClass() { return m_ScriptClass; }
 
@@ -165,9 +167,6 @@ namespace CatEngine
 		static ScriptFieldMap& GetScriptFieldMap(Entity entity);
 
 	private:
-
-        static inline SourceFileCompiler m_Compiler = SourceFileCompiler();
-
 		friend class ScriptClass;
 	};
 }

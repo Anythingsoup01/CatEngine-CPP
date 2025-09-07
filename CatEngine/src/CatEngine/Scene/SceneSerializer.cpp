@@ -6,6 +6,8 @@
 
 #include <yaml-cpp/yaml.h>
 
+#include "CatEngine/Project/Project.h"
+
 
 namespace YAML {
 
@@ -371,8 +373,11 @@ namespace CatEngine
 					auto& src = deserializedEntity.GetOrAddComponent<SpriteRendererComponent>();
 					src.Color = spriteRendererComponent["Color"].as<glm::vec4>();
 					if (spriteRendererComponent["Texture"].as<std::string>() != "")
-						src.Texture = Texture2D::Create(spriteRendererComponent["Texture"].as<std::string>());
-					else
+                    {
+                        std::string texturePath = spriteRendererComponent["Texture"].as<std::string>();
+                        src.Texture = Texture2D::Create(Project::GetAssetFileSystemPath(texturePath));
+                    }
+                    else
 						src.Texture = nullptr;
 					src.TilingFactor = spriteRendererComponent["Tiling"].as<float>();
 				}

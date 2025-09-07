@@ -21,8 +21,8 @@ namespace CatEngine
 	void EditorCamera::OnUpdate(Time time)
 	{	
 		CE_PROFILE_FUNCTION();
-
-		if (Input::IsKeyPressed(KeyCode::LeftAlt))
+        
+		if (Input::IsKeyPressed(KeyCode::LeftAlt) && m_AllowEvents)
 		{
 			const glm::vec2& mouse{ Input::GetMouseX(), Input::GetMouseY() };
 			glm::vec2 delta = (mouse - m_InitialMousePosition) * 0.003f;
@@ -46,7 +46,8 @@ namespace CatEngine
 	void EditorCamera::OnEvent(Event& e)
 	{
 		EventDispatcher dispatcher(e);
-		dispatcher.Dispatch<MouseScrolledEvent>(BIND_EVENT_FN(EditorCamera::OnMouseScrolled));
+        if (m_AllowEvents)
+		    dispatcher.Dispatch<MouseScrolledEvent>(BIND_EVENT_FN(EditorCamera::OnMouseScrolled));
 	}
 	glm::vec3 EditorCamera::GetUpDirection() const
 	{

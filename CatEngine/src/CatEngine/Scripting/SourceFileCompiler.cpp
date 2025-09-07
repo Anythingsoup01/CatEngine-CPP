@@ -6,6 +6,8 @@
 #include <sstream>
 #include <vector>
 
+#include "CatEngine/Project/Project.h"
+
 namespace CatEngine
 {
     static std::vector<const char*> s_Keywords =
@@ -60,6 +62,7 @@ namespace CatEngine
             {
                 m_FilesToBePrepared.push_back(entry.path());
             }
+
         }
     }
 
@@ -73,12 +76,14 @@ namespace CatEngine
     
     void SourceFileCompiler::CopyAndPrepareFiles()
     {
+        CE_API_INFO("CompileAndPrepare");
         if (m_Preparing)
             return;
 
         m_Preparing = true;
         for (auto& path : m_FilesToBePrepared)
         {
+            CE_API_WARN(path.string());
             {
                 if (path.extension() != ".cpp")
                     continue;
@@ -88,6 +93,7 @@ namespace CatEngine
                 if (fileNameStr.find("-int") != std::string::npos)
                     continue;
 
+
                 std::filesystem::file_time_type lastModified = std::filesystem::last_write_time(path);
                 std::optional<std::filesystem::file_time_type> lastCompiled;
 
@@ -96,6 +102,7 @@ namespace CatEngine
 
                 if (lastModified <= lastCompiled)
                     continue;
+
             }
             std::ifstream in(path);
             if (!in.is_open())
@@ -151,9 +158,9 @@ namespace CatEngine
                 }
                 out << line << "\n";
             }
-
-            std::string filePath = path.relative_path().remove_filename();
+            std::filesystem::path pathCPY = path;
             std::string fileNameStr = path.filename().string();
+            std::string filePath = pathCPY.remove_filename();
 
             size_t extensionPos = fileNameStr.find(".");
             std::string extension = fileNameStr.substr(extensionPos);
@@ -181,7 +188,7 @@ namespace CatEngine
             }
             fd.Path = filePath;
             // TODO: STORE THE PROJECT NAME SOMEWHERE
-            filePath.erase(0, 21); // sizeof("SampleProject/Assets/")
+            filePath.erase(0, Project::GetAssetFileSystemPath().string().length() + 1);
 
             out << "extern \"C\" CatEngine::IScriptObject* create() { return new " << className << "; }\n"
                 << "extern \"C\" void destroy(CatEngine::IScriptObject* script) { delete script; }";
@@ -191,16 +198,16 @@ namespace CatEngine
 
             if (out.str() != inCheckSS.str() || m_NeedsRecompiled)
             {
+                CE_API_INFO("NEEDS RECOMPILED!");
                 m_NeedsRecompiled = true;
             }
 
             fd.FileName = fileName;
             fd.RelativePath = filePath;
-            std::string projectPath = "SampleProject/";
-            std::string compilePath = projectPath;
-            compilePath.append("Assets/.build/lib").append(fd.Name).append(".so");
+            std::filesystem::path compilePath = Project::GetAssetFileSystemPath(".build");
+            std::string compileName = "lib"; compileName.append(fd.Name).append(".so");
 
-            fd.CompilePath = compilePath;
+            fd.CompilePath = compilePath / compileName;
 
             m_FilesToBeCompiled[fd.Path] = fd;
         }
@@ -211,12 +218,13 @@ namespace CatEngine
 
     void SourceFileCompiler::RegenerateCmakeFile()
     {
+        CE_API_INFO("RegenerateCmakeFile");
         std::stringstream inSS;
-        std::ifstream in("SampleProject/Assets/CMakeLists.txt");
+        std::ifstream in(Project::GetAssetFileSystemPath("CMakeLists.txt"));
         if (in.is_open())
             inSS << in.rdbuf();
-        
-        std::ofstream out("SampleProject/Assets/CMakeLists.txt");
+
+        std::ofstream out(Project::GetAssetFileSystemPath("CMakeLists.txt"));
         if (!out.is_open())
             CE_API_ASSERT(false, "Failed to generate file!");
 
@@ -238,15 +246,16 @@ namespace CatEngine
            << "set(PRECOMPILEDHEADER " << CatEngineSRC << "/cepch.h)\n"
            << "set(CATENGINELIB " << rootCatEnginePath.string() << "/build/CatEngine/libCatEngine.a dl)\n"
            << "set(COMPILEFLAGS CE_SCRIPT_COMPILATION)\n"
-           << "set(CMAKE_CXX_FLAGS \"${CMAKE_CXX_FLAGS} -rdynamic -fPIC\")  \n";
+           << "set(CMAKE_CXX_FLAGS \"${CMAKE_CXX_FLAGS} -fPIC\")\n";
 
         for (auto& [path, fd] : m_FilesToBeCompiled)
         {
-            ss << "add_library(" << fd.Name << " SHARED " << fd.RelativePath << ")\n"
+            ss << "add_library(" << fd.Name << " SHARED " << fd.RelativePath.string() << ")\n"
                << "target_include_directories(" << fd.Name << " PRIVATE ${INCLUDEDIRS})\n"
                << "target_precompile_headers(" << fd.Name << " PRIVATE ${PRECOMPILEDHEADER})\n"
                << "target_link_libraries(" << fd.Name << " PRIVATE ${CATENGINELIB})\n"
                << "target_compile_definitions(" << fd.Name << " PRIVATE ${COMPILEFLAGS})\n\n";
+            CE_API_INFO("{}", path.string());
         }
         
         out << ss.str();
@@ -258,8 +267,11 @@ namespace CatEngine
     {
         if (m_NeedsRecompiled)
         {
+            CE_API_INFO("RECOMPILING!");
             Application::Get().SubmitToMainThread([](){
-                system("cd SampleProject/Assets && cmake --build .build/ -j 10");
+                std::stringstream ss;
+                ss << "cd " << Project::GetAssetFileSystemPath() << "; cmake --build .build -j 10;";
+                system(ss.str().c_str());
             });
             m_CompiledFiles = m_FilesToBeCompiled;
             m_FilesToBeCompiled.clear();
@@ -269,10 +281,12 @@ namespace CatEngine
 
     void SourceFileCompiler::Init()
     {
-        if (!std::filesystem::exists("SampleProject/Assets/.build"))
+        if (!std::filesystem::exists(Project::GetAssetFileSystemPath(".build")))
         {
-            std::filesystem::create_directory("SampleProject/Assets/.build");
-            system("cd SampleProject/Assets/.build; cmake ..; cmake -DCMAKE_BUILD_TYPE=Release .");
+            std::filesystem::create_directory(Project::GetAssetFileSystemPath(".build"));
+            std::stringstream ss;
+            ss << "cd " << Project::GetAssetFileSystemPath(".build") << "; cmake ..; cmake -DCMAKE_BUILD_TYPE=Release .";
+            system(ss.str().c_str());
         }
     }
 

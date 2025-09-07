@@ -46,11 +46,14 @@ namespace CatEngine
 
         const std::filesystem::path& GetMainPath() const { return m_CatEngineFilesPath; }
 
+        const ApplicationSpecification& GetSpecification() const { return m_Specification; }
+
     private:
         bool OnWindowClose(WindowCloseEvent& e);
         bool OnWindowResize(WindowResizeEvent& e);
 		void ExecuteMainThreadQueue();
     private:
+        ApplicationSpecification m_Specification;
 
         bool m_Running = false;
         bool m_Minimized = false;

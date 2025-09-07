@@ -195,5 +195,7 @@ namespace CatEngine {
 		style.ItemInnerSpacing = { 5, 0 };
 		style.TouchExtraPadding = { 0, 0 };
 		style.IndentSpacing = 10;
+
+        
 	}
 }

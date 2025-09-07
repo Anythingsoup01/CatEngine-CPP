@@ -6,8 +6,6 @@
 
 namespace CatEngine {
 
-	Ref<spdlog::logger> Log::s_APILogger;
-	Ref<spdlog::logger> Log::s_CLILogger;
 
 	void Log::Init() {
 

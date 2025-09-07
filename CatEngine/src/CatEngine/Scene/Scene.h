@@ -66,7 +66,6 @@ namespace CatEngine
 
 		void OnPhysics2DStart();
 		void OnPhysics2DStop();
-        void OnPhysics2DAdd();
 
         void OnScriptStart();
     private:

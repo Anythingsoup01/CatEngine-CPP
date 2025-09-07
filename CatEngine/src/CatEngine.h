@@ -27,6 +27,8 @@
 #include "CatEngine/Renderer/Camera.h"
 #include "CatEngine/Renderer/EditorCamera.h"
 
+#include "CatEngine/Project/Project.h"
+
 #include "CatEngine/Scene/Scene.h"
 #include "CatEngine/Scene/SceneCamera.h"
 #include "CatEngine/Scene/SceneSerializer.h"

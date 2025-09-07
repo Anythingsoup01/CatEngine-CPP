@@ -213,24 +213,21 @@ namespace CatEngine
 
 #pragma region Rigidbody2D
 
-	void ScriptGlue::Rigidbody2D_ApplyForce(Rigidbody2DComponent& rb2d, glm::vec2* impulse, glm::vec2* point, bool wake)
+	void ScriptGlue::Rigidbody2D_ApplyForce(Rigidbody2DComponent& rb2d, const glm::vec2* impulse, const glm::vec2* point, bool wake)
 	{
 		Physics2D::ApplyForce(rb2d, *impulse, *point, wake);
 	}
-	void ScriptGlue::Rigidbody2D_ApplyForceToCenter(UUID entityID, glm::vec2* impulse, bool wake)
+	void ScriptGlue::Rigidbody2D_ApplyForceToCenter(Rigidbody2DComponent& rb2d, const glm::vec2* impulse, bool wake)
 	{
-		Entity entity = GetEntity(entityID);
-		//Physics2D::ApplyForceToCenter(entity, *impulse, wake);
+		Physics2D::ApplyForceToCenter(rb2d, *impulse, wake);
 	}
-	void ScriptGlue::Rigidbody2D_ApplyLinearImpulse(UUID entityID, glm::vec2* impulse, glm::vec2* point, bool wake)
+	void ScriptGlue::Rigidbody2D_ApplyLinearImpulse(Rigidbody2DComponent& rb2d, const glm::vec2* impulse, const glm::vec2* point, bool wake)
 	{
-		Entity entity = GetEntity(entityID);
-		//Physics2D::ApplyLinearImpulse(entity, *impulse, *point, wake);
+		Physics2D::ApplyLinearImpulse(rb2d, *impulse, *point, wake);
 	}
-	void ScriptGlue::Rigidbody2D_ApplyLinearImpulseToCenter(UUID entityID, glm::vec2* impulse, bool wake)
+	void ScriptGlue::Rigidbody2D_ApplyLinearImpulseToCenter(Rigidbody2DComponent& rb2d, const glm::vec2* impulse, bool wake)
 	{
-		Entity entity = GetEntity(entityID);
-		//Physics2D::ApplyLinearImpulseToCenter(entity, *impulse, wake);
+		Physics2D::ApplyLinearImpulseToCenter(rb2d, *impulse, wake);
 	}
 
 

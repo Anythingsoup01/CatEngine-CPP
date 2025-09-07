@@ -17,6 +17,7 @@ extern bool g_ApplicationRunning;
 namespace CatEngine
 {
     Application::Application(const ApplicationSpecification& spec)
+        : m_Specification(spec)
     {
         CE_PROFILE_FUNCTION();
         s_Instance = this;
@@ -24,13 +25,6 @@ namespace CatEngine
         RenderAPI::Set(RenderAPI::API::OpenGL);
 
         m_CatEngineFilesPath = std::filesystem::current_path();
-        CE_API_INFO("{}", m_CatEngineFilesPath.string());
-
-        if (spec.CommandlineArgs.Count > 1)
-        {
-            std::filesystem::current_path(spec.CommandlineArgs[1]);
-        }
-
 
         m_Window.Init(WindowProps(spec.Name, 1280, 720));
         m_Window.SetVSync(false);

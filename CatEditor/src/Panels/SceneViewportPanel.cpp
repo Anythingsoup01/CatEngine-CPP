@@ -33,7 +33,6 @@ namespace CatEngine
 		m_PanelBounds[0] = { viewportMinRegion.x + viewportOffset.x, viewportMinRegion.y + viewportOffset.y };
 		m_PanelBounds[1] = { viewportMaxRegion.x + viewportOffset.x, viewportMaxRegion.y + viewportOffset.y };
 
-
 		m_PanelFocused = ImGui::IsWindowFocused();
 		m_PanelHovered = ImGui::IsWindowHovered();
 

@@ -16,10 +16,11 @@ namespace CatEngine {
 		inline static Ref<spdlog::logger>& GetAPILogger() { return s_APILogger; }
 		inline static Ref<spdlog::logger>& GetCLILogger() { return s_CLILogger; }
 	private:
-		static Ref<spdlog::logger> s_APILogger;
-		static Ref<spdlog::logger> s_CLILogger;
+		inline static Ref<spdlog::logger> s_APILogger;
+		inline static Ref<spdlog::logger> s_CLILogger;
 	};
 }
+
 
 #ifdef CE_DEBUG
 
@@ -53,3 +54,17 @@ namespace CatEngine {
 
 #endif // CE_DEBUG
 
+#ifdef CE_TEST_LOG
+#define CE_API_CRITICAL(...)
+#define CE_API_ERROR(...)
+#define CE_API_WARN(...)
+#define CE_API_INFO(...)
+#define CE_API_TRACE(...)
+
+// Client Log Macros
+#define CE_CLI_CRITICAL(...)             
+#define CE_CLI_ERROR(...)               
+#define CE_CLI_WARN(...)               
+#define CE_CLI_INFO(...)              
+#define CE_CLI_TRACE(...)
+#endif

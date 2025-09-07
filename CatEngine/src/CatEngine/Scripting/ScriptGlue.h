@@ -24,10 +24,10 @@ namespace CatEngine
 	
         static void* GetScriptInstance(UUID entityID);
 
-        static void Rigidbody2D_ApplyForce(Rigidbody2DComponent& rb2d, glm::vec2* impulse, glm::vec2* point, bool wake);
-        static void Rigidbody2D_ApplyForceToCenter(UUID entityID, glm::vec2* impulse, bool wake);
-        static void Rigidbody2D_ApplyLinearImpulse(UUID entityID, glm::vec2* impulse, glm::vec2* point, bool wake);
-        static void Rigidbody2D_ApplyLinearImpulseToCenter(UUID entityID, glm::vec2* impulse, bool wake);
+        static void Rigidbody2D_ApplyForce(Rigidbody2DComponent& rb2d, const glm::vec2* impulse, const glm::vec2* point, bool wake);
+        static void Rigidbody2D_ApplyForceToCenter(Rigidbody2DComponent& rb2d, const glm::vec2* impulse, bool wake);
+        static void Rigidbody2D_ApplyLinearImpulse(Rigidbody2DComponent& rb2d, const glm::vec2* impulse, const glm::vec2* point, bool wake);
+        static void Rigidbody2D_ApplyLinearImpulseToCenter(Rigidbody2DComponent& rb2d, const glm::vec2* impulse, bool wake);
 
 
         static glm::vec3 Transform_GetPosition(UUID entityID);

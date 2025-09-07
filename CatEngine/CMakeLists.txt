@@ -29,6 +29,8 @@ set(SRCS
     src/CatEngine/Layer/LayerStack.cpp
     src/CatEngine/FileDialog/FileDialog.cpp
     src/CatEngine/Math/Math.cpp
+    src/CatEngine/Project/Project.cpp
+    src/CatEngine/Project/ProjectSerializer.cpp
     src/CatEngine/Scene/Scene.cpp
     src/CatEngine/Scene/SceneSerializer.cpp
     src/CatEngine/Scene/Components/Components.cpp
@@ -81,6 +83,8 @@ set(SRCS
     src/CatEngine/Math/Math.h
     src/CatEngine/Math/Vector.h
     src/CatEngine/Debug/Instrumentor.h
+    src/CatEngine/Project/ProjectSerializer.h
+    src/CatEngine/Project/Project.h
     src/CatEngine/Scene/Scene.h
     src/CatEngine/Scene/Entity.h
     src/CatEngine/Scene/ScriptObject.h
@@ -449,4 +453,3 @@ PUBLIC
     CE_RELEASE
 )
 endif(CMAKE_BUILD_TYPE STREQUAL Release)
-target_compile_options(CatEngine PRIVATE "-fpermissive")
