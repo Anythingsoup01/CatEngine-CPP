@@ -8,6 +8,8 @@
 
 #include "RenderCommand.h"
 
+#include "CatEngine/AssetManager/AssetManager.h"
+
 // TODO REMOVE
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -178,9 +180,9 @@ namespace CatEngine
             samplers[i] = i;
         s_Data.Shaders.Get("QuadShader")->SetIntArray("u_Textures", samplers, s_Data.MaxTextureSlots);
 
-        s_Data.DefaultTexture = Texture2D::Create(1, 1);
+        s_Data.DefaultTexture = Texture2D::Create();
         uint32_t data = 0xffffffff;
-        s_Data.DefaultTexture->SetData(&data, sizeof(uint32_t));
+        s_Data.DefaultTexture->SetData(Buffer(&data, sizeof(uint32_t)));
         
         s_Data.TextureSlots[0] = s_Data.DefaultTexture;
         for (uint32_t i = 0; i < s_Data.MaxTextureSlots; i++)
@@ -299,12 +301,15 @@ namespace CatEngine
         if (!m_SceneActive) CE_API_ASSERT(false, "No begin scene!");
         float textureIndex = 0.0f;
         constexpr glm::vec2 textureCoords[4] = { {0.0f, 0.0f}, {1.0f, 0.0f}, {1.0f, 1.0f}, {0.0f, 1.0f} };
-
-        if (sprite.Texture)
+        
+        Ref<Texture2D> texture = AssetManager::GetAsset<Texture2D>(sprite.Texture);
+        if (texture)
         {
+            
             for (uint32_t i = 1; i < s_Data.TextureSlotIndex; i++)
             {
-                if (*s_Data.TextureSlots[i] == *sprite.Texture.get())
+                
+                if (*s_Data.TextureSlots[i] == *texture.get())
                 {
                     textureIndex = (float)i;
                     break;
@@ -314,7 +319,7 @@ namespace CatEngine
             if (textureIndex == 0.0f)
             {
                 textureIndex = (float)s_Data.TextureSlotIndex;
-                s_Data.TextureSlots[s_Data.TextureSlotIndex] = sprite.Texture;
+                s_Data.TextureSlots[s_Data.TextureSlotIndex] = texture;
                 s_Data.TextureSlotIndex++;
             }
         }

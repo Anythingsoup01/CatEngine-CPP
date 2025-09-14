@@ -1,82 +1,78 @@
 #include "cepch.h"
 #include "OpenGLTexture2D.h"
 
-#include <stb_image.h>
 
 namespace CatEngine
 {
-    OpenGLTexture2D::OpenGLTexture2D(const std::filesystem::path& filePath)
-        : m_Path(filePath)
+    namespace OpenGLTextureUtils
     {
-        CE_PROFILE_FUNCTION();
-        int width, height, channels;
-        stbi_set_flip_vertically_on_load(1);
-        stbi_uc* data = stbi_load(filePath.c_str(), &width, &height, &channels, 0);
+		static GLenum ImageFormatToGLDataFormat(ImageFormat format)
+		{
+			switch (format)
+			{
+				case ImageFormat::RGB8:  return GL_RGB;
+				case ImageFormat::RGBA8: return GL_RGBA;
+			}
 
-        if (data)
-        {
-            m_IsLoaded = true;
-            m_Width = width;
-            m_Height = height;
+		    CE_API_ASSERT(false, "Image Format Not Supported!");
+			return 0;
+		}
+		
+		static GLenum ImageFormatToGLInternalFormat(ImageFormat format)
+		{
+			switch (format)
+			{
+			case ImageFormat::RGB8:  return GL_RGB8;
+			case ImageFormat::RGBA8: return GL_RGBA8;
+			}
 
-            GLenum internalFormat = 0, dataFormat = 0;
+		    CE_API_ASSERT(false, "Image Format Not Supported!");
+			return 0;
+		}
+        static ImageFormat GLInternalFormatToImageFormat(GLenum type)
+		{
+			switch (type)
+			{
+                case GL_RGB8:  return ImageFormat::RGB8;
+                case GL_RGBA8: return ImageFormat::RGBA8;
+			}
 
-            if (channels == 4)
-            {
-                internalFormat = GL_RGBA8;
-                dataFormat = GL_RGBA;
-            }
-            else if (channels == 3)
-            {
-                internalFormat = GL_RGB8;
-                dataFormat = GL_RGB;
-            }
+		    CE_API_ASSERT(false, "GL Image Format Not Supported!");
+			return ImageFormat::None;
+		}
 
-            CE_API_ASSERT(internalFormat & dataFormat, "Format not supported!");
-
-            glCreateTextures(GL_TEXTURE_2D, 1, &m_RendererID);
-            glTextureStorage2D(m_RendererID, 1, internalFormat, width, height);
-
-            glTextureParameteri(m_RendererID, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTextureParameteri(m_RendererID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-            glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_S, GL_REPEAT);
-            glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_S, GL_REPEAT);
-
-            glTextureSubImage2D(m_RendererID, 0, 0, 0, width, height, dataFormat, GL_UNSIGNED_BYTE, data);
-
-            stbi_image_free(data);
-        }
     }
 
-    OpenGLTexture2D::OpenGLTexture2D(const uint32_t& width, const uint32_t& height)
-        : m_Width(width), m_Height(height), m_Path("DEFAULTTEXTURE")
+    OpenGLTexture2D::OpenGLTexture2D(const TextureSpecification& specification, Buffer data)
+        : m_Specification(specification)
     {
         CE_PROFILE_FUNCTION();
 
         m_IsLoaded = true;
-        m_Width = width;
-        m_Height = height;
 
-        m_InternalFormat = GL_RGBA8;
-        m_Format = GL_RGBA;
+        m_InternalFormat = OpenGLTextureUtils::ImageFormatToGLInternalFormat(m_Specification.Format);
+        m_DataFormat = OpenGLTextureUtils::ImageFormatToGLDataFormat(m_Specification.Format);
 
         glCreateTextures(GL_TEXTURE_2D, 1, &m_RendererID);
-        glTextureStorage2D(m_RendererID, 1, m_InternalFormat, width, height);
+        glTextureStorage2D(m_RendererID, 1, m_InternalFormat, m_Specification.Width, m_Specification.Height);
 
         glTextureParameteri(m_RendererID, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTextureParameteri(m_RendererID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
         glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_S, GL_REPEAT);
+
+        if (data)
+            SetData(data);
+
     }
 
-    void OpenGLTexture2D::SetData(void* data, uint32_t size)
+    void OpenGLTexture2D::SetData(Buffer data)
     {
         CE_PROFILE_FUNCTION();
-        uint32_t bpc = m_Format == GL_RGBA ? 4 : 3;
-        CE_API_ASSERT(size == m_Width * m_Height * bpc, "Data must be entire texture");
-        glTextureSubImage2D(m_RendererID, 0, 0, 0, m_Width, m_Height, m_Format, GL_UNSIGNED_BYTE, data);
+        uint32_t bpc = m_Specification.Format == ImageFormat::RGBA8 ? 4 : 3;
+        CE_API_ASSERT(data.Size == m_Specification.Width * m_Specification.Height * bpc, "Data must be entire texture");
+        glTextureSubImage2D(m_RendererID, 0, 0, 0, m_Specification.Width, m_Specification.Height, m_DataFormat, GL_UNSIGNED_BYTE, data.Data);
     }
 
 

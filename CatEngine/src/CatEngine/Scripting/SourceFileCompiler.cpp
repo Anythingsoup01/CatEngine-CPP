@@ -133,7 +133,7 @@ namespace CatEngine
 
         size_t fileNameLen = fileName.length();
 
-        for (const auto& entry : std::filesystem::recursive_directory_iterator(Project::GetAssetFileSystemPath()))
+        for (const auto& entry : std::filesystem::recursive_directory_iterator(Project::GetAssetDirectory()))
         {
             std::string path = entry.path().string();
             size_t hidden = path.find(".build");
@@ -277,7 +277,7 @@ namespace CatEngine
             }
             fd.Path = filePath;
             // TODO: STORE THE PROJECT NAME SOMEWHERE
-            filePath.erase(0, Project::GetAssetFileSystemPath().string().length() + 1);
+            filePath.erase(0, Project::GetAssetDirectory().string().length() + 1);
 
             out << "extern \"C\" CatEngine::IScriptObject* create() { return new " << className << "; }\n"
                 << "extern \"C\" void destroy(CatEngine::IScriptObject* script) { delete script; }";
@@ -322,7 +322,7 @@ namespace CatEngine
            << "-fPIC; \n";
      
 
-        ss << "gcc -shared " << fd.ObjPath << " -o " << fd.CompilePath << " -L" << rootCatEnginePath.string() << "/build/CatEngine -lCatEngine -ldl\\\n";
+        ss << "gcc -shared " << fd.ObjPath << " -o " << fd.CompilePath << " -L" << rootCatEnginePath.string() << "/build/CatEngine -lCatEngine -ldl -lstdc++\\\n";
         
         return ss.str();
 
@@ -336,7 +336,7 @@ namespace CatEngine
                 {
                     CE_API_INFO("COMILING: {}", fd.Name);
                     std::stringstream ss;
-                    ss << "cd " << Project::GetAssetFileSystemPath() << "; " << GetBuildCommandVariables(fd);
+                    ss << "cd " << Project::GetAssetDirectory() << "; " << GetBuildCommandVariables(fd);
                     system(ss.str().c_str());
 
                     auto it = m_CompiledFiles.find(path);

@@ -1,4 +1,5 @@
 #pragma once
+
 #ifdef CE_SCRIPT_COMPILATION
 #include <iostream>
 #include <memory>
@@ -8,12 +9,12 @@
 #include <filesystem>
 
 #include <string>
+#include <string.h>
 #include <sstream>
 #include <array>
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
-#endif
 
 #include "CatEngine/Core/Input.h"
 #include "CatEngine/Core/KeyCodes.h"
@@ -26,3 +27,5 @@
 #include "CatEngine/Scripting/ScriptGlue.h"
 
 #include "CatEngine/Scripting/IScriptObject.h"
+
+#endif

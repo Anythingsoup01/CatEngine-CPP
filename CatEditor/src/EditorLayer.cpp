@@ -12,19 +12,23 @@
 
 #include "CatEngine/Scripting/ScriptEngine.h"
 
+#include "CatEngine/AssetManager/AssetManager.h"
+#include "CatEngine/AssetManager/TextureImporter.h"
+
 namespace CatEngine
 {
     void EditorLayer::OnAttach()
     {
         s_Instance = this;
 
-        m_IconStartRuntime = Texture2D::Create("Resources/Icons/Editor/Start-Runtime.png");
-		m_IconPauseRuntime = Texture2D::Create("Resources/Icons/Editor/Pause-Runtime.png");
-		m_IconPauseRuntimeSelected = Texture2D::Create("Resources/Icons/Editor/Pause-Runtime-Selected.png");
-		m_IconNextFrameRuntime = Texture2D::Create("Resources/Icons/Editor/NextFrame-Runtime.png");
-		m_IconStopRuntime = Texture2D::Create("Resources/Icons/Editor/Stop-Runtime.png");
+        m_IconStartRuntime = TextureImporter::ImportIconTexture("Resources/Icons/Editor/Start-Runtime.png");
+        m_IconPauseRuntime = TextureImporter::ImportIconTexture("Resources/Icons/Editor/Pause-Runtime.png");
+		m_IconPauseRuntimeSelected = TextureImporter::ImportIconTexture("Resources/Icons/Editor/Pause-Runtime-Selected.png");
+		m_IconNextFrameRuntime = TextureImporter::ImportIconTexture("Resources/Icons/Editor/NextFrame-Runtime.png");
+		m_IconStopRuntime = TextureImporter::ImportIconTexture("Resources/Icons/Editor/Stop-Runtime.png");
 
-		m_IconStartSimulation = Texture2D::Create("Resources/Icons/Editor/Start-Simulation.png");
+		m_IconStartSimulation = TextureImporter::ImportIconTexture("Resources/Icons/Editor/Start-Simulation.png");
+
 
         FramebufferSpecification fbSpec;
         fbSpec.Attachments = { FramebufferTextureFormat::RGBA8, FramebufferTextureFormat::RED_INTEGER, FramebufferTextureFormat::Depth };
@@ -50,7 +54,6 @@ namespace CatEngine
             m_ProjectActive = true;
         }
 
-        m_ContentBrowserPanel.ResetProjectDirectory();
         m_EditorCamera = EditorCamera(30.f, 1.778f, 0.1f, 1000.f);
     }
 
@@ -161,6 +164,7 @@ namespace CatEngine
             UI_Viewport();
             m_SceneHierarchyPanel.OnImGuiRender();
             m_ContentBrowserPanel.OnImGuiRender();
+            m_AssetBrowserPanel.OnImGuiRender();
             UI_Toolbar();
 
 
@@ -404,6 +408,7 @@ namespace CatEngine
             {
                 if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSET_MANAGER_ITEM"))
                 {
+                    /*
                     const wchar_t* path = (const wchar_t*)payload->Data;
                     std::filesystem::path filePath = Project::GetAssetFileSystemPath(path);
     
@@ -426,9 +431,27 @@ namespace CatEngine
                             CE_CLI_WARN("Could not load texture {0}", texturePath.filename().string());
                         }
                     }
-                    else
+                    */
+
+                    AssetHandle handle = *(AssetHandle*)payload->Data;
+                    const AssetType type = AssetManager::GetAssetType(handle);
+
+                    switch (type)
                     {
+                        case AssetType::Scene:
+                        {
+                            OpenScene(handle);
+                            break;
+                        }
+                        case AssetType::Texture2D:
+                        {
+                            if (m_HoveredEntity && m_HoveredEntity.HasComponent<SpriteRendererComponent>())
+                                m_HoveredEntity.GetComponent<SpriteRendererComponent>().Texture = handle;
+                            break;
+                        }
+                        default: break;
                     }
+
                 }
 
                 ImGui::EndDragDropTarget();
@@ -542,7 +565,7 @@ namespace CatEngine
 			{
 				if (ImGui::MenuItem("New", "Ctrl+N")) NewScene();
 
-				if (ImGui::MenuItem("Open...", "Ctrl+O")) OpenScene();
+				//if (ImGui::MenuItem("Open...", "Ctrl+O")) OpenScene();
 
 				if (ImGui::MenuItem("Save", "Ctrl+S")) SaveScene();
 
@@ -550,7 +573,7 @@ namespace CatEngine
 
 
                 // TODO: Be able to close from here!
-				//if (ImGui::MenuItem("Exit")) Application::Get().CloseEditor();
+				// if (ImGui::MenuItem("Exit")) Application::Get().CloseEditor();
 				ImGui::EndMenu();
 			}
 
@@ -573,9 +596,14 @@ namespace CatEngine
 
         if (m_SceneState == SceneState::Edit)
         {
-            m_SceneFilePath = FileDialog::SaveFile({{"CatEngine Scene", "catscene"}});
-            if (!m_SceneFilePath.empty())
+            m_EditorScenePath = FileDialog::SaveFile({{"CatEngine Scene", "catscene"}});
+            if (!m_EditorScenePath.empty())
                 SaveScene();
+
+            std::filesystem::path relativePath = std::filesystem::relative(m_EditorScenePath, Project::GetAssetDirectory());
+            AssetHandle handle = Project::GetActive()->GetEditorAssetManager()->ImportAsset(relativePath);
+            m_CurrentSceneHandle = handle;
+            m_AssetBrowserPanel.ResetAssetDirectory();
         }
     }
 
@@ -585,57 +613,50 @@ namespace CatEngine
 
         if (m_SceneState == SceneState::Edit)
         {
-            if (!m_SceneFilePath.empty())
+            if (!m_EditorScenePath.empty())
             {
                 SceneSerializer serializer(m_ActiveScene);
-                serializer.Serialize(m_SceneFilePath.string());
-                m_RelativeScenePath = std::filesystem::relative(m_SceneFilePath, Project::GetAssetFileSystemPath());
+                serializer.Serialize(m_EditorScenePath.string());
+                if (AssetManager::IsAssetHandleValid(m_CurrentSceneHandle))
+                {
+                    m_EditorScenePath = Project::GetAssetDirectory() / Project::GetActive()->GetEditorAssetManager()->GetFilePath(m_CurrentSceneHandle);
+                }
+                CE_API_WARN("Attempting to save at {}", m_EditorScenePath.c_str());
             }
             else SaveSceneAs();
+
         }
     }
 
-    void EditorLayer::OpenScene()
+    void EditorLayer::OpenScene(AssetHandle handle)
     {
 		CE_PROFILE_FUNCTION();
 
-        m_SceneFilePath = FileDialog::OpenFile({{"CatEngine Scene", "catscene"}});
-        if (!m_SceneFilePath.empty())
-            OpenScene(m_SceneFilePath);
-    }
-    void EditorLayer::OpenScene(const std::filesystem::path& filePath)
-    {
-		CE_PROFILE_FUNCTION();
+        Ref<Scene> readOnlyScene = AssetManager::GetAsset<Scene>(handle);
+        Ref<Scene> newScene = Scene::Copy(readOnlyScene);
 
-        if (filePath.extension().string() != ".catscene")
-        {
-            CE_CLI_WARN("Could not load {0} - not a scene file", filePath.filename().string());
-            return;
-        }
+        m_EditorScene = newScene;
 
-        Ref<Scene> newScene = CreateRef<Scene>();
-        SceneSerializer serializer(newScene);
-        if (serializer.Deserialize(filePath.string()))
-        {
-            m_EditorScene = newScene;
+        m_EditorScene->OnViewportResize(m_SceneViewportPanel.GetWidth(), m_SceneViewportPanel.GetHeight());
+        m_ActiveScene = m_EditorScene;
+        m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+        m_SceneViewportPanel.SetContext(m_ActiveScene);
+        m_SceneCameraPanel.SetContext(m_ActiveScene);
+        ScriptEngine::SetSceneContext(m_ActiveScene);
 
-            m_EditorScene->OnViewportResize(m_SceneViewportPanel.GetWidth(), m_SceneViewportPanel.GetHeight());
-            m_ActiveScene = m_EditorScene;
-            m_SceneHierarchyPanel.SetContext(m_ActiveScene);
-            m_SceneViewportPanel.SetContext(m_ActiveScene);
-            m_SceneCameraPanel.SetContext(m_ActiveScene);
-            ScriptEngine::SetSceneContext(m_ActiveScene);
-            m_SceneFilePath = filePath;
+        std::filesystem::path savePath = Project::GetAssetDirectory() / Project::GetActive()->GetEditorAssetManager()->GetFilePath(handle);
 
-            m_RelativeScenePath = std::filesystem::relative(m_SceneFilePath, Project::GetAssetFileSystemPath());
-        }
+        m_EditorScenePath = savePath;
+        m_CurrentSceneHandle = handle;
     }
 
     void EditorLayer::NewScene()
     {
 		CE_PROFILE_FUNCTION();
 
-        m_SceneFilePath = std::filesystem::path();
+        m_CurrentSceneHandle = 0;
+        m_EditorScenePath = std::filesystem::path();
+
         m_EditorScene = CreateRef<Scene>();
         m_EditorScene->OnViewportResize(m_SceneViewportPanel.GetWidth(), m_SceneViewportPanel.GetHeight());
         m_ActiveScene = m_EditorScene;
@@ -647,7 +668,7 @@ namespace CatEngine
 
     void EditorLayer::SaveProject()
     {
-        Project::SetCurrentScene(m_RelativeScenePath);
+        Project::SetCurrentScene(m_CurrentSceneHandle);
         Project::Save(m_CurrentProjectPath);
     }
 
@@ -670,13 +691,14 @@ namespace CatEngine
         {
             m_CurrentProjectPath = filePath;
             m_ProjectActive = true;
-            auto startScenePath = Project::GetAssetFileSystemPath(Project::GetConfig().StartScene);
-            if (!startScenePath.empty())
+            auto startScenePath = Project::GetConfig().StartScene;
+            if (AssetManager::IsAssetHandleValid(startScenePath))
                 OpenScene(startScenePath);
             SourceFileCompiler::Init();
-            SourceFileCompiler::AddDirectory(Project::GetAssetFileSystemPath());
+            SourceFileCompiler::AddDirectory(Project::GetAssetDirectory());
             ScriptEngine::ReloadBinaries();
-            m_ContentBrowserPanel.ResetProjectDirectory();
+            m_ContentBrowserPanel.ResetAssetDirectory();
+            m_AssetBrowserPanel.ResetAssetDirectory();
         }
     }
 
@@ -863,7 +885,7 @@ namespace CatEngine
             {
                 if (control)
                 {
-                    OpenScene();
+                    //OpenScene();
                     SaveProject();
                 }
                 break;

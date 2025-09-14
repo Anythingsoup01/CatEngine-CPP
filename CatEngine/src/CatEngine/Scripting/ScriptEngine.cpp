@@ -388,7 +388,7 @@ namespace CatEngine
         });
 
         s_ScriptData->SourceFileReloadPending = false;
-        LoadFileWatcher(Project::GetAssetFileSystemPath());
+        LoadFileWatcher(Project::GetAssetDirectory());
 	}
 
 	bool ScriptEngine::ScriptClassExists(const std::string& fullClassName)

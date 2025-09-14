@@ -8,6 +8,11 @@
 
 #include "CatEngine/Core/System.h" 
 
+#include "CatEngine/AssetManager/AssetManager.h"
+#include "CatEngine/AssetManager/TextureImporter.h"
+
+#include "AssetBrowserPanel.h"
+
 const size_t MAX_FILE_PATH_LEN = 4096;
 
 enum class CreateType
@@ -24,17 +29,18 @@ namespace CatEngine
 {
 
 	ContentBrowserPanel::ContentBrowserPanel()
-		: m_CurrentDirectory(Project::GetAssetFileSystemPath())
+		: m_CurrentDirectory(Project::GetAssetDirectory())
 	{
-		m_DirectoryIcon = Texture2D::Create("Resources/Icons/DirectoryIcon.png");
-		m_FileIcon = Texture2D::Create("Resources/Icons/ScriptFileIcon.png");
+        // TODO: Generate these as assets
+        m_DirectoryIcon = TextureImporter::ImportIconTexture("Resources/Icons/DirectoryIcon.png");
+		m_FileIcon = TextureImporter::ImportIconTexture("Resources/Icons/ScriptFileIcon.png");
 	}
 
 	void ContentBrowserPanel::OnImGuiRender()
 	{
-		ImGui::Begin("Assets");
+		ImGui::Begin("File Browser");
 
-		if (m_CurrentDirectory != Project::GetAssetFileSystemPath())
+		if (m_CurrentDirectory != Project::GetAssetDirectory())
 		{
 			if (ImGui::Button("<-"))
 			{
@@ -66,24 +72,37 @@ namespace CatEngine
                 if (ImGui::BeginDragDropSource())
                 {
                     std::setlocale(LC_ALL, "");
-                    auto relativePath = std::filesystem::relative(path, Project::GetAssetFileSystemPath());
+                    auto relativePath = std::filesystem::relative(path, Project::GetAssetDirectory());
 
                     wchar_t itemPath[MAX_FILE_PATH_LEN] = { 0 };
                     const char* path = relativePath.c_str();
                     mbsrtowcs(itemPath, &path, MAX_FILE_PATH_LEN, NULL);
-                    ImGui::SetDragDropPayload("ASSET_MANAGER_ITEM", itemPath, (wcslen(itemPath) + 1) * sizeof(wchar_t), ImGuiCond_Once);
+                    ImGui::SetDragDropPayload("FILE_BROWSER_ITEM", itemPath, (wcslen(itemPath) + 1) * sizeof(wchar_t), ImGuiCond_Once);
                     ImGui::EndDragDropSource();
                 }
-
-
-                if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+                if (ImGui::BeginPopupContextItem())
                 {
-                    if (directoryEntry.is_directory())
-                        m_CurrentDirectory /= path.filename();
+                    if (ImGui::MenuItem("Load As Asset"))
+                    {
+                        std::filesystem::path relativePath = std::filesystem::relative(path, Project::GetAssetDirectory());
+                        Project::GetActive()->GetEditorAssetManager()->ImportAsset(relativePath);
+                        AssetBrowserPanel::RefreshAssetTree();
+                    }
 
-                    if (directoryEntry.is_regular_file())
-                        System::OpenFile(m_CurrentDirectory / path.filename());
+                    ImGui::EndPopup();
+                }
 
+                if (ImGui::IsItemHovered())
+                {
+                    if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+                    {
+                        if (directoryEntry.is_directory())
+                            m_CurrentDirectory /= path.filename();
+
+                        if (directoryEntry.is_regular_file())
+                            System::OpenFile(m_CurrentDirectory / path.filename());
+
+                    }
                 }
                 ImGui::TextWrapped("%s", filenameString.c_str());
 
@@ -182,14 +201,9 @@ namespace CatEngine
 
 	}
 
-    void ContentBrowserPanel::CreateTemplateSourceFile()
+    void ContentBrowserPanel::ResetAssetDirectory()
     {
-        
-    }
-
-    void ContentBrowserPanel::ResetProjectDirectory()
-    {
-        m_CurrentDirectory = Project::GetAssetFileSystemPath();
+        m_CurrentDirectory = Project::GetAssetDirectory();
     }
 
 }

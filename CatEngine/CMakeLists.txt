@@ -17,6 +17,13 @@ set(SRCS
     src/CatEngine/Scripting/SourceFileCompiler.cpp
     src/CatEngine/ImGui/ImGuiBuild.cpp
     src/CatEngine/ImGui/ImGuiLayer.cpp
+    src/CatEngine/AssetManager/AssetImporter.cpp
+    src/CatEngine/AssetManager/RuntimeAssetManager.cpp
+    src/CatEngine/AssetManager/TextureImporter.cpp
+    src/CatEngine/AssetManager/AssetManagerBase.cpp
+    src/CatEngine/AssetManager/EditorAssetManager.cpp
+    src/CatEngine/AssetManager/SceneImporter.cpp
+    src/CatEngine/AssetManager/AssetManager.cpp
     src/CatEngine/Platform/OpenGL/OpenGLVertexArray.cpp
     src/CatEngine/Platform/OpenGL/OpenGLBuffer.cpp
     src/CatEngine/Platform/OpenGL/OpenGLTexture2D.cpp
@@ -39,6 +46,7 @@ set(SRCS
     src/CatEngine/Core/Input.cpp
     src/CatEngine/Core/Window.cpp
     src/CatEngine/Core/System.cpp
+    src/CatEngine/Core/Formatter.cpp
     src/CatEngine/Core/TimeStep.cpp
     src/CatEngine/Core/Utils.cpp
     src/CatEngine/Core/UUID.cpp
@@ -69,6 +77,14 @@ set(SRCS
     src/CatEngine/Event/KeyEvent.h
     src/CatEngine/Event/ApplicationEvent.h
     src/CatEngine/ImGui/ImGuiLayer.h
+    src/CatEngine/AssetManager/Asset.h
+    src/CatEngine/AssetManager/AssetManagerBase.h
+    src/CatEngine/AssetManager/AssetImporter.h
+    src/CatEngine/AssetManager/TextureImporter.h
+    src/CatEngine/AssetManager/RuntimeAssetManager.h
+    src/CatEngine/AssetManager/AssetManager.h
+    src/CatEngine/AssetManager/EditorAssetManager.h
+    src/CatEngine/AssetManager/SceneImporter.h
     src/CatEngine/Platform/OpenGL/OpenGLVertexArray.h
     src/CatEngine/Platform/OpenGL/OpenGLTexture2D.h
     src/CatEngine/Platform/OpenGL/OpenGLGraphicsContext.h
@@ -104,9 +120,11 @@ set(SRCS
     src/CatEngine/Core/TimeStep.h
     src/CatEngine/Core/Entrypoint.h
     src/CatEngine/Core/Utils.h
+    src/CatEngine/Core/Buffer.h
     src/CatEngine/Core/Core.h
     src/CatEngine/Core/Log.h
     src/CatEngine/Core/MouseCodes.h
+    src/CatEngine/Core/Formatter.h
     src/CatEngine/Core/KeyCodes.h
     src/CatEngine/Core/PlatformDetection.h
     src/CatEngine/Core/Window.h

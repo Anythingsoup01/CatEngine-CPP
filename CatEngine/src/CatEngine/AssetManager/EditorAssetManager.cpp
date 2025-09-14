@@ -1,0 +1,178 @@
+#include "cepch.h"
+#include "EditorAssetManager.h"
+
+#include "AssetImporter.h"
+
+#include "CatEngine/Project/Project.h"
+#include <yaml-cpp/yaml.h>
+
+#include "CatEngine/Core/Formatter.h"
+
+namespace CatEngine
+{
+
+    static std::unordered_map<std::filesystem::path, AssetType> s_AssetExtensionMap = 
+    {
+        { ".catscene", AssetType::Scene },
+        { ".png", AssetType::Texture2D },
+        { ".jpg", AssetType::Texture2D },
+        { ".jpeg", AssetType::Texture2D },
+    };
+
+    static AssetType GetAssetTypeFromFileExtension(const std::filesystem::path& path)
+    {
+        if (!s_AssetExtensionMap.contains(path.extension()))
+        {
+            CE_API_WARN("Extension cannot '{}' be found!", path.extension().c_str());
+            return AssetType::None;
+        }
+
+        return s_AssetExtensionMap[path.extension()];
+    }
+
+    Ref<Asset> EditorAssetManager::GetAsset(AssetHandle handle)
+    {
+        // Check if handle is valid
+        if (!IsAssetHandleValid(handle))
+            return nullptr;
+        // Check if asset needs load
+        Ref<Asset> asset;
+        if (IsAssetLoaded(handle))
+        {
+            asset = m_LoadedAssets[handle];
+        }
+        else
+        {
+            // Load Asset
+            const Asset::MetaData& metaData = GetMetaData(handle);
+            asset = AssetImporter::ImportAsset(handle, metaData);
+            if (!asset) 
+            {
+                CE_API_ERROR("EditorAssetManager::GetAsset - Asset Import Failed!");
+            } // import failed
+
+            m_LoadedAssets[handle] = asset;
+        }
+        // Return Asset
+        return asset;
+    }
+
+    bool EditorAssetManager::IsAssetHandleValid(AssetHandle handle) const
+    {
+        return m_AssetRegistry.contains(handle);
+    }
+
+    bool EditorAssetManager::IsAssetLoaded(AssetHandle handle) const
+    {
+        return m_LoadedAssets.contains(handle);
+    }
+
+    AssetType EditorAssetManager::GetAssetType(AssetHandle handle) const
+    {
+
+        if (!IsAssetHandleValid(handle))
+            return AssetType::None;
+
+        return m_AssetRegistry.at(handle).Type;
+    }
+
+    AssetHandle EditorAssetManager::ImportAsset(const std::filesystem::path& filePath)
+    {
+        AssetHandle handle;
+        Asset::MetaData metaData;
+
+        metaData.FilePath = filePath;
+        metaData.Type = GetAssetTypeFromFileExtension(filePath);
+
+        Ref<Asset> asset = AssetImporter::ImportAsset(handle, metaData);
+        if (asset)
+        {
+            asset->m_Handle = handle;
+            m_LoadedAssets[handle] = asset;
+            m_AssetRegistry[handle] = metaData;
+            SerializeAssetRegistry();
+
+            return handle;
+        }
+        return 0;
+    }
+    void EditorAssetManager::DeleteAsset(AssetHandle handle)
+    {
+        if (!m_AssetRegistry.contains(handle))
+            CE_API_ASSERT(false, "Failed to find asset!");
+
+        m_AssetRegistry.erase(handle);
+
+        if (m_LoadedAssets.contains(handle))
+            m_LoadedAssets.erase(handle);
+    }
+
+    const Asset::MetaData& EditorAssetManager::GetMetaData(AssetHandle handle) const
+    {
+        static Asset::MetaData s_NullMetaData;
+        if (!IsAssetHandleValid(handle))
+            return s_NullMetaData;
+
+        return m_AssetRegistry.at(handle);
+    }
+
+    const std::filesystem::path& EditorAssetManager::GetFilePath(AssetHandle handle) const
+    {
+        return GetMetaData(handle).FilePath;
+    }
+
+    void EditorAssetManager::SerializeAssetRegistry()
+    {
+        auto path = Project::GetAssetRegistryPath();
+
+        std::ofstream fout(path);
+        if (!fout.is_open())
+        {
+            CE_API_ASSERT(false, "No Asset Registry Found!");
+            return;
+        }
+
+		YAML::Emitter out;
+		out << YAML::BeginMap; // Root
+		out << YAML::Key << "AssetRegistry" << YAML::Value;
+
+        out << YAML::BeginSeq;
+        for (const auto& [handle, metaData] : m_AssetRegistry)
+        {
+            out << YAML::BeginMap; // Asset
+            out << YAML::Key << "Handle" << YAML::Value << handle;
+            std::string filePathStr = metaData.FilePath.generic_string();
+            out << YAML::Key << "FilePath" << YAML::Value << filePathStr;
+            out << YAML::Key << "Type" << YAML::Value << AssetTypeToString(metaData.Type);
+            out << YAML::EndMap;
+        }
+        out <<  YAML::EndSeq;
+
+        out << YAML::EndMap; // Root 
+
+        fout << out.c_str();
+
+    }
+
+    bool EditorAssetManager::DeserializeAssetRegistry()
+    {
+        YAML::Node data = YAML::LoadFile(Project::GetAssetRegistryPath());
+
+        auto registryNode = data["AssetRegistry"];
+        if (!registryNode)
+            return false;
+
+        for (const auto& node : registryNode)
+        {
+            AssetHandle handle = node["Handle"].as<AssetHandle>();
+            auto& metaData = m_AssetRegistry[handle];
+            metaData.FilePath = node["FilePath"].as<std::string>();
+            metaData.Type = StringToAssetType(node["Type"].as<std::string>());
+        }
+
+        return true;
+
+    }
+
+
+}

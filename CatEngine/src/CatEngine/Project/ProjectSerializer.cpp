@@ -3,6 +3,8 @@
 
 #include <yaml-cpp/yaml.h>
 
+#include "CatEngine/Core/Formatter.h"
+
 namespace CatEngine
 {
     bool ProjectSerializer::Serialize(const std::filesystem::path& filePath)
@@ -17,7 +19,8 @@ namespace CatEngine
         out << YAML::BeginMap; // Project
         out << YAML::Key << "Name" << YAML::Value << config.Name;
         out << YAML::Key << "AssetDirectory" << YAML::Value << config.AssetDirectory.string();
-        out << YAML::Key << "StartScene" << YAML::Value << config.StartScene.string();
+        out << YAML::Key << "AssetRegistryPath" << YAML::Value << config.AssetRegistryPath.string();
+        out << YAML::Key << "StartScene" << YAML::Value << config.StartScene;
         out << YAML::EndMap;
 
 		std::ofstream fout(filePath);
@@ -47,9 +50,9 @@ namespace CatEngine
 
         config.Name = projectNode["Name"].as<std::string>();
         config.AssetDirectory = projectNode["AssetDirectory"].as<std::string>();
-        config.StartScene = projectNode["StartScene"].as<std::string>();
+        config.AssetRegistryPath = projectNode["AssetRegistryPath"].as<std::string>();
+        config.StartScene = projectNode["StartScene"].as<AssetHandle>();
 
-        CE_API_INFO("{}", config.AssetDirectory.string());
         return true;
     }
 }

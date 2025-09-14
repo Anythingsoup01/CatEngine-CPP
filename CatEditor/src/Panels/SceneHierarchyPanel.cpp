@@ -11,6 +11,8 @@
 
 #include "CatEngine/Scripting/ScriptEngine.h"
 
+#include "CatEngine/AssetManager/AssetManager.h"
+
 namespace CatEngine
 {
 	SceneHierarchyPanel::SceneHierarchyPanel(const Ref<Scene>& scene)
@@ -242,25 +244,53 @@ namespace CatEngine
 		DrawComponent<SpriteRendererComponent>("Sprite Renderer", selection, [](auto& component) 
 		{
 			ImGuiDraw::DrawColorEdit4Control("Color", component.Color);
-			
-            if (component.Texture)
-                ImGui::ImageButton("##Texture", (void*)(uint64_t)component.Texture->GetRendererID(), {100, 100}, {0, 1}, {1, 0});
-            else
-                ImGui::Button("Texture", {100, 100});
+		
+            std::string label = "None";
+            AssetHandle handle = component.Texture;
+            if (handle != 0)
+            {
+                if (AssetManager::IsAssetHandleValid(handle) && AssetManager::GetAssetType(handle) == AssetType::Texture2D)
+                {
+                    const auto& metaData = Project::GetActive()->GetEditorAssetManager()->GetMetaData(handle);
+                    std::string fileName = metaData.FilePath.filename().string();
+                    size_t extensionLen = metaData.FilePath.extension().string().length();
+                    fileName.erase(fileName.length() - extensionLen);
+                    label = fileName;
+                }
+            }
+
+            ImVec2 buttonLabelSize = ImGui::CalcTextSize(label.c_str());
+            buttonLabelSize.x = glm::max<float>(100.0f, buttonLabelSize.x);
+            ImGui::Button(label.c_str(), buttonLabelSize);
+
 			if (ImGui::BeginDragDropTarget())
 			{
 				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSET_MANAGER_ITEM"))
 				{
-					const wchar_t* path = (const wchar_t*)payload->Data;
-					std::filesystem::path texturePath = std::filesystem::path("SampleProject/Assets") / path;
-					Ref<Texture2D> texture = Texture2D::Create(texturePath.string());
-					if (texture->IsLoaded())
-						component.Texture = texture;
-					else
-						CE_API_WARN("Could not load texture {0}", texturePath.filename().string());
-				}
+					AssetHandle handle = *(AssetHandle*)payload->Data;
+                    const AssetType type = AssetManager::GetAssetType(handle);
+
+                    if (type == AssetType::Texture2D)
+                    {
+                        component.Texture = handle;
+                    }
+                    else
+                    {
+                        CE_API_WARN("Cannot explicitly convert {0} to Texture2D", AssetTypeToString(type));
+                    }
+                }
 				ImGui::EndDragDropTarget();
 			}
+            if (strncmp(label.c_str(), "None", 4) != 0)
+            {
+                ImGui::SameLine();
+                if (ImGui::Button("X"))
+                {
+                    component.Texture = 0;
+                }
+            }
+
+
 
 			ImGuiDraw::DrawVec1Control("Tiling Factor", component.TilingFactor, 0.1f, 0.f, 100.f);
 		});

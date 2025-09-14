@@ -8,14 +8,16 @@ namespace CatEngine
 	class OpenGLTexture2D : public Texture2D
 	{
 	public:
-		OpenGLTexture2D(const std::filesystem::path& path);
-		OpenGLTexture2D(const uint32_t& width, const uint32_t& height);
+		OpenGLTexture2D(const TextureSpecification& specification, Buffer data);
 		~OpenGLTexture2D();
 
-		virtual uint32_t GetWidth() const override { return m_Width; };
-		virtual uint32_t GetHeight() const override { return m_Height; };
+        virtual const TextureSpecification& GetSpecification() const override { return m_Specification; }
 
-		virtual void SetData(void* data, uint32_t size) override;
+		virtual uint32_t GetWidth() const override { return m_Specification.Width; };
+		virtual uint32_t GetHeight() const override { return m_Specification.Height; };
+        virtual uint32_t GetRendererID() const override { return m_RendererID; }
+
+		virtual void SetData(Buffer data) override;
 
 		virtual void Bind(uint32_t slot) const override;
 
@@ -26,14 +28,10 @@ namespace CatEngine
             return m_RendererID == other.GetRendererID();
         }
 
-        virtual uint32_t GetRendererID() const override { return m_RendererID; }
-
-        virtual std::filesystem::path& GetFilePath() override { return m_Path; }
     private:
-        std::filesystem::path m_Path;
         bool m_IsLoaded = false;
-        uint32_t m_Width, m_Height;
-        GLenum m_InternalFormat, m_Format;
+        GLenum m_InternalFormat, m_DataFormat;
+        TextureSpecification m_Specification;
         RendererID m_RendererID;
     };
 }

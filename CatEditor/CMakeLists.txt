@@ -3,12 +3,15 @@ set(SRCS
     src/ImGui/ImGuiDraw.cpp
     src/Panels/SceneHierarchyPanel.cpp
     src/Panels/SceneViewportPanel.cpp
+    src/Panels/AssetBrowserPanel.cpp
     src/Panels/ContentBrowserPanel.cpp
     src/EditorLayer.cpp
     src/ImGui/ImGuiDraw.h
     src/Panels/ContentBrowserPanel.h
+    src/Panels/Panel.h
     src/Panels/SceneViewportPanel.h
     src/Panels/SceneHierarchyPanel.h
+    src/Panels/AssetBrowserPanel.h
     src/EditorLayer.h
 )
 add_executable(CatEditor ${SRCS})

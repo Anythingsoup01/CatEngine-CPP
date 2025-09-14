@@ -6,6 +6,8 @@
 #include "CatEngine/Core/TimeStep.h"
 #include "CatEngine/Core/UUID.h"
 
+#include "CatEngine/AssetManager/Asset.h"
+
 class b2World;
 
 namespace CatEngine
@@ -13,7 +15,7 @@ namespace CatEngine
 
     class Entity;
 
-    class Scene
+    class Scene : public Asset
     {
     public:
         Scene();
@@ -59,6 +61,9 @@ namespace CatEngine
         entt::registry& GetReg() { return m_Registry; }
 
         bool IsRunning() { return m_IsRunning; }
+
+        static AssetType GetStaticType() { return AssetType::Scene; }
+        virtual AssetType GetType() const { return GetStaticType(); }
 
     private:
         template<typename T>

@@ -11,12 +11,12 @@ namespace CatEngine
 	{
 
 		glm::vec4 Color{ 1.f, 1.f, 1.f, 1.f };
-		Ref<Texture2D> Texture;
+	    AssetHandle Texture;
 		float TilingFactor = 1.0f;
 
 		SpriteRendererComponent() = default;
 		SpriteRendererComponent(const SpriteRendererComponent&) = default;
-		SpriteRendererComponent(const glm::vec4& color, const Ref<Texture2D>& texture)
+		SpriteRendererComponent(const glm::vec4& color, AssetHandle texture)
 			: Color(color), Texture(texture) {}
 	};
 }

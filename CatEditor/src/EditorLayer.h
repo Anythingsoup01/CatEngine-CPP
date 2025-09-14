@@ -5,6 +5,7 @@
 #include "imgui.h"
 
 #include "Panels/ContentBrowserPanel.h"
+#include "Panels/AssetBrowserPanel.h"
 #include "Panels/SceneHierarchyPanel.h"
 #include "Panels/SceneViewportPanel.h"
 
@@ -43,8 +44,7 @@ namespace CatEngine
 		void SaveSceneAs();
 		void SaveScene();
 
-		void OpenScene();
-		void OpenScene(const std::filesystem::path& filePath);
+		void OpenScene(AssetHandle handle);
 		
 		void NewScene();
 
@@ -71,10 +71,8 @@ namespace CatEngine
 
     private:
 
-		std::filesystem::path m_SceneFilePath;
         std::filesystem::path m_CurrentProjectPath;
-
-        std::filesystem::path m_RelativeScenePath;
+        std::filesystem::path m_EditorScenePath;
 
         EditorCamera m_EditorCamera;
 
@@ -93,6 +91,8 @@ namespace CatEngine
         Ref<Scene> m_ActiveScene;
         Ref<Scene> m_EditorScene;
 
+        AssetHandle m_CurrentSceneHandle = 0;
+
         Entity m_HoveredEntity;
         Entity m_CopiedEntity;
 
@@ -100,6 +100,7 @@ namespace CatEngine
         SceneViewportPanel m_SceneCameraPanel;
         SceneHierarchyPanel m_SceneHierarchyPanel;
         ContentBrowserPanel m_ContentBrowserPanel;
+        AssetBrowserPanel m_AssetBrowserPanel;
 		
         int m_GizmoType = -1;
 
