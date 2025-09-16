@@ -42,6 +42,24 @@ namespace CatEngine
 		{"Rigidbody2DComponent", ScriptFieldType::Rigidbody2DComponent},
 
 	};
+
+    static bool IsVariable(const char* line, std::string& outVariableType, std::string& outVariableName)
+    {
+        for (auto& [keyword, sft] : s_ScriptFieldTypeMap)
+        {
+            if (strncmp(line, keyword.c_str(), keyword.length()) == 0)
+            {
+                std::string lineStr(line);
+                outVariableType = keyword;
+                lineStr.erase(0, keyword.length());
+                size_t equalSign = lineStr.find_first_of('=');
+                outVariableName = lineStr.substr(0, equalSign);
+                return true;
+            }
+        }
+
+        return false;
+    }
 		
     ScriptFieldType StringToScriptFieldType(const std::string& type)
     {
@@ -125,44 +143,67 @@ namespace CatEngine
 
     void ScriptClass::SetFieldsFromFile(const std::filesystem::path& filePath)
     {
-        std::unordered_map<std::string, std::string> variables;
     
         std::ifstream in(filePath);
         if (!in.is_open())
         {
-            fprintf(stderr, "Failed to open file!\n");
+            CE_API_ERROR("Failed to open file '{}'", filePath.string());
             return;
         }
 
         std::string line;
 
+        bool isPublicVariable = false;
+        bool inClass = false;
+        bool firstLoopInClass = true;
+
+        int openingBrackets = 0, closingBrackets = 0;
+
+        std::unordered_map<std::string, std::string> variables;
+
         while (std::getline(in, line))
         {
-            if (strncmp(line.c_str(), "extern \"C\" CatEngine::IScriptObject* create()", 33) == 0)
-                break;
+            std::string lineParse = line;
+            lineParse.erase(remove_if(lineParse.begin(), lineParse.end(), isspace), lineParse.end());
 
-            else if (strncmp(line.c_str(), "extern \"C\"", 10) == 0)
+            if (strncmp(lineParse.c_str(), "#definePUBLIC", 13) == 0)
+                isPublicVariable = true;
+
+            if (strncmp(lineParse.c_str(), "#definePRIVATE", 14) == 0)
+                isPublicVariable = false;
+
+
+            if (strncmp(lineParse.c_str(), "class", 5) == 0)
             {
-                size_t linePos = 11; // One more than ^
-                size_t space = line.find_first_of(" ", linePos);
-                std::string variableType = line.substr(linePos, space - linePos);
-                linePos = space + 1;
-
-                if (strncmp(variableType.c_str(), "const", 5) == 0)
-                {
-                    space = line.find_first_of(" ", linePos);
-                    std::string extra = line.substr(linePos, space - linePos);
-                    variableType.append(" ").append(extra);
-                    linePos = space + 1;
-                }
-
-
-                space = line.find_first_of(" ", linePos);
-                std::string variableName = line.substr(linePos, space - linePos);
-
-                variables.emplace(std::pair<std::string, std::string>(variableName, variableType));
+                inClass = true;
             }
+
+            if (inClass)
+            {
+                if (lineParse.find("{") != std::string::npos)
+                    openingBrackets++;
+                if (lineParse.find("}") != std::string::npos)
+                    closingBrackets++;
+
+                if (openingBrackets == closingBrackets && !firstLoopInClass)
+                    inClass = false;
+
+
+                // Keep at end!
+                firstLoopInClass = false;
+            }
+            else
+            {
+                std::string variableType, variableName;
+                if (IsVariable(lineParse.c_str(), variableType, variableName) && isPublicVariable)
+                {
+                    CE_API_INFO("{} - {}", variableType, variableName);
+                    variables.emplace(std::pair<std::string, std::string>(variableName, variableType));
+                }
+            }
+
         }
+    
 
         for (auto& [name, type] : variables)
         {
@@ -367,7 +408,6 @@ namespace CatEngine
 		//CE_CLI_TRACE(s_ScriptData->ReloadTimer.ElapsedMillis());
 #endif
 		//CE_API_TRACE(s_ScriptData->ReloadTimer.ElapsedMillis());
-        CE_API_INFO("BINARIES RELOADED!");
         SourceFileCompiler::CopyAndPrepareFiles();
         SourceFileCompiler::CompileFiles();
 

@@ -257,7 +257,7 @@ namespace CatEngine
 
             FileDescription fd;
             fd.Name = fileName;
-            
+            fd.Path = path;
             fileName.append("-int");
 
             fileName.append(extension);
@@ -275,7 +275,6 @@ namespace CatEngine
                 std::cout << "Failed to create file!\n";
                 return;
             }
-            fd.Path = filePath;
             // TODO: STORE THE PROJECT NAME SOMEWHERE
             filePath.erase(0, Project::GetAssetDirectory().string().length() + 1);
 
@@ -296,7 +295,7 @@ namespace CatEngine
             fd.CompilePath = compilePath / compileName;
 
 
-            m_FilesToBeCompiled[fd.Path] = fd;
+            m_FilesToBeCompiled[filePath] = fd;
         }
         m_FilesToBePrepared.clear();
 
@@ -330,11 +329,9 @@ namespace CatEngine
 
     void SourceFileCompiler::CompileFiles()
     {
-            CE_API_INFO("RECOMPILING!");
             Application::Get().SubmitToMainThread([](){
                 for (auto& [path, fd] : m_FilesToBeCompiled)
                 {
-                    CE_API_INFO("COMILING: {}", fd.Name);
                     std::stringstream ss;
                     ss << "cd " << Project::GetAssetDirectory() << "; " << GetBuildCommandVariables(fd);
                     system(ss.str().c_str());
@@ -344,6 +341,10 @@ namespace CatEngine
                     {
                         m_CompiledFiles.emplace(std::pair<std::filesystem::path, FileDescription>(path, fd));
                     }
+                    std::filesystem::path absolutePath = Project::GetAssetDirectory() / path;
+                    ss.str("");
+                    ss << "rm " <<  absolutePath.generic_string();
+                    system(ss.str().c_str());
                 }
                 m_FilesToBeCompiled.clear();
             });
