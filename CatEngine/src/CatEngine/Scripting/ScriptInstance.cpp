@@ -8,7 +8,6 @@ namespace CatEngine
 	ScriptInstance::ScriptInstance(Ref<ScriptClass> scriptClass, Entity entity)
 		: m_ScriptClass(scriptClass)
 	{ 
-		// Put specific events here - i.e. Start, Update, Awake, Collision, Possibly Triggers
 		m_Instance = scriptClass->Instantiate();
 
 	}

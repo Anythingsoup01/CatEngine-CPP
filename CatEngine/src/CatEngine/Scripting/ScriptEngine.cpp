@@ -141,6 +141,7 @@ namespace CatEngine
         for (auto& [uuid, instance] : s_ScriptData->EntityInstances)
         {
             instance->InvokeDeleteScript();
+            instance = nullptr;
         }
 		s_ScriptData->EntityInstances.clear();
 		

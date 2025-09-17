@@ -135,6 +135,7 @@ namespace CatEngine
         while (std::getline(in, line))
         {
             std::string lineParse = line;
+            lineParse.erase(remove_if(lineParse.begin(), lineParse.end(), isspace), lineParse.end());
 
             if (strncmp(lineParse.c_str(), "#definePUBLIC", 13) == 0)
                 isPublicVariable = true;
