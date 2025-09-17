@@ -10,26 +10,6 @@
 
 namespace CatEngine
 {
-
-    enum class KeyWordType
-    {
-        None = 0,
-        Digit, String, Char, Bool, Vec2, Vec3, Vec4,
-        TransformComponent, Rigidbody2DComponent
-    };
-
-    static std::vector<const char*> s_Keywords =
-    {
-        "float", "double",
-		"char",
-		"int16_t", "int32_t", "int", "int64_t", 
-        "bool",
-		"uint16_t", "uint32_t", "unsigned int", "uint64_t",
-		"std::string",
-		"glm::vec2", "glm::vec3", "glm::vec4",
-		"TransformComponent", "Rigidbody2DComponent",
-    };
-
     bool InLine(const char* line, const char* word)
     {
         size_t len = strlen(word);
@@ -46,7 +26,7 @@ namespace CatEngine
 
         return false;
     }
-    
+
 
     KeyWordType GetKeyWord(const char* line)
     {
@@ -120,14 +100,11 @@ namespace CatEngine
         defaultVariable = ";";
         return false;
     }
-    
+
     void SourceFileCompiler::AddFile(const std::filesystem::path& filePath)
     {
         std::string extension = filePath.extension();
         std::string fileName = filePath.filename();
-
-        if (extension.length() > 4)
-            return;
 
         if (strncmp(extension.c_str(), ".cpp", 4) != 0)
             return;
@@ -150,14 +127,35 @@ namespace CatEngine
                 if (strncmp(entryFileName.c_str(), fileName.c_str(), fileNameLen) != 0)
                     continue;
 
-                m_FilesToBePrepared.push_back(entry.path());
+                CopyAndPrepareFile(entry.path());
 
             }
 
         }
 
     }
-    // TODO: When switching to Asset Manager, Only look for .catscript files!
+    void SourceFileCompiler::RemoveFile(const std::filesystem::path& filePath)
+    {
+        bool found = false;
+
+        int index = 0;
+        for (auto& fd : m_CompiledFiles)
+        {
+            if (fd.SourceFilePath == filePath)
+            {
+                found = true;
+            }
+            index++;
+        }
+
+        if (!found)
+        {
+            CE_API_ERROR("Failed to locate and remove '{}'", filePath.string());
+            return;
+        }
+        m_CompiledFiles.erase(m_CompiledFiles.begin() + index);
+    }
+
     void SourceFileCompiler::AddDirectory(const std::filesystem::path& directory) 
     {
         for (const auto& entry : std::filesystem::recursive_directory_iterator(directory)) 
@@ -173,10 +171,7 @@ namespace CatEngine
 
                 if (strncmp(extension.c_str(), ".cpp", 4) == 0)
                 {
-                    fileName.erase(fileName.length() - 4); // erases .cpp
-                    std::string intermediate = fileName.substr(fileName.length() - 4);
-                    if (strncmp(intermediate.c_str(), "-int", 4) != 0)
-                        m_FilesToBePrepared.push_back(filePath);
+                    CopyAndPrepareFile(filePath, true);
                 }
 
             }
@@ -184,124 +179,116 @@ namespace CatEngine
         }
     }
 
-    void SourceFileCompiler::CopyAndPrepareFiles()
+    void SourceFileCompiler::CopyAndPrepareFile(const std::filesystem::path& filePath, bool initialLoad)
     {
-        for (auto& path : m_FilesToBePrepared)
+        std::ifstream in(filePath);
+        if (!in.is_open())
         {
-            CE_API_WARN(path.string());
-            std::ifstream in(path);
-            if (!in.is_open())
-                CE_API_ASSERT(false, "Failed to open file: {}", path.string().c_str());
-    
-            std::stringstream ss; ss << in.rdbuf();
-            std::string line;
-
-            std::stringstream out;
-
-            bool inClass = false;
-            bool firstLoopInClass = true;
-
-            int openingBrackets = 0, closingBrackets = 0;
-
-            std::string className;
-
-            while (std::getline(ss, line))
-            {
-                std::string lineParse = line;
-                lineParse.erase(remove_if(lineParse.begin(), lineParse.end(), isspace), lineParse.end());
-
-                if (strncmp(lineParse.c_str(), "class", 5) == 0)
-                {
-                    inClass = true;
-                    size_t eow = lineParse.find(":", 5);
-                    className = lineParse.substr(5, eow - 5);
-                }
-
-                if (inClass)
-                {
-                    if (lineParse.find("{") != std::string::npos)
-                        openingBrackets++;
-                    if (lineParse.find("}") != std::string::npos)
-                        closingBrackets++;
-
-                    if (openingBrackets == closingBrackets && !firstLoopInClass)
-                        inClass = false;
-
-
-                    // Keep at end!
-                    firstLoopInClass = false;
-                }
-                else
-                {
-                    if (IsVariable(lineParse.c_str()))
-                    {
-                        std::stringstream ss;
-
-                        line.erase(line.length() - 1);
-                        ss << "extern \"C\" " << line;
-                        std::string defaultVariable;
-                        NeedsDefaultVariable(line, defaultVariable);
-                        ss << defaultVariable;
-                        line = ss.str();
-                    }
-
-                }
-                out << line << "\n";
-            }
-            std::filesystem::path pathCPY = path;
-            std::string fileNameStr = path.filename().string();
-            std::string filePath = pathCPY.remove_filename();
-
-            size_t extensionPos = fileNameStr.find(".");
-            std::string extension = fileNameStr.substr(extensionPos);
-            std::string fileName = fileNameStr.substr(0, extensionPos);
-
-            FileDescription fd;
-            fd.Name = fileName;
-            fd.Path = path;
-            fileName.append("-int");
-
-            fileName.append(extension);
-
-            filePath.append(fileName);
-
-            std::stringstream inCheckSS;
-            std::ifstream inCheck(filePath);
-            if (inCheck.is_open())
-                inCheckSS << inCheck.rdbuf();
-
-            std::ofstream outStream(filePath);
-            if (!outStream.is_open())
-            {
-                std::cout << "Failed to create file!\n";
-                return;
-            }
-            // TODO: STORE THE PROJECT NAME SOMEWHERE
-            filePath.erase(0, Project::GetAssetDirectory().string().length() + 1);
-
-            out << "extern \"C\" CatEngine::IScriptObject* create() { return new " << className << "; }\n"
-                << "extern \"C\" void destroy(CatEngine::IScriptObject* script) { delete script; }";
-            
-            outStream << out.str();
-            outStream.close();
-
-            fd.FileName = fileName;
-            fd.RelativePath = filePath;
-
-            std::filesystem::path compilePath = Project::GetAssetFileSystemPath(".build");
-            std::string objName = fd.Name; objName.append("-int.o");
-            std::string compileName = "lib"; compileName.append(fd.Name).append("-int.so");
-
-            fd.ObjPath = compilePath / objName;
-            fd.CompilePath = compilePath / compileName;
-
-
-            m_FilesToBeCompiled[filePath] = fd;
+            CE_API_ERROR("Failed to open file : {}", filePath.string());
+            return;
         }
-        m_FilesToBePrepared.clear();
+
+        std::stringstream copy; copy << in.rdbuf();
+
+        in.close();
+
+        std::ofstream out(filePath, std::ios::out | std::ios::trunc);
+        if (!out.is_open())
+        {
+            CE_API_ERROR("Failed to open file : {}", filePath.string());
+            return;
+        }
+
+        std::string line;
+        bool inClass = false;
+        bool firstLoopInClass = true;
+
+        int openingBrackets = 0, closingBrackets = 0;
+        while (getline(copy, line))
+        {
+            std::string lineParse = line;
+            lineParse.erase(remove_if(lineParse.begin(), lineParse.end(), isspace), lineParse.end());
+
+            if (strncmp(lineParse.c_str(), "class", 5) == 0)
+            {
+                inClass = true;
+            }
+
+            if (inClass)
+            {
+                if (lineParse.find("{") != std::string::npos)
+                    openingBrackets++;
+                if (lineParse.find("}") != std::string::npos)
+                    closingBrackets++;
+
+                if (openingBrackets == closingBrackets && !firstLoopInClass)
+                    inClass = false;
+
+
+                // Keep at end!
+                firstLoopInClass = false;
+            }
+            else
+            {
+                if (IsVariable(lineParse.c_str()))
+                {
+                    std::stringstream ss;
+
+                    line.erase(line.length() - 1);
+                    ss << "extern \"C\" " << line;
+                    std::string defaultVariable;
+                    NeedsDefaultVariable(line, defaultVariable);
+                    ss << defaultVariable;
+                    line = ss.str();
+                }
+            }
+
+            out << line << "\n";
+        }
+        out.close();
+
+        std::string fileName = filePath.filename();
+        fileName.erase(fileName.length() - 4);
+
+        std::string libFilePath = ".build/lib";
+        libFilePath.append(fileName).append(".so");
+        std::filesystem::path sharedObjectPath = s_ProjectAssetPath / libFilePath;
+
+        std::string objectFilePath = ".build/";
+        objectFilePath.append(fileName).append(".o");
+        std::filesystem::path objectPath = s_ProjectAssetPath / objectFilePath;
+
+        FileDescription fd;
+        fd.Name = fileName;
+        fd.SharedObjectPath = sharedObjectPath;
+        fd.ObjectPath = objectPath;
+        fd.SourceFilePath = filePath;
+
+        std::ifstream check(sharedObjectPath, std::ios::in | std::ios::binary);
+        if (!check.is_open() || !initialLoad)
+        {
+            CompileFile(fd);
+        }
+        else
+        {
+            m_CompiledFiles.push_back(fd);
+        }
+
+        std::ofstream out1(filePath, std::ios::out | std::ios::trunc);
+        if (!out1.is_open())
+        {
+            CE_API_ERROR("Failed to open file : {}", filePath.string());
+            return;
+        }
+
+        out1 << copy.str();
+
+        out1.close();
+
 
     }
 
+    
     std::string SourceFileCompiler::GetBuildCommandVariables(const FileDescription& fd)
     {
 
@@ -312,7 +299,7 @@ namespace CatEngine
         CatEngineVND.append("/vendor");
 
         std::stringstream ss;
-        ss << "gcc -c " << fd.Path.string() << " -o " << fd.ObjPath.string() << " \\\n"
+        ss << "gcc -c " << fd.SourceFilePath.string() << " -o " << fd.ObjectPath.string() << " \\\n"
            << "-I" << CatEngineSRC << " \\\n"
            << "-I" << CatEngineVND << "/spdlog/include \\\n"
            << "-I" << CatEngineVND << "/glm \\\n"
@@ -322,50 +309,40 @@ namespace CatEngine
            << "-fPIC; \n";
      
 
-        ss << "gcc -shared " << fd.ObjPath << " -o " << fd.CompilePath << " -L" << rootCatEnginePath.string() << "/build/CatEngine -lCatEngine -ldl -lstdc++\\\n";
+        ss << "gcc -shared " << fd.ObjectPath << " -o " << fd.SharedObjectPath << " -L" << rootCatEnginePath.string() << "/build/CatEngine -lCatEngine -ldl -lstdc++\\\n";
         
         return ss.str();
 
     }
 
-    void SourceFileCompiler::CompileFiles()
+    void SourceFileCompiler::CompileFile(FileDescription fd)
     {
-            Application::Get().SubmitToMainThread([](){
-                for (auto& [path, fd] : m_FilesToBeCompiled)
-                {
-                    std::stringstream ss;
-                    ss << "cd " << Project::GetAssetDirectory() << "; " << GetBuildCommandVariables(fd);
-                    system(ss.str().c_str());
+            Application::Get().SubmitToMainThread([fd](){
+                std::stringstream ss;
+                ss << "cd " << Project::GetAssetDirectory() << "; " << GetBuildCommandVariables(fd);
+                system(ss.str().c_str());
 
-                    auto it = m_CompiledFiles.find(path);
-                    if (it == m_CompiledFiles.end())
+                bool fileExists = false;
+
+                for (auto& file : m_CompiledFiles)
+                {
+                    if (fd.Name == file.Name)
                     {
-                        m_CompiledFiles.emplace(std::pair<std::filesystem::path, FileDescription>(path, fd));
+                        fileExists = true;
+                        break;
                     }
-                    std::filesystem::path absolutePath = Project::GetAssetDirectory() / path;
-                    ss.str("");
-                    ss << "rm " <<  absolutePath.generic_string();
-                    system(ss.str().c_str());
                 }
-                m_FilesToBeCompiled.clear();
+
+                if (!fileExists)
+                    m_CompiledFiles.push_back(fd);
             });
 
     }
 
+
     void SourceFileCompiler::Init()
     {
-        if (!std::filesystem::exists(Project::GetAssetFileSystemPath(".build")))
-        {
-            std::filesystem::create_directory(Project::GetAssetFileSystemPath(".build"));
-            std::stringstream ss;
-            ss << "cd " << Project::GetAssetFileSystemPath(".build") << "; cmake ..; cmake -DCMAKE_BUILD_TYPE=Release .";
-            system(ss.str().c_str());
-        }
-    }
-
-    std::unordered_map<std::filesystem::path, FileDescription> SourceFileCompiler::GetIntermediateFiles()
-    {
-        return m_CompiledFiles;
+        s_ProjectAssetPath = Project::GetAssetDirectory();
     }
 
 }

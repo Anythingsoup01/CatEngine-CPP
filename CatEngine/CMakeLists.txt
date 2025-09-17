@@ -13,6 +13,8 @@ set(SRCS
     src/CatEngine/Renderer/EditorCamera.cpp
     src/CatEngine/Renderer/Buffer.cpp
     src/CatEngine/Scripting/ScriptGlue.cpp
+    src/CatEngine/Scripting/ScriptClass.cpp
+    src/CatEngine/Scripting/ScriptInstance.cpp
     src/CatEngine/Scripting/ScriptEngine.cpp
     src/CatEngine/Scripting/SourceFileCompiler.cpp
     src/CatEngine/ImGui/ImGuiBuild.cpp
@@ -68,7 +70,10 @@ set(SRCS
     src/CatEngine/Renderer/Framebuffer.h
     src/CatEngine/Renderer/Texture.h
     src/CatEngine/Scripting/IScriptObject.h
+    src/CatEngine/Scripting/CatScriptCore.h
     src/CatEngine/Scripting/ScriptInclude.h
+    src/CatEngine/Scripting/ScriptInstance.h
+    src/CatEngine/Scripting/ScriptClass.h
     src/CatEngine/Scripting/ScriptEngine.h
     src/CatEngine/Scripting/SourceFileCompiler.h
     src/CatEngine/Scripting/ScriptGlue.h
