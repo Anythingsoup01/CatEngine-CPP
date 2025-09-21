@@ -7,6 +7,7 @@
 #include "CatEngine/Core/UUID.h"
 
 #include "CatEngine/AssetManager/Asset.h"
+#include "CatEngine/Scene/ContactListener.h"
 
 class b2World;
 
@@ -22,7 +23,6 @@ namespace CatEngine
         ~Scene();
 
 		static Ref<Scene> Copy(Ref<Scene> other);
-
 
 		Entity CreateEntity(const std::string& name = std::string());
 		Entity CreateEntityWithUUID(UUID uuid, const std::string& name = std::string());
@@ -62,6 +62,7 @@ namespace CatEngine
 
         bool IsRunning() { return m_IsRunning; }
 
+
         static AssetType GetStaticType() { return AssetType::Scene; }
         virtual AssetType GetType() const { return GetStaticType(); }
 
@@ -70,6 +71,7 @@ namespace CatEngine
 		    void OnComponentAdded(Entity entity, T& component);
 
 		void OnPhysics2DStart();
+        void OnPhysics2DUpdate(Time ts);
 		void OnPhysics2DStop();
 
         void OnScriptStart();
@@ -80,6 +82,7 @@ namespace CatEngine
         std::unordered_map<UUID, entt::entity> m_EntityMap;
 
         b2World* m_PhysicsWorld = nullptr;
+        ContactListener m_ContactListenter;
 
 		bool m_IsRunning = false;
 		bool m_IsPaused = false;

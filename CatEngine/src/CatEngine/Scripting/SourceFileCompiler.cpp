@@ -314,6 +314,7 @@ namespace CatEngine
            << "-I" << CatEngineVND << "/glm \\\n"
            << "-I" << CatEngineVND << "/entt \\\n"
            << "-I" << CatEngineVND << "/Glad/include \\\n"
+           << "-I" << CatEngineVND << "/Box2D/include \\\n"
            << "-DCE_SCRIPT_COMPILATION \\\n"
            << "-fPIC; \n";
      

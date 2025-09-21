@@ -1,4 +1,5 @@
 #include "CatEngine/Core/Core.h"
+#include "CatEngine/Scene/Entity.h"
 #include "cepch.h"
 #include "ScriptInstance.h"
 
@@ -61,8 +62,17 @@ namespace CatEngine
     {
         m_ScriptClass->DeleteScript(m_Instance);
     }
+    void ScriptInstance::InvokeOnCollisionEnter(const Entity& other)
+    {
+        m_Instance->OnCollisionEnter(other);
+    }
 
-	bool ScriptInstance::GetFieldDataInternal(const std::string& name, void* buffer)
+    void ScriptInstance::InvokeOnCollisionExit(const Entity& other)
+    {
+        m_Instance->OnCollisionExit(other);
+    }
+	
+    bool ScriptInstance::GetFieldDataInternal(const std::string& name, void* buffer)
     {
         const auto& fields = m_ScriptClass->GetFields();
         auto it = fields.find(name);

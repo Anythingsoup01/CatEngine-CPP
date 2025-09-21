@@ -219,11 +219,14 @@ namespace CatEngine
             }
             else
             {
-                std::string name;
-                ScriptField sf = GetField(m_Instance, line.c_str(), name);
-                if (!name.empty())
+                if (isPublicVariable)
                 {
-                    m_Fields[name] = sf;
+                    std::string name;
+                    ScriptField sf = GetField(m_Instance, line.c_str(), name);
+                    if (!name.empty())
+                    {
+                        m_Fields[name] = sf;
+                    }
                 }
             }
 

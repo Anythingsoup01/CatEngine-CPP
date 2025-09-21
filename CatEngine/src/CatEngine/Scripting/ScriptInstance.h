@@ -18,6 +18,9 @@ namespace CatEngine
 		void InvokeStartMethod();
         void InvokeDeleteScript();
 
+        void InvokeOnCollisionEnter(const Entity& other);
+        void InvokeOnCollisionExit(const Entity& other);
+
 		Ref<ScriptClass> GetScriptClass() { return m_ScriptClass; }
 
 		template<typename T>

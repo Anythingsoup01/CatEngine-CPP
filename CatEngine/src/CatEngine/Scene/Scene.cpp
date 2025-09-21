@@ -6,6 +6,7 @@
 
 #include "CatEngine/Renderer/Renderer2D.h"
 
+#include <cstdint>
 #include <glm/glm.hpp>
 
 #include <box2d/b2_world.h>
@@ -218,29 +219,8 @@ namespace CatEngine
 				}
 			}
 			// Physics 2D
+            OnPhysics2DUpdate(time);
 
-			{
-				const int32_t velocityIterations = 6;
-				const int32_t positionIterations = 6;
-
-				m_PhysicsWorld->Step(time.deltaTime(), velocityIterations, positionIterations);
-
-				// Retrieve transform from Box2D
-				auto view = m_Registry.view<Rigidbody2DComponent>();
-				for (auto e : view)
-				{
-					Entity entity{ e, this };
-					auto& transform = entity.GetComponent<TransformComponent>();
-					auto& rb2d = entity.GetComponent<Rigidbody2DComponent>();
-                    
-					b2Body* body = (b2Body*)rb2d.RuntimeBody;
-					const auto& position = body->GetPosition();
-					transform.Position.x = position.x;
-					transform.Position.y = position.y;
-					transform.Rotation.z = body->GetAngle();
-				}
-
-			}
 		}
 		// Render 2D 
 		Camera* mainCamera = nullptr;
@@ -385,6 +365,7 @@ namespace CatEngine
 		CE_PROFILE_FUNCTION();
 
 		m_PhysicsWorld = new b2World({ 0.0f, -9.8f });
+        m_PhysicsWorld->SetContactListener(&m_ContactListenter);
         auto view = m_Registry.view<Rigidbody2DComponent>();
 		for (auto e : view)
 		{
@@ -413,6 +394,7 @@ namespace CatEngine
                 fixtureDef.friction = bc2d.Friction;
                 fixtureDef.restitution = bc2d.Restitution;
                 fixtureDef.restitutionThreshold = bc2d.RestitutionThreshold;
+                fixtureDef.userData.pointer = static_cast<uintptr_t>(entity.GetUUID());
                 body->CreateFixture(&fixtureDef);
             }
     
@@ -432,6 +414,30 @@ namespace CatEngine
                 fixtureDef.restitutionThreshold = cc2d.RestitutionThreshold;
                 body->CreateFixture(&fixtureDef);
             }
+        }
+
+    }
+
+    void Scene::OnPhysics2DUpdate(Time ts)
+    {
+        const int32_t velocityIterations = 6;
+        const int32_t positionIterations = 6;
+
+        m_PhysicsWorld->Step(ts.deltaTime(), velocityIterations, positionIterations);
+
+        // Retrieve transform from Box2D
+        auto view = m_Registry.view<Rigidbody2DComponent>();
+        for (auto e : view)
+        {
+            Entity entity{ e, this };
+            auto& transform = entity.GetComponent<TransformComponent>();
+            auto& rb2d = entity.GetComponent<Rigidbody2DComponent>();
+
+            b2Body* body = (b2Body*)rb2d.RuntimeBody;
+            const auto& position = body->GetPosition();
+            transform.Position.x = position.x;
+            transform.Position.y = position.y;
+            transform.Rotation.z = body->GetAngle();
         }
 
     }
@@ -462,7 +468,7 @@ namespace CatEngine
 	{
 		CE_PROFILE_FUNCTION();
 
-		Entity newEntity = CreateEntity(entity.GetName() + "(Copied from " + entity.GetName() + ")");
+		Entity newEntity = CreateEntity(entity.GetName() + "(Copy)");
 		CopyComponentIfExists(AllComponents{}, newEntity, entity);
 		return newEntity;
 	}
