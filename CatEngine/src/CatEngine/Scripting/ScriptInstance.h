@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CatScriptCore.h"
+#include <unordered_map>
 
 namespace CatEngine
 {
@@ -9,12 +10,16 @@ namespace CatEngine
 	{
 	public:
 		ScriptInstance(Ref<ScriptClass> scriptClass, Entity entity);
+        ~ScriptInstance();
 
         void SetEntityID(UUID entityID);
 
 		void InvokeUpdateMethod(float ts);
 		void InvokeStartMethod();
         void InvokeDeleteScript();
+
+        void InvokeOnCollisionEnter(const Entity& other);
+        void InvokeOnCollisionExit(const Entity& other);
 
 		Ref<ScriptClass> GetScriptClass() { return m_ScriptClass; }
 
@@ -43,6 +48,8 @@ namespace CatEngine
 		Ref<ScriptClass> m_ScriptClass;
 
 		CatScriptObject* m_Instance = nullptr;
+
+        std::unordered_map<std::string, void*> m_DefaultFieldDatas;
 
 		static inline char s_FieldValueBuffer[8];
 

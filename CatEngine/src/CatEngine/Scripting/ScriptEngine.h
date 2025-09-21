@@ -10,6 +10,13 @@
 
 namespace CatEngine
 {
+
+    enum class CollisionType
+    {
+        None = 0,
+        Begin, End,
+    };
+
     class Scene;
     class Entity;
 
@@ -31,6 +38,8 @@ namespace CatEngine
 		static bool ScriptClassExists(const std::string& fullClassName);
 		static void OnStartEntity(Entity e);
 		static void OnUpdateEntity(Entity e, float ts);
+
+        static void DispatchCollisionEvent(UUID entityA, UUID entityB, CollisionType type);
 
 		static Ref<Scene> GetSceneContext();
 		static Ref<ScriptInstance> GetEntityScriptInstance(UUID entityID);

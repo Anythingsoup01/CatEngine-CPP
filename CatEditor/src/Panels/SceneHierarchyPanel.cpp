@@ -526,8 +526,6 @@ namespace CatEngine
 								scriptInstance->SetFieldData(name, &data);
 							break;
 						}
-						case ScriptFieldType::Byte:
-							break;
 						case ScriptFieldType::UInt16:
 						{
 							uint16_t data = scriptInstance->GetFieldData<uint16_t>(name);
@@ -673,8 +671,6 @@ namespace CatEngine
 								}
 								break;
 							}
-							case ScriptFieldType::Byte:
-								break;
 							case ScriptFieldType::UInt16:
 							{
 								ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
@@ -828,8 +824,6 @@ namespace CatEngine
 								}
 								break;
 							}
-							case ScriptFieldType::Byte:
-								break;
 							case ScriptFieldType::UInt16:
 							{
 								uint16_t data = 0;

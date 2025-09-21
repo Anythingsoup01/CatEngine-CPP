@@ -1,3 +1,5 @@
+#include "CatEngine/Core/Core.h"
+#include "CatEngine/Core/Log.h"
 #include "cepch.h"
 #include "ScriptEngine.h"
 
@@ -141,8 +143,9 @@ namespace CatEngine
         for (auto& [uuid, instance] : s_ScriptData->EntityInstances)
         {
             instance->InvokeDeleteScript();
-            instance = nullptr;
         }
+
+
 		s_ScriptData->EntityInstances.clear();
 		
 		if (s_ScriptData->SourceFileReloadPending || !s_ScriptData->MainThreadQueue.empty())
@@ -164,7 +167,9 @@ namespace CatEngine
             {
                 auto it = s_ScriptData->EntityClasses.find(fd.Name);
                 if (it != s_ScriptData->EntityClasses.end())
+                {
                     s_ScriptData->EntityClasses.erase(it);
+                }
                 s_ScriptData->EntityClasses[fd.Name] = CreateRef<ScriptClass>(fd.SharedObjectPath);
                 s_ScriptData->EntityClasses[fd.Name]->SetFieldsFromFile(fd.SourceFilePath);
             }
@@ -221,6 +226,32 @@ namespace CatEngine
 		}
 
 	}
+
+    void ScriptEngine::DispatchCollisionEvent(UUID uuidA, UUID uuidB, CollisionType type)
+    {
+        Ref<ScriptInstance> scriptA, scriptB;
+        if (s_ScriptData->EntityInstances.find(uuidA) != s_ScriptData->EntityInstances.end())
+            scriptA = s_ScriptData->EntityInstances[uuidA];
+
+        if (s_ScriptData->EntityInstances.find(uuidB) != s_ScriptData->EntityInstances.end())
+            scriptB = s_ScriptData->EntityInstances[uuidB];
+
+        const auto& entityA = s_ScriptData->SceneContext->GetEntityByUUID(uuidA);
+        const auto& entityB = s_ScriptData->SceneContext->GetEntityByUUID(uuidB);
+
+        switch (type)
+        {
+            case CollisionType::Begin:
+                if (scriptA) scriptA->InvokeOnCollisionEnter(entityB);
+                if (scriptB) scriptB->InvokeOnCollisionEnter(entityA);
+                break;
+            case CollisionType::End:
+                if (scriptA) scriptA->InvokeOnCollisionExit(entityB);
+                if (scriptB) scriptB->InvokeOnCollisionExit(entityA);
+                break;
+            default: break;
+        }
+    }
 
 	Ref<Scene> ScriptEngine::GetSceneContext()
 	{

@@ -204,7 +204,9 @@ namespace CatEngine
         bool firstLoopInClass = true;
 
         int openingBrackets = 0, closingBrackets = 0;
-        while (getline(copy, line))
+        std::string className;
+
+        while (std::getline(copy, line))
         {
             std::string lineParse = line;
             lineParse.erase(remove_if(lineParse.begin(), lineParse.end(), isspace), lineParse.end());
@@ -212,6 +214,8 @@ namespace CatEngine
             if (strncmp(lineParse.c_str(), "class", 5) == 0)
             {
                 inClass = true;
+                size_t eow = lineParse.find(":", 5);
+                className = lineParse.substr(5, eow - 5);
             }
 
             if (inClass)
@@ -245,6 +249,10 @@ namespace CatEngine
 
             out << line << "\n";
         }
+
+        out << "extern \"C\" CatEngine::IScriptObject* create() { return new " << className << "; }\n"
+            << "extern \"C\" void destroy(CatEngine::IScriptObject* script) { delete script; }";
+
         out.close();
 
         std::string fileName = filePath.filename();
@@ -273,6 +281,7 @@ namespace CatEngine
         {
             m_CompiledFiles.push_back(fd);
         }
+
 
         std::ofstream out1(filePath, std::ios::out | std::ios::trunc);
         if (!out1.is_open())
@@ -305,6 +314,7 @@ namespace CatEngine
            << "-I" << CatEngineVND << "/glm \\\n"
            << "-I" << CatEngineVND << "/entt \\\n"
            << "-I" << CatEngineVND << "/Glad/include \\\n"
+           << "-I" << CatEngineVND << "/Box2D/include \\\n"
            << "-DCE_SCRIPT_COMPILATION \\\n"
            << "-fPIC; \n";
      
@@ -317,25 +327,23 @@ namespace CatEngine
 
     void SourceFileCompiler::CompileFile(FileDescription fd)
     {
-            Application::Get().SubmitToMainThread([fd](){
-                std::stringstream ss;
-                ss << "cd " << Project::GetAssetDirectory() << "; " << GetBuildCommandVariables(fd);
-                system(ss.str().c_str());
+        std::stringstream ss;
+        ss << "cd " << Project::GetAssetDirectory() << "; " << GetBuildCommandVariables(fd);
+        system(ss.str().c_str());
 
-                bool fileExists = false;
+        bool fileExists = false;
 
-                for (auto& file : m_CompiledFiles)
-                {
-                    if (fd.Name == file.Name)
-                    {
-                        fileExists = true;
-                        break;
-                    }
-                }
+        for (auto& file : m_CompiledFiles)
+        {
+            if (fd.Name == file.Name)
+            {
+                fileExists = true;
+                break;
+            }
+        }
 
-                if (!fileExists)
-                    m_CompiledFiles.push_back(fd);
-            });
+        if (!fileExists)
+            m_CompiledFiles.push_back(fd);
 
     }
 

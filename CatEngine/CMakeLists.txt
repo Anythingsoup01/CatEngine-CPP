@@ -44,6 +44,7 @@ set(SRCS
     src/CatEngine/Scene/SceneSerializer.cpp
     src/CatEngine/Scene/Components/Components.cpp
     src/CatEngine/Scene/SceneCamera.cpp
+    src/CatEngine/Scene/ContactListener.cpp
     src/CatEngine/Scene/Entity.cpp
     src/CatEngine/Core/Input.cpp
     src/CatEngine/Core/Window.cpp
@@ -110,6 +111,7 @@ set(SRCS
     src/CatEngine/Scene/Scene.h
     src/CatEngine/Scene/Entity.h
     src/CatEngine/Scene/ScriptObject.h
+    src/CatEngine/Scene/ContactListener.h
     src/CatEngine/Scene/Components/3D/TransformComponent.h
     src/CatEngine/Scene/Components/Required/InformationComponents.h
     src/CatEngine/Scene/Components/Renderer/CameraComponent.h

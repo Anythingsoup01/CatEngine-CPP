@@ -1,7 +1,10 @@
+#include "CatEngine/Core/Core.h"
+#include "CatEngine/Scene/Entity.h"
 #include "cepch.h"
 #include "ScriptInstance.h"
 
 #include "ScriptClass.h"
+#include <cstring>
 
 namespace CatEngine
 {
@@ -9,8 +12,37 @@ namespace CatEngine
 		: m_ScriptClass(scriptClass)
 	{ 
 		m_Instance = scriptClass->Instantiate();
+        for (auto& [name, field] :scriptClass->GetFields())
+        {
+            size_t valueSize = TypeToSize(field.Type);
+            void* copy = malloc(valueSize);
+            if (copy == nullptr)
+            {
+                CE_API_ASSERT(false, "Failed to malloc data! : NAME - {}", name);
+            }
+
+            memcpy(copy, field.ClassField, valueSize);
+
+            if(copy == nullptr)
+            {
+                CE_API_ASSERT(false, "Failed to memcpy data! : NAME - {}", name);
+            }
+
+            m_DefaultFieldDatas[name] = copy;
+        }
 
 	}
+
+    ScriptInstance::~ScriptInstance()
+    {
+        for (auto& [name, data] : m_DefaultFieldDatas)
+        {
+            SetFieldDataInternal(name, data);
+            free(data);
+        }
+
+        m_DefaultFieldDatas.clear();
+    }
 
     void ScriptInstance::SetEntityID(UUID entityID)
     {
@@ -30,8 +62,17 @@ namespace CatEngine
     {
         m_ScriptClass->DeleteScript(m_Instance);
     }
+    void ScriptInstance::InvokeOnCollisionEnter(const Entity& other)
+    {
+        m_Instance->OnCollisionEnter(other);
+    }
 
-	bool ScriptInstance::GetFieldDataInternal(const std::string& name, void* buffer)
+    void ScriptInstance::InvokeOnCollisionExit(const Entity& other)
+    {
+        m_Instance->OnCollisionExit(other);
+    }
+	
+    bool ScriptInstance::GetFieldDataInternal(const std::string& name, void* buffer)
     {
         const auto& fields = m_ScriptClass->GetFields();
         auto it = fields.find(name);
