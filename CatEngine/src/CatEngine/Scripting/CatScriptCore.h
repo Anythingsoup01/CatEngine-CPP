@@ -30,6 +30,7 @@ namespace CatEngine
 	struct ScriptFieldInstance
 	{
 		ScriptField Field;
+		
 		ScriptFieldInstance()
 		{
 			memset(m_Data, 0, sizeof(m_Data));

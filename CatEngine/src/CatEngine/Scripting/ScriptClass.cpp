@@ -1,7 +1,10 @@
+#include "CatEngine/Scripting/CatScriptCore.h"
 #include "cepch.h"
 #include "ScriptClass.h"
 
 #include "ScriptInstance.h"
+#include <cstdint>
+#include <cstring>
 
 #ifdef CE_PLATFORM_LINUX
 #include <dlfcn.h>
@@ -32,8 +35,8 @@ namespace CatEngine
 		{"Rigidbody2DComponent", ScriptFieldType::Rigidbody2DComponent},
 
 	};
-    
-    static bool IsVariable(const char* line, std::string& outVariableType, std::string& outVariableName)
+
+    static bool IsVariable(const char* line, std::string& outVariableType, std::string& outVariableName, void* outVariableValue)
     {
         for (auto& [keyword, sft] : s_ScriptFieldTypeMap)
         {
@@ -43,14 +46,18 @@ namespace CatEngine
                 outVariableType = keyword;
                 lineStr.erase(0, keyword.length());
                 size_t equalSign = lineStr.find_first_of('=');
-                outVariableName = lineStr.substr(0, equalSign);
+                if (equalSign == std::string::npos)
+                    outVariableName = lineStr.substr(0 , lineStr.length() - 1); // Erases ";" character
+                else
+                    outVariableName = lineStr.substr(0, equalSign);
+                
                 return true;
             }
         }
 
         return false;
     }
-		
+
     ScriptFieldType StringToScriptFieldType(const std::string& type)
     {
         auto it = s_ScriptFieldTypeMap.find(type);
@@ -62,7 +69,7 @@ namespace CatEngine
         return ScriptFieldType::None;
     }
 
-    void* GetVariableSymbol(void* handle, ScriptFieldType type, const std::string& symbolName)
+    void* GetVariableSymbol(CatScriptClass* handle, ScriptFieldType type, const std::string& symbolName)
     {
         void* out = nullptr;
 
@@ -92,16 +99,65 @@ namespace CatEngine
         return out;
 
     }
+
+    bool IsTrue(const std::string& value)
+    {
+        if (strncmp(value.c_str(), "true", 4) == 0)
+            return true;
+        return false;
+    }
+
+    ScriptField GetField(CatScriptClass* instance, const char* line, std::string& outName)
+    {
+        ScriptField sf;
+        std::string type, value;
+
+        std::string lineStr(line);
+
+        for (auto& [keyword, sft] : s_ScriptFieldTypeMap)
+        {
+            if (strncmp(line, keyword.c_str(), keyword.length()) == 0)
+            {
+                sf.Type = sft;
+                type = keyword;
+                lineStr.erase(0, keyword.length());
+                size_t equalSign = lineStr.find_first_of('=');
+                if (equalSign != std::string::npos)
+                    outName = lineStr.substr(0, equalSign);
+                else
+                    outName = lineStr.substr(0 , lineStr.length() - 1); // Erases ";" character
+
+                outName.erase(remove_if(outName.begin(), outName.end(), isspace), outName.end()); // Removes and folling and trailing spaces
+
+                sf.ClassField = GetVariableSymbol(instance, sft, outName);
+                if (sf.ClassField == nullptr)
+                {
+                    CE_API_CRITICAL("NULL DETECTED: {0}:{1}", type, outName);
+                    outName = "";
+                    return ScriptField();
+                }
+                break;
+            }
+        }
+        return sf;
+
+    }
+
     ScriptClass::ScriptClass(const std::filesystem::path& path)
         : m_Path(path)
     {
 #       ifdef CE_PLATFORM_LINUX
         m_Instance = dlopen(path.c_str(), RTLD_LAZY | RTLD_LOCAL);
-#       endif
         CE_API_ASSERT(m_Instance, dlerror());
 
+        CE_API_WARN("Library Path : {}", path.string());
+
         m_CreateScript = (create_t*)dlsym(m_Instance, "create");
+        CE_API_ASSERT(m_CreateScript, dlerror());
         m_DestroyScript = (destroy_t*)dlsym(m_Instance, "destroy");
+        CE_API_ASSERT(m_DestroyScript, dlerror());
+
+#       endif
     }
 
     ScriptClass::~ScriptClass()
@@ -165,29 +221,16 @@ namespace CatEngine
             }
             else
             {
-                std::string variableType, variableName;
-                if (IsVariable(lineParse.c_str(), variableType, variableName) && isPublicVariable)
+                std::string name;
+                ScriptField sf = GetField(m_Instance, line.c_str(), name);
+                if (!name.empty())
                 {
-                    CE_API_INFO("{} - {}", variableType, variableName);
-                    variables.emplace(std::pair<std::string, std::string>(variableName, variableType));
+                    CE_API_INFO("{}", name);
+                    m_Fields[name] = sf;
                 }
             }
 
         }
     
-
-        for (auto& [name, type] : variables)
-        {
-            ScriptField sf;
-            sf.Type = StringToScriptFieldType(type);
-            sf.Name = name;
-            sf.ClassField = GetVariableSymbol(m_Instance, sf.Type, name);
-            if (sf.ClassField == nullptr)
-            {
-                CE_API_CRITICAL("NULL DETECTED: {0}:{1}", type, name);
-            }
-            m_Fields.emplace(std::pair<std::string, ScriptField>(name, sf));
-        }
-
     }
 }

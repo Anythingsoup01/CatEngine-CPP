@@ -164,7 +164,9 @@ namespace CatEngine
             {
                 auto it = s_ScriptData->EntityClasses.find(fd.Name);
                 if (it != s_ScriptData->EntityClasses.end())
+                {
                     s_ScriptData->EntityClasses.erase(it);
+                }
                 s_ScriptData->EntityClasses[fd.Name] = CreateRef<ScriptClass>(fd.SharedObjectPath);
                 s_ScriptData->EntityClasses[fd.Name]->SetFieldsFromFile(fd.SourceFilePath);
             }
