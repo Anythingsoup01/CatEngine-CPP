@@ -138,11 +138,19 @@ namespace CatEngine
 	void ScriptEngine::OnRuntimeStop()
 	{
 		s_ScriptData->SceneContext = nullptr;
+        std::vector<UUID> scriptUUIDs;
         for (auto& [uuid, instance] : s_ScriptData->EntityInstances)
         {
             instance->InvokeDeleteScript();
-            instance = nullptr;
+            scriptUUIDs.push_back(uuid);
         }
+
+        for (auto& uuid : scriptUUIDs)
+        {
+            //s_ScriptData->EntityInstances[uuid]->ResetFieldData();
+        }
+
+
 		s_ScriptData->EntityInstances.clear();
 		
 		if (s_ScriptData->SourceFileReloadPending || !s_ScriptData->MainThreadQueue.empty())

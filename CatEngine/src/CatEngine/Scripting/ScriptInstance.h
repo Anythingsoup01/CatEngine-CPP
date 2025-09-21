@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CatScriptCore.h"
+#include <unordered_map>
 
 namespace CatEngine
 {
@@ -9,6 +10,7 @@ namespace CatEngine
 	{
 	public:
 		ScriptInstance(Ref<ScriptClass> scriptClass, Entity entity);
+        ~ScriptInstance();
 
         void SetEntityID(UUID entityID);
 
@@ -43,6 +45,8 @@ namespace CatEngine
 		Ref<ScriptClass> m_ScriptClass;
 
 		CatScriptObject* m_Instance = nullptr;
+
+        std::unordered_map<std::string, void*> m_DefaultFieldDatas;
 
 		static inline char s_FieldValueBuffer[8];
 

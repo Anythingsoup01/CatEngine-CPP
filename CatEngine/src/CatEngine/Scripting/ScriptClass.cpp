@@ -150,8 +150,6 @@ namespace CatEngine
         m_Instance = dlopen(path.c_str(), RTLD_LAZY | RTLD_LOCAL);
         CE_API_ASSERT(m_Instance, dlerror());
 
-        CE_API_WARN("Library Path : {}", path.string());
-
         m_CreateScript = (create_t*)dlsym(m_Instance, "create");
         CE_API_ASSERT(m_CreateScript, dlerror());
         m_DestroyScript = (destroy_t*)dlsym(m_Instance, "destroy");
@@ -225,7 +223,6 @@ namespace CatEngine
                 ScriptField sf = GetField(m_Instance, line.c_str(), name);
                 if (!name.empty())
                 {
-                    CE_API_INFO("{}", name);
                     m_Fields[name] = sf;
                 }
             }

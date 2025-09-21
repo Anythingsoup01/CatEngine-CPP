@@ -1,7 +1,9 @@
+#include "CatEngine/Core/Core.h"
 #include "cepch.h"
 #include "ScriptInstance.h"
 
 #include "ScriptClass.h"
+#include <cstring>
 
 namespace CatEngine
 {
@@ -9,8 +11,37 @@ namespace CatEngine
 		: m_ScriptClass(scriptClass)
 	{ 
 		m_Instance = scriptClass->Instantiate();
+        for (auto& [name, field] :scriptClass->GetFields())
+        {
+            size_t valueSize = TypeToSize(field.Type);
+            void* copy = malloc(valueSize);
+            if (copy == nullptr)
+            {
+                CE_API_ASSERT(false, "Failed to malloc data! : NAME - {}", name);
+            }
+
+            memcpy(copy, field.ClassField, valueSize);
+
+            if(copy == nullptr)
+            {
+                CE_API_ASSERT(false, "Failed to memcpy data! : NAME - {}", name);
+            }
+
+            m_DefaultFieldDatas[name] = copy;
+        }
 
 	}
+
+    ScriptInstance::~ScriptInstance()
+    {
+        for (auto& [name, data] : m_DefaultFieldDatas)
+        {
+            SetFieldDataInternal(name, data);
+            free(data);
+        }
+
+        m_DefaultFieldDatas.clear();
+    }
 
     void ScriptInstance::SetEntityID(UUID entityID)
     {
