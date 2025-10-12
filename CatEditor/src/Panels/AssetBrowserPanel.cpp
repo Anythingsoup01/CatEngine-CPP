@@ -75,9 +75,32 @@ namespace CatEngine
             std::string itemStr = item.generic_string();
 
             ImGui::PushID(itemStr.c_str());
-            Ref<Texture2D> icon = isDirectory ? m_DirectoryIcon : m_FileIcon;
-            ImGui::ImageButton((ImTextureID)(uint64_t)icon->GetRendererID(), { thumbnailSize, thumbnailSize }, { 0, 1 }, { 1, 0 });
+            Ref<Texture2D> fileIcon;
+            AssetHandle handle = m_TreeNodes[treeNodeIndex].Handle;
 
+            AssetType type;
+
+            const Ref<Asset>& asset = Project::GetActive()->GetEditorAssetManager()->GetAsset(handle);
+            if (asset)
+            {
+                type = asset->GetType();
+            }
+
+
+
+            if (type == AssetType::Texture2D && !item.extension().string().empty())
+            {
+                const auto& asset = Project::GetActive()->GetEditorAssetManager()->GetAsset(handle);
+                fileIcon = (const Ref<Texture2D>&)asset;
+                if (fileIcon == nullptr)
+                {
+                    CE_CLI_ERROR("Failed to load Texture2D!");
+                }
+            }
+
+            fileIcon = fileIcon == nullptr ? m_FileIcon : fileIcon;
+            Ref<Texture2D> icon = isDirectory ? m_DirectoryIcon : fileIcon;
+            ImGui::ImageButton((ImTextureID)(uint64_t)icon->GetRendererID(), { thumbnailSize, thumbnailSize }, { 0, 1 }, { 1, 0 });
             if (ImGui::BeginDragDropSource())
             {
                 AssetHandle handle = m_TreeNodes[treeNodeIndex].Handle;
