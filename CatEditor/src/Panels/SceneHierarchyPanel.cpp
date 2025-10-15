@@ -109,10 +109,18 @@ namespace CatEngine
 		ImGuiTreeNodeFlags flags = ((m_SelectionContext == entity) ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
 		bool opened = ImGui::TreeNodeEx((void*)(uint64_t)(uint32_t)entity, flags, name.c_str());
 
-		if (ImGui::IsItemClicked())
-		{
+        if (ImGui::BeginDragDropSource())
+        {
+            UUID entityID = entity.GetUUID();
+            ImGui::SetDragDropPayload("SCENE_HIERARCHY_ITEM", &entityID, sizeof(entityID));
+            ImGui::EndDragDropSource();
+        }
+
+        if (ImGui::IsMouseDoubleClicked(0) && ImGui::IsItemHovered())
+        {
 			m_SelectionContext = entity;
-		}
+        }
+
 		bool entityDeleted = false;
 		if (ImGui::BeginPopupContextItem())
 		{
@@ -575,8 +583,28 @@ namespace CatEngine
 								scriptInstance->SetFieldData(name, &data);
 							break;
 						}
-						case ScriptFieldType::TransformComponent:
-							break;
+                        case ScriptFieldType::TransformComponent:
+                        {
+                            TransformComponent data = scriptInstance->GetFieldData<TransformComponent>(name);
+                            ImGui::Button("TransformComponent (Has Data)");
+                            if (ImGui::BeginDragDropTarget())
+                            {
+                                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SCENE_HIERARCHY_ITEM"))
+                                {
+                                    UUID entityID = *(UUID*)payload->Data;
+                                    auto entity = m_Context->GetEntityByUUID(entityID);
+
+                                    if (entity.HasComponent<TransformComponent>())
+                                    {
+                                        data = entity.GetComponent<TransformComponent>();
+                                        scriptInstance->SetFieldData(name, &data);
+                                    }
+                                }
+                                ImGui::EndDragDropTarget();
+                            }
+                            break;
+
+                        }
 						case ScriptFieldType::Rigidbody2DComponent:
 							break;
 						}
@@ -739,7 +767,28 @@ namespace CatEngine
 								break;
 							}
 							case ScriptFieldType::TransformComponent:
+                            {
+                                ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
+								TransformComponent data = scriptFieldInstance.GetValue<TransformComponent>();
+                                ImGui::Button("TransformComponent (Has Data)");
+                                if (ImGui::BeginDragDropTarget())
+                                {
+                                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SCENE_HIERARCHY_ITEM"))
+                                    {
+                                        UUID entityID = *(UUID*)payload->Data;
+                                        auto entity = m_Context->GetEntityByUUID(entityID);
+
+                                        if (entity.HasComponent<TransformComponent>())
+                                        {
+                                            data = entity.GetComponent<TransformComponent>();
+                                            scriptFieldInstance.SetValue(data);
+                                        }
+                                    }
+                                    ImGui::EndDragDropTarget();
+                                }
 								break;
+
+                            }
 							case ScriptFieldType::Rigidbody2DComponent:
 								break;
 							}
@@ -750,7 +799,7 @@ namespace CatEngine
 							{
 							case ScriptFieldType::Float:
 							{
-								float data = 0.0f;
+								float data = *(float*)field.ClassField;
 								if (ImGui::DragFloat(name.c_str(), &data))
 								{
 									ScriptFieldInstance& sfi = scriptFields[name];
@@ -761,7 +810,7 @@ namespace CatEngine
 							}
 							case ScriptFieldType::Double:
 							{
-								double data = 0.0f;
+								double data = *(double*)field.ClassField;
 								float dataCon = (float)data;
 								if (ImGui::DragFloat(name.c_str(), &dataCon))
 								{
@@ -779,7 +828,7 @@ namespace CatEngine
 								break;
 							case ScriptFieldType::Int16:
 							{
-								int16_t data = 0;
+								int16_t data = *(int16_t*)field.ClassField;
 								int dataCon = (int)data;
 								if (ImGui::DragInt(name.c_str(), &dataCon))
 								{
@@ -791,7 +840,7 @@ namespace CatEngine
 							}
 							case ScriptFieldType::Int32:
 							{
-								int32_t data = 0;
+								int32_t data = *(int32_t*)field.ClassField;
 								int dataCon = (int)data;
 								if (ImGui::DragInt(name.c_str(), &dataCon))
 								{
@@ -803,7 +852,7 @@ namespace CatEngine
 							}
 							case ScriptFieldType::Int64:
 							{
-								int64_t data = 0;
+								int64_t data = *(int64_t*)field.ClassField;
 								int dataCon = (int)data;
 								if (ImGui::DragInt(name.c_str(), &dataCon))
 								{
@@ -815,7 +864,7 @@ namespace CatEngine
 							}
 							case ScriptFieldType::Boolean:
 							{
-								bool data = false;
+								bool data = *(bool*)field.ClassField;
 								if (ImGui::Checkbox(name.c_str(), &data))
 								{
 									ScriptFieldInstance& sfi = scriptFields[name];
@@ -826,7 +875,7 @@ namespace CatEngine
 							}
 							case ScriptFieldType::UInt16:
 							{
-								uint16_t data = 0;
+								uint16_t data = *(uint16_t*)field.ClassField;
 								int dataCon = (int)data;
 								if (ImGui::DragInt(name.c_str(), &dataCon))
 								{
@@ -838,7 +887,7 @@ namespace CatEngine
 							}
 							case ScriptFieldType::UInt32:
 							{
-								uint32_t data = 0;
+								uint32_t data = *(uint32_t*)field.ClassField;
 								int dataCon = (int)data;
 								if (ImGui::DragInt(name.c_str(), &dataCon))
 								{
@@ -850,7 +899,7 @@ namespace CatEngine
 							}
 							case ScriptFieldType::UInt64:
 							{
-								uint64_t data = 0;
+								uint64_t data = *(uint64_t*)field.ClassField;
 								int dataCon = (int)data;
 								if (ImGui::DragInt(name.c_str(), &dataCon))
 								{
@@ -866,7 +915,7 @@ namespace CatEngine
 							}
 							case ScriptFieldType::Vector2:
 							{
-								glm::vec2 data{ 0,0 };
+								glm::vec2 data = *(glm::vec2*)field.ClassField;
 								if (ImGui::DragFloat2(name.c_str(), glm::value_ptr(data)))
 								{
 									ScriptFieldInstance& sfi = scriptFields[name];
@@ -877,7 +926,7 @@ namespace CatEngine
 							}
 							case ScriptFieldType::Vector3:
 							{
-								glm::vec3 data{ 0,0,0 };
+								glm::vec3 data = *(glm::vec3*)field.ClassField;
 								if (ImGui::DragFloat3(name.c_str(), glm::value_ptr(data)))
 								{
 									ScriptFieldInstance& sfi = scriptFields[name];
@@ -888,7 +937,7 @@ namespace CatEngine
 							}
 							case ScriptFieldType::Vector4:
 							{
-								glm::vec4 data{ 0,0,0,0 };
+								glm::vec4 data = *(glm::vec4*)field.ClassField;
 								if (ImGui::DragFloat4(name.c_str(), glm::value_ptr(data)))
 								{
 									ScriptFieldInstance& sfi = scriptFields[name];
@@ -896,10 +945,34 @@ namespace CatEngine
 									sfi.SetValue(data);
 								}
 								break;
-							}
+                            }
 
-							}
-						}
+                            case ScriptFieldType::TransformComponent:
+                            {
+                                ImGui::Button("TransformComponent (empty)");
+                                if (ImGui::BeginDragDropTarget())
+                                {
+                                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SCENE_HIERARCHY_ITEM"))
+                                    {
+                                        UUID entityID = *(UUID*)payload->Data;
+                                        auto entity = m_Context->GetEntityByUUID(entityID);
+
+                                        if (entity.HasComponent<TransformComponent>())
+                                        {
+                                            ScriptFieldInstance& sfi = scriptFields[name];
+                                            *(TransformComponent*)field.ClassField = entity.GetComponent<TransformComponent>();
+                                            sfi.Field = field;
+                                            sfi.SetValue(&field.ClassField);
+                                        }
+                                    }
+                                    ImGui::EndDragDropTarget();
+                                }
+                                ImGui::PopItemWidth();
+                                break;
+                            }
+
+                            }
+                        }
 
 					}
 				}

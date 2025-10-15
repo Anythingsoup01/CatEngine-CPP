@@ -41,6 +41,7 @@ namespace CatEngine
         void ApplyForceToCenter(Rigidbody2DComponent& rb2d, const glm::vec2& impulse, bool wake) { ScriptGlue::Rigidbody2D_ApplyForceToCenter(rb2d, &impulse, wake); }
         void ApplyLinearImpulse(Rigidbody2DComponent& rb2d, const glm::vec2& impulse, const glm::vec2& point, bool wake) { ScriptGlue::Rigidbody2D_ApplyLinearImpulse(rb2d, &impulse, &point, wake); }
         void ApplyLinearImpulseToCenter(Rigidbody2DComponent& rb2d, const glm::vec2& impulse, bool wake) { ScriptGlue::Rigidbody2D_ApplyLinearImpulseToCenter(rb2d, &impulse, wake); }
+        
     private:
         void SetUUID(UUID entityID) { m_UUID = entityID; }
 

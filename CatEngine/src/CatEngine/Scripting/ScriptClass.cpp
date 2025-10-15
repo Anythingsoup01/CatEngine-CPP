@@ -69,44 +69,6 @@ namespace CatEngine
         return ScriptFieldType::None;
     }
 
-    void* GetVariableSymbol(CatScriptClass* handle, ScriptFieldType type, const std::string& symbolName)
-    {
-        void* out = nullptr;
-
-        switch (type)
-        {
-#ifdef      CE_PLATFORM_LINUX
-            case ScriptFieldType::Float: out = (float*)dlsym(handle, symbolName.c_str()); break;
-            case ScriptFieldType::Double: out = (double*)dlsym(handle, symbolName.c_str()); break;
-            case ScriptFieldType::Char: out = (char**)dlsym(handle, symbolName.c_str()); break;
-            case ScriptFieldType::Int16: out = (int16_t*)dlsym(handle, symbolName.c_str()); break;
-            case ScriptFieldType::Int32: out = (int32_t*)dlsym(handle, symbolName.c_str()); break;
-            case ScriptFieldType::Int64: out = (int64_t*)dlsym(handle, symbolName.c_str()); break;
-            case ScriptFieldType::Boolean: out = (bool*)dlsym(handle, symbolName.c_str()); break;
-            case ScriptFieldType::UInt16: out = (uint16_t*)dlsym(handle, symbolName.c_str()); break;
-            case ScriptFieldType::UInt32: out = (uint32_t*)dlsym(handle, symbolName.c_str()); break;
-            case ScriptFieldType::UInt64: out = (uint64_t*)dlsym(handle, symbolName.c_str()); break;
-            case ScriptFieldType::String: out = (std::string*)dlsym(handle, symbolName.c_str()); break;
-            case ScriptFieldType::Vector2: out = (glm::vec2*)dlsym(handle, symbolName.c_str()); break;
-            case ScriptFieldType::Vector3: out = (glm::vec3*)dlsym(handle, symbolName.c_str()); break;
-            case ScriptFieldType::Vector4: out = (glm::vec4*)dlsym(handle, symbolName.c_str()); break;
-            case ScriptFieldType::TransformComponent: out = (TransformComponent*)dlsym(handle, symbolName.c_str()); break;
-            case ScriptFieldType::Rigidbody2DComponent: out = (Rigidbody2DComponent*)dlsym(handle, symbolName.c_str()); break;
-#           endif
-            default: break;
-        }
-
-        return out;
-
-    }
-
-    bool IsTrue(const std::string& value)
-    {
-        if (strncmp(value.c_str(), "true", 4) == 0)
-            return true;
-        return false;
-    }
-
     ScriptField GetField(CatScriptClass* instance, const char* line, std::string& outName)
     {
         ScriptField sf;
@@ -127,9 +89,9 @@ namespace CatEngine
                 else
                     outName = lineStr.substr(0 , lineStr.length() - 1); // Erases ";" character
 
-                outName.erase(remove_if(outName.begin(), outName.end(), isspace), outName.end()); // Removes and folling and trailing spaces
+                outName.erase(remove_if(outName.begin(), outName.end(), isspace), outName.end()); // Removes and following and trailing spaces
 
-                sf.ClassField = GetVariableSymbol(instance, sft, outName);
+                sf.ClassField = dlsym(instance, outName.c_str());
                 if (sf.ClassField == nullptr)
                 {
                     CE_API_CRITICAL("NULL DETECTED: {0}:{1}", type, outName);
