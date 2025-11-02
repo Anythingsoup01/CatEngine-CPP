@@ -585,7 +585,6 @@ namespace CatEngine
 						}
                         case ScriptFieldType::TransformComponent:
                         {
-                            TransformComponent data = scriptInstance->GetFieldData<TransformComponent>(name);
                             ImGui::Button("TransformComponent (Has Data)");
                             if (ImGui::BeginDragDropTarget())
                             {
@@ -596,7 +595,7 @@ namespace CatEngine
 
                                     if (entity.HasComponent<TransformComponent>())
                                     {
-                                        data = entity.GetComponent<TransformComponent>();
+                                        TransformComponent* data = &entity.GetComponent<TransformComponent>();
                                         scriptInstance->SetFieldData(name, &data);
                                     }
                                 }
@@ -769,7 +768,6 @@ namespace CatEngine
 							case ScriptFieldType::TransformComponent:
                             {
                                 ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
-								TransformComponent data = scriptFieldInstance.GetValue<TransformComponent>();
                                 ImGui::Button("TransformComponent (Has Data)");
                                 if (ImGui::BeginDragDropTarget())
                                 {
@@ -780,8 +778,7 @@ namespace CatEngine
 
                                         if (entity.HasComponent<TransformComponent>())
                                         {
-                                            data = entity.GetComponent<TransformComponent>();
-                                            scriptFieldInstance.SetValue(data);
+                                            *(TransformComponent*)scriptFieldInstance.Field.ClassField = entity.GetComponent<TransformComponent>();
                                         }
                                     }
                                     ImGui::EndDragDropTarget();
@@ -962,7 +959,6 @@ namespace CatEngine
                                             ScriptFieldInstance& sfi = scriptFields[name];
                                             *(TransformComponent*)field.ClassField = entity.GetComponent<TransformComponent>();
                                             sfi.Field = field;
-                                            sfi.SetValue(&field.ClassField);
                                         }
                                     }
                                     ImGui::EndDragDropTarget();

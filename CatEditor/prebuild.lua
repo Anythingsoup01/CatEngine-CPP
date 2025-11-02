@@ -1,42 +1,52 @@
-project "CatEditor"
-    kind "ConsoleApp"
-    language "C++"
-    dialect "20"
+Project = {
+    name = "CatEditor",
+    kind = "ConsoleApp",
+    language = "C++",
+    dialect = "20",
 
-    files
+    files =
     {
         "src/*.cpp",
         "src/*.h",
-    }
+    },
 
-    includedirs
+    includedirs =
     {
         "src",
-        "$(WORKSPACEDIR)/CatEngine/src",
-        "$(WORKSPACEDIR)/vendor/spdlog/include",
-        "$(WORKSPACEDIR)/vendor/imgui",
-        "$(WORKSPACEDIR)/vendor/glm",
-        "$(WORKSPACEDIR)/vendor/entt",
-        "$(WORKSPACEDIR)/vendor/Glad/include",
-        "$(WORKSPACEDIR)/vendor/NFD-E/src/include",
-        "$(WORKSPACEDIR)/vendor/yaml/include",
-        "$(WORKSPACEDIR)/vendor/ImGuizmo",
-        "$(WORKSPACEDIR)/vendor/Box2D/include",
-    }
+        "${WORKSPACEDIR}CatEngine/src",
+        "${WORKSPACEDIR}vendor/spdlog/include",
+        "${WORKSPACEDIR}vendor/imgui",
+        "${WORKSPACEDIR}vendor/glm",
+        "${WORKSPACEDIR}vendor/entt",
+        "${WORKSPACEDIR}vendor/Glad/include",
+        "${WORKSPACEDIR}vendor/NFD-E/src/include",
+        "${WORKSPACEDIR}vendor/yaml/include",
+        "${WORKSPACEDIR}vendor/ImGuizmo",
+        "${WORKSPACEDIR}vendor/Box2D/include",
+    },
 
-    links
+    links =
     {
         "CatEngine",
-    }
+    },
 
-    defines
+
+
+    defines =
     {
         "GLFW_INCLUDE_NONE",
         "CE_DISPLAY_WAYLAND",
-    }
+    },
 
-    filter "configurations:Debug"
-        define "CE_DEBUG"
-
-    filter "configurations:Release"
-        defines "CE_RELEASE"
+    filters =
+    {
+        {
+            name = "configurations:Debug",
+            defines = "CE_DEBUG",
+        },
+        {
+            name = "configurations:Release",
+            defines = "CE_RELEASE",
+        },
+    },
+}

@@ -29,6 +29,7 @@ namespace CatEngine
 		ScriptFieldType Type;
 		std::string Name;
 		CatScriptField* ClassField;
+        CatScriptField* ComponentData;
 	};
 
 	struct ScriptFieldInstance
@@ -53,7 +54,6 @@ namespace CatEngine
 			static_assert(sizeof(T) <= 128, "Type to large!");
 			memcpy(m_Data, &value, sizeof(T));
 		}
-
 
 	private:
 

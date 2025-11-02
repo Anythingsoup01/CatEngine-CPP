@@ -31,32 +31,12 @@ namespace CatEngine
 		{"glm::vec2", ScriptFieldType::Vector2},
 		{"glm::vec3", ScriptFieldType::Vector3},
 		{"glm::vec4", ScriptFieldType::Vector4},
+		{"TransformComponent*", ScriptFieldType::TransformComponent},
 		{"TransformComponent", ScriptFieldType::TransformComponent},
 		{"Rigidbody2DComponent", ScriptFieldType::Rigidbody2DComponent},
 
 	};
 
-    static bool IsVariable(const char* line, std::string& outVariableType, std::string& outVariableName, void* outVariableValue)
-    {
-        for (auto& [keyword, sft] : s_ScriptFieldTypeMap)
-        {
-            if (strncmp(line, keyword.c_str(), keyword.length()) == 0)
-            {
-                std::string lineStr(line);
-                outVariableType = keyword;
-                lineStr.erase(0, keyword.length());
-                size_t equalSign = lineStr.find_first_of('=');
-                if (equalSign == std::string::npos)
-                    outVariableName = lineStr.substr(0 , lineStr.length() - 1); // Erases ";" character
-                else
-                    outVariableName = lineStr.substr(0, equalSign);
-                
-                return true;
-            }
-        }
-
-        return false;
-    }
 
     ScriptFieldType StringToScriptFieldType(const std::string& type)
     {
@@ -90,6 +70,7 @@ namespace CatEngine
                     outName = lineStr.substr(0 , lineStr.length() - 1); // Erases ";" character
 
                 outName.erase(remove_if(outName.begin(), outName.end(), isspace), outName.end()); // Removes and following and trailing spaces
+                outName.erase(std::remove(outName.begin(), outName.end(), '*'), outName.end()); // Removes and following and trailing spaces
 
                 sf.ClassField = dlsym(instance, outName.c_str());
                 if (sf.ClassField == nullptr)

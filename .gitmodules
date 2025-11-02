@@ -22,3 +22,6 @@
 [submodule "vendor/yaml"]
 	path = vendor/yaml
 	url = https://github.com/Anythingsoup01/yaml-cpp
+[submodule "vendor/Capybara"]
+	path = vendor/Capybara
+	url = https://github.com/Anythingsoup01/Capybara
