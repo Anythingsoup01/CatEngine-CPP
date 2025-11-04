@@ -25,3 +25,6 @@
 [submodule "vendor/Capybara"]
 	path = vendor/Capybara
 	url = https://github.com/Anythingsoup01/Capybara
+[submodule "vendor/ImGuizmo"]
+	path = vendor/ImGuizmo
+	url = https://github.com/Anythingsoup01/Imguizmo

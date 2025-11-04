@@ -1,34 +1,34 @@
 set(SRCS
-    src/CatEditorApp.cpp
-    src/ImGui/ImGuiDraw.cpp
-    src/Panels/SceneHierarchyPanel.cpp
-    src/Panels/SceneViewportPanel.cpp
-    src/Panels/AssetBrowserPanel.cpp
-    src/Panels/ContentBrowserPanel.cpp
-    src/EditorLayer.cpp
-    src/ImGui/ImGuiDraw.h
-    src/Panels/ContentBrowserPanel.h
-    src/Panels/Panel.h
-    src/Panels/SceneViewportPanel.h
-    src/Panels/SceneHierarchyPanel.h
-    src/Panels/AssetBrowserPanel.h
-    src/EditorLayer.h
+    "src/CatEditorApp.cpp"
+    "src/EditorLayer.cpp"
+    "src/Panels/AssetBrowserPanel.cpp"
+    "src/Panels/ContentBrowserPanel.cpp"
+    "src/Panels/SceneHierarchyPanel.cpp"
+    "src/Panels/SceneViewportPanel.cpp"
+    "src/ImGui/ImGuiDraw.cpp"
+    "src/Panels/SceneViewportPanel.h"
+    "src/Panels/Panel.h"
+    "src/Panels/AssetBrowserPanel.h"
+    "src/Panels/SceneHierarchyPanel.h"
+    "src/Panels/ContentBrowserPanel.h"
+    "src/ImGui/ImGuiDraw.h"
+    "src/EditorLayer.h"
 )
 add_executable(CatEditor ${SRCS})
 set_property(TARGET CatEditor PROPERTY CXX_STANDARD 20)
 
 target_include_directories(CatEditor PRIVATE
-    src
-    ${CMAKE_SOURCE_DIR}/CatEngine/src
-    ${CMAKE_SOURCE_DIR}/vendor/spdlog/include
-    ${CMAKE_SOURCE_DIR}/vendor/imgui
-    ${CMAKE_SOURCE_DIR}/vendor/glm
-    ${CMAKE_SOURCE_DIR}/vendor/entt
-    ${CMAKE_SOURCE_DIR}/vendor/Glad/include
-    ${CMAKE_SOURCE_DIR}/vendor/NFD-E/src/include
-    ${CMAKE_SOURCE_DIR}/vendor/yaml/include
-    ${CMAKE_SOURCE_DIR}/vendor/ImGuizmo
-    ${CMAKE_SOURCE_DIR}/vendor/Box2D/include
+    "src"
+    "${CMAKE_SOURCE_DIR}/CatEngine/src"
+    "${CMAKE_SOURCE_DIR}/vendor/spdlog/include"
+    "${CMAKE_SOURCE_DIR}/vendor/imgui"
+    "${CMAKE_SOURCE_DIR}/vendor/glm"
+    "${CMAKE_SOURCE_DIR}/vendor/entt"
+    "${CMAKE_SOURCE_DIR}/vendor/Glad/include"
+    "${CMAKE_SOURCE_DIR}/vendor/NFD-E/src/include"
+    "${CMAKE_SOURCE_DIR}/vendor/yaml/include"
+    "${CMAKE_SOURCE_DIR}/vendor/ImGuizmo"
+    "${CMAKE_SOURCE_DIR}/vendor/Box2D/include"
 )
 
 target_link_libraries(CatEditor
@@ -41,6 +41,10 @@ target_compile_definitions(CatEditor PUBLIC
 )
 
 if(CMAKE_BUILD_TYPE STREQUAL Debug)
+target_compile_definitions(CatEditor
+PUBLIC
+    CE_DEBUG
+)
 endif(CMAKE_BUILD_TYPE STREQUAL Debug)
 if(CMAKE_BUILD_TYPE STREQUAL Release)
 target_compile_definitions(CatEditor
