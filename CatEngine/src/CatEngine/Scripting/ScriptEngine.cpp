@@ -1,5 +1,3 @@
-#include "CatEngine/Core/Core.h"
-#include "CatEngine/Core/Log.h"
 #include "cepch.h"
 #include "ScriptEngine.h"
 

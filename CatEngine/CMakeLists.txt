@@ -421,6 +421,17 @@ set(SRCS
     "${CMAKE_SOURCE_DIR}/vendor/stb/stb_image.h"
     "${CMAKE_SOURCE_DIR}/vendor/stb/stb_image.cpp"
     "${CMAKE_SOURCE_DIR}/vendor/entt/entt.hpp"
+    "${CMAKE_SOURCE_DIR}/vendor/ImGuizmo/ImGuizmo.cpp"
+    "${CMAKE_SOURCE_DIR}/vendor/ImGuizmo/GraphEditor.cpp"
+    "${CMAKE_SOURCE_DIR}/vendor/ImGuizmo/ImGradient.cpp"
+    "${CMAKE_SOURCE_DIR}/vendor/ImGuizmo/ImSequencer.cpp"
+    "${CMAKE_SOURCE_DIR}/vendor/ImGuizmo/ImCurveEdit.cpp"
+    "${CMAKE_SOURCE_DIR}/vendor/ImGuizmo/ImGuizmo.h"
+    "${CMAKE_SOURCE_DIR}/vendor/ImGuizmo/ImZoomSlider.h"
+    "${CMAKE_SOURCE_DIR}/vendor/ImGuizmo/ImSequencer.h"
+    "${CMAKE_SOURCE_DIR}/vendor/ImGuizmo/GraphEditor.h"
+    "${CMAKE_SOURCE_DIR}/vendor/ImGuizmo/ImCurveEdit.h"
+    "${CMAKE_SOURCE_DIR}/vendor/ImGuizmo/ImGradient.h"
 )
 add_library(CatEngine STATIC ${SRCS})
 set_property(TARGET CatEngine PROPERTY CXX_STANDARD 20)
