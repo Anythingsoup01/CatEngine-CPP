@@ -8,24 +8,19 @@ namespace CatEngine
     {
     public:
         ScriptClass() = default;
-        ScriptClass(const std::filesystem::path& path);
+        ScriptClass(CapyImage* image, const std::string& nameSpace, const std::string& className);
 
-        ~ScriptClass();
+        void* Instantiate();
 
-        void SetFieldsFromFile(const std::filesystem::path& filePath);
+        CapyMethod* GetMethod(const std::string& methodName);
 
-        CatScriptObject* Instantiate() { return m_CreateScript(); }
-
-        void DeleteScript(IScriptObject* scriptObject) { delete scriptObject; }
+        void* InvokeMethod(CapyMethod* method, void* instance, const std::vector<RuntimeValue>& values);
 
         const std::unordered_map<std::string, ScriptField>& GetFields() const { return m_Fields; }
     private:
         std::filesystem::path m_Path;
         
-        CatScriptClass* m_Instance;
-
-        create_t* m_CreateScript;
-        destroy_t* m_DestroyScript;
+        CapyClass* m_CapyClass;
 
         std::unordered_map<std::string, ScriptField> m_Fields;
 

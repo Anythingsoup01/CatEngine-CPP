@@ -520,7 +520,7 @@ namespace CatEngine
 			Ref<Texture2D> simulationIcon = m_SceneState == SceneState::Simulate ? m_IconStopRuntime : m_IconStartSimulation;
 
             ImGui::SetCursorPosX((ImGui::GetWindowContentRegionMax().x * 0.5f - (size * 0.5f)));
-            if (ImGui::ImageButton((ImTextureID)(uint64_t)runtimeIcon->GetRendererID(), ImVec2(size * 1.403f, size), {0, 0}, {1, 1}, 0))
+            if (ImGui::ImageButton("##PLAY", (ImTextureID)(uint64_t)runtimeIcon->GetRendererID(), ImVec2(size * 1.403f, size), {0, 0}, {1, 1}))
             {
                 if (m_SceneState == SceneState::Edit)
                     OnScenePlay();
@@ -528,7 +528,7 @@ namespace CatEngine
                     OnSceneStop();
             }
 			ImGui::SameLine();
-			if (ImGui::ImageButton((ImTextureID)(uint64_t)pauseIcon->GetRendererID(), ImVec2(size * 1.403f, size), { 0, 0 }, { 1, 1 }, 0))
+			if (ImGui::ImageButton("##PAUSE", (ImTextureID)(uint64_t)pauseIcon->GetRendererID(), ImVec2(size * 1.403f, size), { 0, 0 }, { 1, 1 }))
 			{
 				if (m_SceneState == SceneState::Edit)
 				{
@@ -543,7 +543,7 @@ namespace CatEngine
 				
 			}
 			ImGui::SameLine();
-			if (ImGui::ImageButton((ImTextureID)(uint64_t)simulationIcon->GetRendererID(), ImVec2(size * 1.403f, size), { 0, 0 }, { 1, 1 }, 0))
+			if (ImGui::ImageButton("##SIMULATE", (ImTextureID)(uint64_t)simulationIcon->GetRendererID(), ImVec2(size * 1.403f, size), { 0, 0 }, { 1, 1 }))
 			{
 				if (m_SceneState == SceneState::Edit)
 					OnSceneSimulateStart();
@@ -694,9 +694,7 @@ namespace CatEngine
             auto startScenePath = Project::GetConfig().StartScene;
             if (AssetManager::IsAssetHandleValid(startScenePath))
                 OpenScene(startScenePath);
-            SourceFileCompiler::Init();
-            SourceFileCompiler::AddDirectory(Project::GetAssetDirectory());
-            ScriptEngine::ReloadBinaries();
+            ScriptEngine::InitializeFileSystems();
             m_ContentBrowserPanel.ResetAssetDirectory();
             m_AssetBrowserPanel.ResetAssetDirectory();
         }

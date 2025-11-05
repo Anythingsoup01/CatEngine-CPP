@@ -3,6 +3,8 @@
 
 #include "FileWatch.hpp"
 
+#include <Capybara/Capybara.h>
+
 #include "CatEngine/Scene/Scene.h"
 #include "CatEngine/Scene/Entity.h"
 
@@ -22,6 +24,9 @@ namespace CatEngine
 {
 	struct ScriptEngineData
 	{
+
+        CapyDomain* AppDomain;
+
 		std::unordered_map<std::string, Ref<ScriptClass>> EntityClasses;
 		std::unordered_map<UUID, Ref<ScriptInstance>> EntityInstances;
 
@@ -47,13 +52,18 @@ namespace CatEngine
     void ScriptEngine::Init()
 	{
 		s_ScriptData = new ScriptEngineData();
+        s_ScriptData->AppDomain = capy_init_domain("CatAppDomain");
+
 	}
+
 	void ScriptEngine::Shutdown()
 	{
         s_ScriptData->EntityScriptFields.clear();
         s_ScriptData->SourceFileWatchers.clear();
         s_ScriptData->EntityClasses.clear();
 		delete s_ScriptData;
+
+        capy_shutdown();
 	}
 
 	static void OnSourceFileSystemEvent(const std::string& path, const filewatch::Event change_type)
@@ -113,6 +123,14 @@ namespace CatEngine
 
 	}
 
+    void ScriptEngine::InitializeFileSystems()
+    {
+        const std::filesystem::path& path = Project::GetAssetDirectory();
+        LoadFileWatcher(path);
+        capy_set_libraries_path(path / ".build");
+        ReloadBinaries();
+    }
+
 	bool ScriptEngine::LoadFileWatcher(const std::filesystem::path& filePath)
 	{
         for (const auto& entry : std::filesystem::recursive_directory_iterator(filePath)) 
@@ -138,11 +156,6 @@ namespace CatEngine
 	void ScriptEngine::OnRuntimeStop()
 	{
 		s_ScriptData->SceneContext = nullptr;
-        for (auto& [uuid, instance] : s_ScriptData->EntityInstances)
-        {
-            instance->InvokeDeleteScript();
-        }
-
 
 		s_ScriptData->EntityInstances.clear();
 		
@@ -157,20 +170,28 @@ namespace CatEngine
 #endif
 		//CE_API_TRACE(s_ScriptData->ReloadTimer.ElapsedMillis());
 
+        capy_unload_domain("CatAppDomain");
+
         Application::Get().SubmitToMainThread([](){
+            s_ScriptData->AppDomain = capy_init_domain("CatAppDomain");
+            capy_reload_libraries_into_domain(s_ScriptData->AppDomain);
+
             
-            auto& compiledFiles = SourceFileCompiler::GetCompiledFiles();
-            
-            for (auto& fd : compiledFiles)
+
+            for (auto& [name , lib] : s_ScriptData->AppDomain->Libraries)
             {
-                auto it = s_ScriptData->EntityClasses.find(fd.Name);
+
+                auto it = s_ScriptData->EntityClasses.find(name);
                 if (it != s_ScriptData->EntityClasses.end())
-                {
                     s_ScriptData->EntityClasses.erase(it);
+
+                CapyImage* image = lib->MainImage.get();
+                for (auto& [name, klass] : image->Classes)
+                {
+                    s_ScriptData->EntityClasses[name] = CreateRef<ScriptClass>(image, klass->NameSpace, klass->ClassName);
                 }
-                s_ScriptData->EntityClasses[fd.Name] = CreateRef<ScriptClass>(fd.SharedObjectPath);
-                s_ScriptData->EntityClasses[fd.Name]->SetFieldsFromFile(fd.SourceFilePath);
             }
+
         });
 
         s_ScriptData->SourceFileReloadPending = false;
@@ -265,14 +286,6 @@ namespace CatEngine
 		return it->second;
 	}
     
-	CatScriptObject* ScriptEngine::GetManagedInstance(UUID uuid)
-	{
-		if(s_ScriptData->EntityInstances.find(uuid) != s_ScriptData->EntityInstances.end())
-			return s_ScriptData->EntityInstances.at(uuid)->GetManagedObject();
-
-		return nullptr;
-	}
-
 	std::unordered_map<std::string, Ref<ScriptClass>>& ScriptEngine::GetScriptClasses()
 	{
 		return s_ScriptData->EntityClasses;

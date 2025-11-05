@@ -100,7 +100,7 @@ namespace CatEngine
 
             fileIcon = fileIcon == nullptr ? m_FileIcon : fileIcon;
             Ref<Texture2D> icon = isDirectory ? m_DirectoryIcon : fileIcon;
-            ImGui::ImageButton((ImTextureID)(uint64_t)icon->GetRendererID(), { thumbnailSize, thumbnailSize }, { 0, 1 }, { 1, 0 });
+            ImGui::ImageButton("##ICON", (ImTextureID)(uint64_t)icon->GetRendererID(), { thumbnailSize, thumbnailSize }, { 0, 1 }, { 1, 0 });
             if (ImGui::BeginDragDropSource())
             {
                 AssetHandle handle = m_TreeNodes[treeNodeIndex].Handle;

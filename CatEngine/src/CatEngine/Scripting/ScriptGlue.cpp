@@ -205,7 +205,8 @@ namespace CatEngine
 
 	void* ScriptGlue::GetScriptInstance(UUID entityID)
 	{
-		return ScriptEngine::GetManagedInstance(entityID);
+		//return ScriptEngine::GetManagedInstance(entityID);
+        return nullptr;
 	}
 
 #pragma endregion

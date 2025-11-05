@@ -19,8 +19,7 @@ Project = {
         "${WORKSPACEDIR}vendor/ImGuizmo/*.h",
     },
 
-    includedirs =
-    {
+    includedirs = {
         "src",
         "${WORKSPACEDIR}vendor/spdlog/include",
         "${WORKSPACEDIR}vendor/glfw/include",
@@ -37,8 +36,7 @@ Project = {
         "${WORKSPACEDIR}vendor/Capybara/include",
     },
 
-    links =
-    {
+    links = {
         "ImGui",
         "glfw",
         "Glad",
@@ -46,16 +44,15 @@ Project = {
         "yaml-cpp",
         "Box2D",
         "GL",
+        "Capybara"
     },
 
-    defines =
-    {
+    defines = {
         "GLFW_INCLUDE_NONE",
         "CE_DISPLAY_WAYLAND",
     },
 
-    filters =
-    {
+    filters = {
         {
             name = "configurations:Debug",
             defines = "CE_DEBUG",
@@ -64,5 +61,10 @@ Project = {
             name = "configurations:Release",
             defines = "CE_RELEASE",
         },
+        {
+            name = "system:linux",
+            links = "X11",
+        },
+
     },
 }

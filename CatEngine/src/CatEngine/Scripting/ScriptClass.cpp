@@ -12,168 +12,35 @@
 
 namespace CatEngine
 {
-
-    static std::unordered_map<std::string, ScriptFieldType> s_ScriptFieldTypeMap =
-	{
-		{"float", ScriptFieldType::Float},
-		{"double", ScriptFieldType::Double},
-		{"char",ScriptFieldType::Char},
-		{"int16_t", ScriptFieldType::Int16},
-		{"int32_t", ScriptFieldType::Int32},
-		{"int", ScriptFieldType::Int32},
-		{"int64_t", ScriptFieldType::Int64},
-		{"bool", ScriptFieldType::Boolean},
-		{"uint16_t", ScriptFieldType::UInt16},
-		{"uint32_t", ScriptFieldType::UInt32},
-		{"unsigned int", ScriptFieldType::UInt32},
-		{"uint64_t", ScriptFieldType::UInt64},
-		{"std::string", ScriptFieldType::String},
-		{"glm::vec2", ScriptFieldType::Vector2},
-		{"glm::vec3", ScriptFieldType::Vector3},
-		{"glm::vec4", ScriptFieldType::Vector4},
-		{"TransformComponent*", ScriptFieldType::TransformComponent},
-		{"TransformComponent", ScriptFieldType::TransformComponent},
-		{"Rigidbody2DComponent", ScriptFieldType::Rigidbody2DComponent},
-
-	};
-
-
-    ScriptFieldType StringToScriptFieldType(const std::string& type)
+    ScriptClass::ScriptClass(CapyImage* image, const std::string& nameSpace, const std::string& className)
     {
-        auto it = s_ScriptFieldTypeMap.find(type);
-
-        if (it != s_ScriptFieldTypeMap.end())
-            return it->second;
-
-        CE_API_ERROR("Not supported type {}", type);
-        return ScriptFieldType::None;
+        m_CapyClass = capy_class_from_name(image, nameSpace, className);
     }
 
-    ScriptField GetField(CatScriptClass* instance, const char* line, std::string& outName)
+    void* ScriptClass::Instantiate()
     {
-        ScriptField sf;
-        std::string type, value;
-
-        std::string lineStr(line);
-
-        for (auto& [keyword, sft] : s_ScriptFieldTypeMap)
+        CapyMethod* m = capy_method_from_class(m_CapyClass, "Create");
+        if (!m)
         {
-            if (strncmp(line, keyword.c_str(), keyword.length()) == 0)
-            {
-                sf.Type = sft;
-                type = keyword;
-                lineStr.erase(0, keyword.length());
-                size_t equalSign = lineStr.find_first_of('=');
-                if (equalSign != std::string::npos)
-                    outName = lineStr.substr(0, equalSign);
-                else
-                    outName = lineStr.substr(0 , lineStr.length() - 1); // Erases ";" character
-
-                outName.erase(remove_if(outName.begin(), outName.end(), isspace), outName.end()); // Removes and following and trailing spaces
-                outName.erase(std::remove(outName.begin(), outName.end(), '*'), outName.end()); // Removes and following and trailing spaces
-
-                sf.ClassField = dlsym(instance, outName.c_str());
-                if (sf.ClassField == nullptr)
-                {
-                    CE_API_CRITICAL("NULL DETECTED: {0}:{1}", type, outName);
-                    outName = "";
-                    return ScriptField();
-                }
-                break;
-            }
+            CE_API_CRITICAL("NO CREATE FUNCTION FOUND!");
+            return nullptr;
         }
-        return sf;
-
+        return capy_function_call_from_method(m, {});
     }
 
-    ScriptClass::ScriptClass(const std::filesystem::path& path)
-        : m_Path(path)
+    CapyMethod* ScriptClass::GetMethod(const std::string& methodName)
     {
-#       ifdef CE_PLATFORM_LINUX
-        m_Instance = dlopen(path.c_str(), RTLD_LAZY | RTLD_LOCAL);
-        CE_API_ASSERT(m_Instance, dlerror());
-
-        m_CreateScript = (create_t*)dlsym(m_Instance, "create");
-        CE_API_ASSERT(m_CreateScript, dlerror());
-        m_DestroyScript = (destroy_t*)dlsym(m_Instance, "destroy");
-        CE_API_ASSERT(m_DestroyScript, dlerror());
-
-#       endif
+        return capy_method_from_class(m_CapyClass, methodName);
     }
 
-    ScriptClass::~ScriptClass()
+    void* ScriptClass::InvokeMethod(CapyMethod* m, void* instance, const std::vector<RuntimeValue>& values)
     {
-#       ifdef CE_PLATFORM_LINUX
-        dlclose(m_Instance);
-#       endif 
-        m_Instance = nullptr;
+        std::vector<RuntimeValue> vals;
+        vals = values;
+        vals.insert(vals.begin(), instance);
+        return capy_function_call_from_method(m, vals);
     }
 
-    void ScriptClass::SetFieldsFromFile(const std::filesystem::path& filePath)
-    {
-    
-        std::ifstream in(filePath);
-        if (!in.is_open())
-        {
-            CE_API_ERROR("Failed to open file '{}'", filePath.string());
-            return;
-        }
-
-        std::string line;
-
-        bool isPublicVariable = false;
-        bool inClass = false;
-        bool firstLoopInClass = true;
-
-        int openingBrackets = 0, closingBrackets = 0;
-
-        std::unordered_map<std::string, std::string> variables;
-
-        while (std::getline(in, line))
-        {
-            std::string lineParse = line;
-            lineParse.erase(remove_if(lineParse.begin(), lineParse.end(), isspace), lineParse.end());
-
-            if (strncmp(lineParse.c_str(), "#definePUBLIC", 13) == 0)
-                isPublicVariable = true;
-
-            if (strncmp(lineParse.c_str(), "#definePRIVATE", 14) == 0)
-                isPublicVariable = false;
 
 
-            if (strncmp(lineParse.c_str(), "class", 5) == 0)
-            {
-                inClass = true;
-            }
-
-            if (inClass)
-            {
-                if (lineParse.find("{") != std::string::npos)
-                    openingBrackets++;
-                if (lineParse.find("}") != std::string::npos)
-                    closingBrackets++;
-
-                if (openingBrackets == closingBrackets && !firstLoopInClass)
-                    inClass = false;
-
-
-                // Keep at end!
-                firstLoopInClass = false;
-            }
-            else
-            {
-                if (isPublicVariable)
-                {
-                    std::string name;
-                    ScriptField sf = GetField(m_Instance, line.c_str(), name);
-                    if (!name.empty())
-                    {
-                        m_Fields[name] = sf;
-                    }
-                }
-            }
-
-        }
-    
-    }
 }

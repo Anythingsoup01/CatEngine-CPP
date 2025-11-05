@@ -29,6 +29,7 @@ namespace CatEngine
 		static void Shutdown();
 
 		static bool LoadFileWatcher(const std::filesystem::path& filePath);
+        static void InitializeFileSystems();
 
 		static void SetSceneContext(Ref<Scene> scene);
 		static void OnRuntimeStop();
@@ -44,7 +45,8 @@ namespace CatEngine
 		static Ref<Scene> GetSceneContext();
 		static Ref<ScriptInstance> GetEntityScriptInstance(UUID entityID);
 
-		static CatScriptObject* GetManagedInstance(UUID uuid);
+
+		static void* GetManagedInstance(UUID uuid);
 
 		static std::unordered_map<std::string, Ref<ScriptClass>>& GetScriptClasses();
 		static Ref<ScriptClass> GetScriptClass(const std::string& name);

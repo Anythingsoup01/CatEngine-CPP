@@ -23,6 +23,7 @@ Project = {
         "${WORKSPACEDIR}vendor/yaml/include",
         "${WORKSPACEDIR}vendor/ImGuizmo",
         "${WORKSPACEDIR}vendor/Box2D/include",
+        "${WORKSPACEDIR}vendor/Capybara/include",
     },
 
     links =

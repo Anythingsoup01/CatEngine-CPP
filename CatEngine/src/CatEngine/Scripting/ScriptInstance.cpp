@@ -6,12 +6,21 @@
 #include "ScriptClass.h"
 #include <cstring>
 
+
+template<>
+entt::entity RuntimeValue::As<entt::entity>() const
+{
+    if (Type != ValueType::INT32) throw std::runtime_error("Type mismatch for int");
+    return (entt::entity)i;
+}
+
+
 namespace CatEngine
 {
 	ScriptInstance::ScriptInstance(Ref<ScriptClass> scriptClass, Entity entity)
 		: m_ScriptClass(scriptClass)
 	{ 
-		m_Instance = scriptClass->Instantiate();
+        m_Instance = scriptClass->Instantiate();
         for (auto& [name, field] :scriptClass->GetFields())
         {
             size_t valueSize = TypeToSize(field.Type);
@@ -31,6 +40,14 @@ namespace CatEngine
             m_DefaultFieldDatas[name] = copy;
         }
 
+        m_StartMethod = scriptClass->GetMethod("Start");
+        m_UpdateMethod = scriptClass->GetMethod("Update");
+
+        m_CollisionEnterMethod = scriptClass->GetMethod("OnCollisionEnter");
+        m_CollisionExitMethod = scriptClass->GetMethod("OnCollisionExit");
+
+        m_SetUUIDMethod = scriptClass->GetMethod("SetUUID");
+
 	}
 
     ScriptInstance::~ScriptInstance()
@@ -46,30 +63,29 @@ namespace CatEngine
 
     void ScriptInstance::SetEntityID(UUID entityID)
     {
-        m_Instance->SetUUID(entityID);
+        if (!m_SetUUIDMethod)
+            CE_API_CRITICAL("CAN'T ACCESS SETUUID!");
+        else
+            m_ScriptClass->InvokeMethod(m_SetUUIDMethod, m_Instance, { (int)entityID });
     }
 
 	void ScriptInstance::InvokeUpdateMethod(float ts)
 	{
-        m_Instance->Update(ts);
+        m_ScriptClass->InvokeMethod(m_UpdateMethod, m_Instance, {ts});
 	}
 
 	void ScriptInstance::InvokeStartMethod()
 	{
-        m_Instance->Start();
-    }
-    void ScriptInstance::InvokeDeleteScript()
-    {
-        m_ScriptClass->DeleteScript(m_Instance);
+        m_ScriptClass->InvokeMethod(m_StartMethod, m_Instance, {});
     }
     void ScriptInstance::InvokeOnCollisionEnter(const Entity& other)
     {
-        m_Instance->OnCollisionEnter(other);
+        m_ScriptClass->InvokeMethod(m_CollisionEnterMethod, m_Instance, { (int)other });
     }
 
     void ScriptInstance::InvokeOnCollisionExit(const Entity& other)
     {
-        m_Instance->OnCollisionExit(other);
+        m_ScriptClass->InvokeMethod(m_CollisionExitMethod, m_Instance, { (int)other });
     }
 	
     bool ScriptInstance::GetFieldDataInternal(const std::string& name, void* buffer)
@@ -80,8 +96,8 @@ namespace CatEngine
         if (it == fields.end())
             return false;
 
-        const ScriptField& field = it->second;
-        memcpy(buffer, field.ClassField, sizeof(field.ClassField));
+        ScriptField field = it->second;
+        memcpy(buffer, field.ClassField->SymHandle, TypeToSize(field.Type));
         return true;
     }
 
@@ -93,26 +109,9 @@ namespace CatEngine
         if (it == fields.end())
             return;
 
-        const ScriptField& field = it->second;
-        switch (field.Type) 
-        {
-            case ScriptFieldType::Float: *(float*)field.ClassField = *(float*)value; break;
-            case ScriptFieldType::Double: *(double*)field.ClassField = *(double*)value; break;
-            case ScriptFieldType::Char: *(char*)field.ClassField = *(char*)value; break;
-            case ScriptFieldType::Int16: *(int16_t*)field.ClassField = *(int16_t*)value; break;
-            case ScriptFieldType::Int32: *(int32_t*)field.ClassField = *(int32_t*)value; break;
-            case ScriptFieldType::Int64: *(int64_t*)field.ClassField = *(int64_t*)value; break;
-            case ScriptFieldType::Boolean: *(bool*)field.ClassField = *(bool*)value; break;
-            case ScriptFieldType::UInt16: *(uint16_t*)field.ClassField = *(uint16_t*)value; break;
-            case ScriptFieldType::UInt32: *(uint32_t*)field.ClassField = *(uint32_t*)value; break;
-            case ScriptFieldType::UInt64: *(uint64_t*)field.ClassField = *(uint64_t*)value; break;
-            case ScriptFieldType::String: *(std::string*)field.ClassField = *(std::string*)value; break;
-            case ScriptFieldType::Vector2: *(glm::vec2*)field.ClassField = *(glm::vec2*)value; break;
-            case ScriptFieldType::Vector3: *(glm::vec3*)field.ClassField = *(glm::vec3*)value; break;
-            case ScriptFieldType::Vector4: *(glm::vec4*)field.ClassField = *(glm::vec4*)value; break;
-            case ScriptFieldType::TransformComponent: *(TransformComponent*)field.ClassField = *(TransformComponent*)value; break;
-            case ScriptFieldType::Rigidbody2DComponent: *(Rigidbody2DComponent*)field.ClassField = *(Rigidbody2DComponent*)value; break;
-        }
+        ScriptField field = it->second;
+
+        memcpy(field.ClassField->SymHandle, value, TypeToSize(field.Type));
     }
 }
 

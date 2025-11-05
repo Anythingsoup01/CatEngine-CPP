@@ -6,13 +6,10 @@
 #include "glm/fwd.hpp"
 #include <cstdint>
 
+#include <Capybara/Capybara.h>
+
 namespace CatEngine
 {
-    typedef IScriptObject CatScriptObject;
-    typedef void CatScriptClass;
-    typedef void CatScriptField;
-    typedef void CatScriptMethod;
-
     enum class ScriptFieldType
 	{
 		None = 0,
@@ -28,8 +25,7 @@ namespace CatEngine
 	{
 		ScriptFieldType Type;
 		std::string Name;
-		CatScriptField* ClassField;
-        CatScriptField* ComponentData;
+		CapyField* ClassField;
 	};
 
 	struct ScriptFieldInstance
@@ -42,17 +38,17 @@ namespace CatEngine
 		}
 
 		template<typename T>
-		T GetValue()
+		void GetValue(void* value)
 		{
 			static_assert(sizeof(T) <= 128, "Type to large!");
-			return *(T*)m_Data;
+			memcpy(value, m_Data, sizeof(T));
 		}
 
 		template<typename T>
-		void SetValue(T value)
+		void SetValue(T* value)
 		{
 			static_assert(sizeof(T) <= 128, "Type to large!");
-			memcpy(m_Data, &value, sizeof(T));
+			memcpy(m_Data, value, sizeof(T));
 		}
 
 	private:

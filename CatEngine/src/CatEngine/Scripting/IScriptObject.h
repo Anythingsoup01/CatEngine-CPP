@@ -13,13 +13,14 @@ namespace CatEngine
     class IScriptObject
     {
     public:
-        virtual ~IScriptObject() {}
         virtual void Start() {}
         virtual void Update(float ts) {}
         virtual void OnCollisionEnter(const Entity& other) {}
         virtual void OnCollisionExit(const Entity& other) {}
+
     protected:
         UUID m_UUID;
+        IScriptObject* m_Instance;
 
         bool KeyPressed(KeyCode keyCode) { return ScriptGlue::Input_IsKeyDown(keyCode); }
 
@@ -44,11 +45,7 @@ namespace CatEngine
         
     private:
         void SetUUID(UUID entityID) { m_UUID = entityID; }
-
     private:
         friend class ScriptInstance;
     };
-
-    typedef IScriptObject* create_t();
-    typedef void destroy_t(IScriptObject*);
 }

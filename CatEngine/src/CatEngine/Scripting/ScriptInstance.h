@@ -24,22 +24,21 @@ namespace CatEngine
 		Ref<ScriptClass> GetScriptClass() { return m_ScriptClass; }
 
 		template<typename T>
-		T GetFieldData(const std::string& name)
+		void GetFieldData(const std::string& name, void* value)
 		{
 			static_assert(sizeof(T) <= 128, "Type to large!");
-			bool success = GetFieldDataInternal(name, &s_FieldValueBuffer);
+			bool success = GetFieldDataInternal(name, value);
 			if (!success)
-				return T();
-			return *(T*)s_FieldValueBuffer;
+				memset(value, 0, sizeof(T));
 		}
 
 		template<typename T>
-		void SetFieldData(const std::string& name, T value)
+		void SetFieldData(const std::string& name, T* value)
 		{
 			static_assert(sizeof(T) <= 128, "Type to large!");
 			SetFieldDataInternal(name, value);
 		}
-		CatScriptObject* GetManagedObject() { return m_Instance; }
+		//CatScriptObject* GetManagedObject() { return m_Instance; }
 
 	private:
 		bool GetFieldDataInternal(const std::string& name, void* buffer);
@@ -47,7 +46,14 @@ namespace CatEngine
 	private:
 		Ref<ScriptClass> m_ScriptClass;
 
-		CatScriptObject* m_Instance = nullptr;
+        CapyMethod* m_StartMethod;
+        CapyMethod* m_UpdateMethod;
+        CapyMethod* m_CollisionEnterMethod;
+        CapyMethod* m_CollisionExitMethod;
+
+        CapyMethod* m_SetUUIDMethod;
+
+		void* m_Instance = nullptr;
 
         std::unordered_map<std::string, void*> m_DefaultFieldDatas;
 
