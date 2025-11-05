@@ -1,3 +1,4 @@
+#include "CatEngine/Core/Core.h"
 #include "cepch.h"
 #include "ScriptEngine.h"
 
@@ -24,7 +25,6 @@ namespace CatEngine
 {
 	struct ScriptEngineData
 	{
-
         CapyDomain* AppDomain;
 
 		std::unordered_map<std::string, Ref<ScriptClass>> EntityClasses;
@@ -144,6 +144,8 @@ namespace CatEngine
 
             }
         }
+
+        s_ScriptData->SourceFileWatchers.push_back(CreateScope<filewatch::FileWatch<std::string>>(filePath.string(), OnSourceFileSystemEvent));
 
 		return true;
 	}

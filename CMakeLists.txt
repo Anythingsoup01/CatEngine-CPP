@@ -1,6 +1,10 @@
-cmake_minimum_required(VERSION 4.1.2)
+cmake_minimum_required(VERSION 3.28.3)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 project(CatEngine LANGUAGES C CXX)
+add_compile_options(
+    -fPIC
+)
+
 add_subdirectory(CatEngine)
 add_subdirectory(CatEditor)
 add_subdirectory(vendor/Glad)

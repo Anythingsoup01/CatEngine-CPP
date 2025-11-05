@@ -1,4 +1,5 @@
 
+#include "CatEngine/Core/Log.h"
 #include "cepch.h"
 #include "SourceFileCompiler.h"
 
@@ -85,7 +86,7 @@ namespace CatEngine
            << "-I" << CatEngineVND << "/Glad/include \\\n"
            << "-I" << CatEngineVND << "/Box2D/include \\\n"
            << "-DCE_SCRIPT_COMPILATION \\\n"
-           << "-fPIC -shared  -L" << rootCatEnginePath.string() << "/build/CatEngine -lCatEngine -ldl -lstdc++ -gdwarf-4\\\n";
+           << "-fPIC -shared  -L" << rootCatEnginePath.string() << "/build/CatEngine -lCatEngine -ldl -lstdc++ -gdwarf-4\n";
         
         return ss.str();
 
@@ -93,8 +94,10 @@ namespace CatEngine
 
     void SourceFileCompiler::CompileFile(const std::filesystem::path& filePath)
     {
+        CE_API_CRITICAL("COMPILING");
         std::stringstream ss;
-        ss << "cd " << Project::GetAssetDirectory() << "; " << GetBuildCommandVariables(filePath);
+        ss << GetBuildCommandVariables(filePath);
+        CE_API_WARN(ss.str());
         system(ss.str().c_str());
     }
 

@@ -1,6 +1,9 @@
 Workspace =
 {
     name = "CatEngine",
+    flags = {
+        "-fPIC",
+    }
 }
 
 External = "CatEngine"

@@ -44,7 +44,7 @@ Project = {
         "yaml-cpp",
         "Box2D",
         "GL",
-        "Capybara"
+        "Capybara",
     },
 
     defines = {

@@ -1,0 +1,19 @@
+Scene: SampleScene
+Entities:
+  - Entity: 17653273273332766706
+    TagComponent:
+      Tag: None
+    LayerComponent:
+      Layer: Default
+    NameComponent:
+      Name: GameObject
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      Texture: 17002799958257037877
+      Tiling: 1
+    ScriptComponent:
+      ClassName: ""
