@@ -26,6 +26,7 @@ namespace CatEngine
 	struct ScriptEngineData
 	{
         CapyDomain* AppDomain;
+        std::filesystem::path CoreLibraryPath;
 
 		std::unordered_map<std::string, Ref<ScriptClass>> EntityClasses;
 		std::unordered_map<UUID, Ref<ScriptInstance>> EntityInstances;
@@ -53,6 +54,12 @@ namespace CatEngine
 	{
 		s_ScriptData = new ScriptEngineData();
         s_ScriptData->AppDomain = capy_init_domain("CatAppDomain");
+
+        capy_set_ignored_namespace({"spdlog", "fmt", "literals", "internal"});
+
+        s_ScriptData->CoreLibraryPath = Application::Get().GetMainPath() / "build/CatScriptCore/libCatScriptCore.so";
+
+        capy_domain_library_open(s_ScriptData->AppDomain, s_ScriptData->CoreLibraryPath.c_str(), true);
 
 	}
 
@@ -176,13 +183,18 @@ namespace CatEngine
 
         Application::Get().SubmitToMainThread([](){
             s_ScriptData->AppDomain = capy_init_domain("CatAppDomain");
+
+            capy_domain_library_open(s_ScriptData->AppDomain, s_ScriptData->CoreLibraryPath.c_str(), true);
+
             capy_reload_libraries_into_domain(s_ScriptData->AppDomain);
 
             
 
             for (auto& [name , lib] : s_ScriptData->AppDomain->Libraries)
             {
-
+                if (lib->IsCore)
+                    continue;
+                
                 auto it = s_ScriptData->EntityClasses.find(name);
                 if (it != s_ScriptData->EntityClasses.end())
                     s_ScriptData->EntityClasses.erase(it);
@@ -192,6 +204,13 @@ namespace CatEngine
                 {
                     s_ScriptData->EntityClasses[name] = CreateRef<ScriptClass>(image, klass->NameSpace, klass->ClassName);
                 }
+            }
+
+            std::vector<std::string> coreLib = capy_get_core_libraries_from_domain("CatAppDomain");
+
+            for (auto& libName : coreLib)
+            {
+                CE_API_WARN("CORE LIBRARY: {}", libName);
             }
 
         });

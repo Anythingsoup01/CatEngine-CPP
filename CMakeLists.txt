@@ -7,6 +7,7 @@ add_compile_options(
 
 add_subdirectory(CatEngine)
 add_subdirectory(CatEditor)
+add_subdirectory(CatScriptCore)
 add_subdirectory(vendor/Glad)
 add_subdirectory(vendor/glfw)
 add_subdirectory(vendor/imgui)

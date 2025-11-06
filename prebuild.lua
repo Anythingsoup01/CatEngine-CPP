@@ -8,6 +8,7 @@ Workspace =
 
 External = "CatEngine"
 External = "CatEditor"
+External = "CatScriptCore"
 
 External = "vendor/Glad"
 External = "vendor/glfw"
