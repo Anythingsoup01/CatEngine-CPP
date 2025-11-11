@@ -1,13 +1,7 @@
 #pragma once
 
-#include "CatEngine/Core/KeyCodes.h"
-#ifndef CE_SCRIPT_COMPILATION
-#include <glm/glm.hpp>
-#include "CatEngine/Core/UUID.h"
-#include "CatEngine/Scene/Entity.h"
-#include "CatEngine/Scene/Components/Components.h"
-#include "CatEngine/Scripting/ScriptGlue.h"
-#endif
+#include "CatScriptCore/Types/Types.h"
+#include "CatScriptCore/InternalCalls/InternalCalls.h"
 
 namespace CatEngine
 {

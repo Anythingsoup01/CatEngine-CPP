@@ -1,5 +1,11 @@
 set(SRCS
+    "src/CatScriptCore/InternalCalls/InternalCalls.cpp"
     "src/CatScriptCore/BaseClasses/ScriptObject.cpp"
+    "src/CatScriptCore/InternalCalls/InternalCalls.h"
+    "src/CatScriptCore/Types/Types.h"
+    "src/CatScriptCore/Types/Vector.h"
+    "src/CatScriptCore/Scene/Component/Object.h"
+    "src/CatScriptCore/Scene/Component/Component.h"
     "src/CatScriptCore/BaseClasses/ScriptObject.h"
 )
 add_library(CatScriptCore SHARED ${SRCS})
@@ -12,10 +18,6 @@ target_include_directories(CatScriptCore PRIVATE
     "${CMAKE_SOURCE_DIR}/vendor/glm"
     "${CMAKE_SOURCE_DIR}/vendor/entt"
     "${CMAKE_SOURCE_DIR}/vendor/Box2D/include"
-)
-
-target_link_libraries(CatScriptCore
-    CatEngine
 )
 
 target_compile_options(CatScriptCore PRIVATE

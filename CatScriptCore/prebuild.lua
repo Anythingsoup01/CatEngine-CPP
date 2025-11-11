@@ -22,8 +22,4 @@ Project = {
         "-fPIC",
         "-gdwarf-2",
     },
-
-    links = {
-        "CatEngine"
-    }
 }

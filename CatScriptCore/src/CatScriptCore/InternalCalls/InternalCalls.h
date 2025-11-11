@@ -1,0 +1,38 @@
+#pragma once
+
+#include "CatScriptCore/Types/Types.h"
+
+#include <string>
+#include <cstdint>
+
+struct Type;
+struct Object;
+
+namespace CatRuntime
+{
+#   define CE_ADD_INTERNAL_CALL(name, ret, ...) \
+        using name##_func_t = ret(*)(__VA_ARGS__); \
+        extern name##_func_t name;
+
+#   define CE_INITIALIZE_INTERNAL_CALL(name) \
+        name##_func_t name = nullptr;
+
+    CE_ADD_INTERNAL_CALL(Input_IsKeyDown, bool, uint16_t);
+
+    CE_ADD_INTERNAL_CALL(Object_HasComponent, bool, Type);
+    CE_ADD_INTERNAL_CALL(Object_FindObjectByName, uint64_t, std::string);
+
+    CE_ADD_INTERNAL_CALL(GetScriptInstance, Object, uint64_t);
+
+    CE_ADD_INTERNAL_CALL(Rigidbody2D_ApplyForce, void, uint64_t, Vector2, Vector2, bool);
+    CE_ADD_INTERNAL_CALL(Rigidbody2D_ApplyForceToCenter, void, uint64_t, Vector2, bool);
+    CE_ADD_INTERNAL_CALL(Rigidbody2D_ApplyLinearImpulse, void, Vector2, Vector2, bool);
+    CE_ADD_INTERNAL_CALL(Rigidbody2D_ApplyLinearImpulseToCenter, void, Vector2, bool);
+
+    CE_ADD_INTERNAL_CALL(Transform_GetPosition, Vector3, uint64_t);
+    CE_ADD_INTERNAL_CALL(Transform_SetPosition, void, uint64_t, Vector3);
+    CE_ADD_INTERNAL_CALL(Transform_GetRotation, Vector3, uint64_t);
+    CE_ADD_INTERNAL_CALL(Transform_SetRotation, void, uint64_t, Vector3);
+    CE_ADD_INTERNAL_CALL(Transform_GetScale, Vector3, uint64_t);
+    CE_ADD_INTERNAL_CALL(Transform_SetScale, void, uint64_t, Vector3);
+}
