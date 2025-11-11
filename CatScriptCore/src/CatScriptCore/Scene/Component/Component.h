@@ -2,26 +2,17 @@
 
 #include "Object.h"
 
+#include "Tag.h"
+#include "Layer.h"
+#include "Transform.h"
+
 namespace CatRuntime
 {
 	class Component : public Object
 	{
     public:
-
-        Tag Tag()
-        {
-            return GetComponent<Tag>();
-        }
-
-		Layer Layer()
-		{
-			return GetComponent<Layer>();
-		}
-
-		Transform Transform()
-		{	
-            return GetComponent<Transform>();	
-		}
-
-	}
+        TagComponent Tag();
+		LayerComponent Layer();
+        TransformComponent Transform();
+    };
 }

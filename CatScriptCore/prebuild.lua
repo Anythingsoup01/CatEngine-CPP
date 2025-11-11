@@ -11,11 +11,6 @@ Project = {
 
     includedirs = {
         "src",
-        "${WORKSPACEDIR}CatEngine/src",
-        "${WORKSPACEDIR}vendor/spdlog/include",
-        "${WORKSPACEDIR}vendor/glm",
-        "${WORKSPACEDIR}vendor/entt",
-        "${WORKSPACEDIR}vendor/Box2D/include",
     },
 
     flags = {

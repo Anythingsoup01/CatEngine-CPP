@@ -2,6 +2,8 @@
 
 #include "CatScriptCore/InternalCalls/InternalCalls.h"
 
+#include "Transform.h"
+
 namespace CatRuntime
 {
 	class Object
@@ -17,43 +19,45 @@ namespace CatRuntime
 
 		uint64_t m_InstanceID;
 
-        /*
 		Transform Transform()
 		{
             return GetComponent<Transform>();
 		}
-        */
 
         template<typename T>
 		bool HasComponent<T>()
 		{
             static_assert(!Object_HasComponent, "Object_HasComponent is not defined!");
-			T componentType = typeof(T);
-			return Object_HasComponent(m_InstanceID, componentType);
+			return Object_HasComponent(m_InstanceID, T);
 		}
-/*
-		public T GetComponent<T>() where T : Component, new()
+
+        template<typename T>
+		T GetComponent<T>()
 		{
 			if (!HasComponent<T>())
-				return null;
-
-			T component = new T() { Object = this };
-			return component;
+            {
+                printf("Component not found!\n");
+				return T();
+            }
+            return Object_GetComponent(m_InstanceID);
 		}
 
-		public Object FindObjectByName(string name)
+		Object FindObjectByName(std::string name)
 		{
-			ulong objectID = InternalCalls.Object_FindObjectByName(name);
+			ulong objectID = Object_FindObjectByName(m_InstanceID, name);
 			if (objectID == 0)
-				return null;
-			return new Object(objectID) { };
+            {
+                printf("Object not found!\n");
+				return Object();
+            }
+			return Object(objectID);
 		}
 
-		public T As<T>() where T : Object, new()
-		{
-			object instance = InternalCalls.GetScriptInstance(m_InstanceID);
-			return instance as T;
+        template<typename T>
+		T As<T>()
+        {
+			T instance = GetScriptInstance(m_InstanceID);
+			return instance;
 		}
-        */
 	};
 }
