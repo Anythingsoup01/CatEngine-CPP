@@ -11,7 +11,7 @@ template<>
 entt::entity RuntimeValue::As<entt::entity>() const
 {
     if (Type != ValueType::INT32) throw std::runtime_error("Type mismatch for int");
-    return (entt::entity)i;
+    return (entt::entity)ui64;
 }
 
 
@@ -46,7 +46,7 @@ namespace CatEngine
         m_CollisionEnterMethod = scriptClass->GetMethod("OnCollisionEnter");
         m_CollisionExitMethod = scriptClass->GetMethod("OnCollisionExit");
 
-        m_SetUUIDMethod = scriptClass->GetMethod("SetUUID");
+        m_SetUUIDMethod = scriptClass->GetMethod("SetInstanceID");
 
 	}
 

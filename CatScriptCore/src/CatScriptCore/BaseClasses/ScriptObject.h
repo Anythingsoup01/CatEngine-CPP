@@ -3,9 +3,11 @@
 #include "CatScriptCore/Types/Types.h"
 #include "CatScriptCore/InternalCalls/InternalCalls.h"
 
-namespace CatEngine
+#include "CatScriptCore/Scene/Component/Object.h"
+
+namespace CatRuntime
 {
-    class IScriptObject
+    class ScriptObject : public Object
     {
     public:
         virtual void Start() {}

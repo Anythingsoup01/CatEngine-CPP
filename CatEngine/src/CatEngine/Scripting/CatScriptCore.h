@@ -21,6 +21,11 @@ namespace CatEngine
 		TransformComponent, Rigidbody2DComponent,
 	};
 
+    static ScriptFieldType StringToScriptFieldType(const std::string& type)
+    {
+        
+    }
+
 	struct ScriptField
 	{
 		ScriptFieldType Type;

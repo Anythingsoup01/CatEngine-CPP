@@ -3,8 +3,9 @@
 
 namespace CatRuntime
 {
-    Vector3 Transform::Position()
+    Vector3 TransformComponent::Position()
     {
-	    return Transform_GetPosition(Object.m_InstanceID);
+	    //return Transform_GetPosition();
+        return Vector3();
     }
 }

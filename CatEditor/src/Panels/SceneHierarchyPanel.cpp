@@ -1,4 +1,5 @@
 #include "SceneHierarchyPanel.h"
+#include "CatEngine/Core/Log.h"
 #include "CatEngine/Scene/Components/Components.h"
 #include "ImGui/ImGuiDraw.h"
 

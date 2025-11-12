@@ -3,18 +3,21 @@
 
 namespace CatRuntime
 {
-    Tag Component::Tag()
+    TagComponent Component::Tag()
     {
-        return GetComponent<Tag>();
+        //return GetComponent<Tag>();
+        return TagComponent();
     }
 
-    Layer Component::Layer()
+    LayerComponent Component::Layer()
     {
-        return GetComponent<Layer>();
+        //return GetComponent<Layer>();
+        return LayerComponent();
     }
 
-    Transform Component::Transform()
+    TransformComponent Component::Transform()
     {
-        return GetComponent<Transform>();
+        //return GetComponent<Transform>();
+        return TransformComponent();
     }
 }

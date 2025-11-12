@@ -1,4 +1,5 @@
 #include "CatEngine/Core/Core.h"
+#include "CatEngine/Scripting/ScriptGlue.h"
 #include "cepch.h"
 #include "ScriptEngine.h"
 
@@ -11,6 +12,7 @@
 
 
 #include <glm/glm.hpp>
+#include <unordered_map>
 
 
 #include "CatEngine/Core/Application.h"
@@ -52,6 +54,8 @@ namespace CatEngine
 	///////////////////////////////////////////////////////
     void ScriptEngine::Init()
 	{
+        capy_init();
+
 		s_ScriptData = new ScriptEngineData();
         s_ScriptData->AppDomain = capy_init_domain("CatAppDomain");
 
@@ -195,24 +199,36 @@ namespace CatEngine
                 if (lib->IsCore)
                     continue;
                 
-                auto it = s_ScriptData->EntityClasses.find(name);
-                if (it != s_ScriptData->EntityClasses.end())
-                    s_ScriptData->EntityClasses.erase(it);
 
                 CapyImage* image = lib->MainImage.get();
                 for (auto& [name, klass] : image->Classes)
                 {
-                    s_ScriptData->EntityClasses[name] = CreateRef<ScriptClass>(image, klass->NameSpace, klass->ClassName);
+                    auto it = s_ScriptData->EntityClasses.find(klass->ClassName);
+                    if (it != s_ScriptData->EntityClasses.end())
+                        s_ScriptData->EntityClasses.erase(it);
+
+                    s_ScriptData->EntityClasses[klass->ClassName] = CreateRef<ScriptClass>(image, klass->NameSpace, klass->ClassName);
+
+
+                    CapyClass* klassPtr = klass.get();
+                    for (auto& [name, field] : klassPtr->VTable->Fields)
+                    {
+                        s_ScriptData->EntityClasses[klass->ClassName]->m_Fields[name] = ScriptField{StringToScriptFieldType(field->FieldTypeString), name, field.get()};
+                    }
+
                 }
+
+
+
             }
 
             std::vector<std::string> coreLib = capy_get_core_libraries_from_domain("CatAppDomain");
 
-            for (auto& libName : coreLib)
-            {
-                CE_API_WARN("CORE LIBRARY: {}", libName);
-            }
 
+            //ScriptGlue::RegisterFunctions();
+            //ScriptGlue::RegisterComponents();
+
+            CE_API_WARN("{}", capy_dump_domain("CatAppDomain"));
         });
 
         s_ScriptData->SourceFileReloadPending = false;

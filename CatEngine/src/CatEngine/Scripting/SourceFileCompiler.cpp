@@ -68,10 +68,6 @@ namespace CatEngine
     {
 
         std::filesystem::path rootCatEnginePath = Application::Get().GetMainPath();
-        std::string CatEngineSRC = rootCatEnginePath.string();
-        CatEngineSRC.append("/CatEngine/src");
-        std::string CatEngineVND = rootCatEnginePath.string();
-        CatEngineVND.append("/vendor");
 
         std::filesystem::path sourceFilePath = filePath;
         std::filesystem::path compilePath = Project::GetAssetDirectory() / ".build" / filePath.filename();
@@ -79,14 +75,8 @@ namespace CatEngine
 
         std::stringstream ss;
         ss << "gcc " << sourceFilePath << " -o " << compilePath << " \\\n"
-           << "-I" << CatEngineSRC << " \\\n"
-           << "-I" << CatEngineVND << "/spdlog/include \\\n"
-           << "-I" << CatEngineVND << "/glm \\\n"
-           << "-I" << CatEngineVND << "/entt \\\n"
-           << "-I" << CatEngineVND << "/Glad/include \\\n"
-           << "-I" << CatEngineVND << "/Box2D/include \\\n"
-           << "-DCE_SCRIPT_COMPILATION \\\n"
-           << "-fPIC -shared  -L" << rootCatEnginePath.string() << "/build/CatEngine -lCatEngine -ldl -lstdc++ -gdwarf-4\n";
+           << "-I" << rootCatEnginePath.string() << "/CatScriptCore/src \\\n"
+           << "-fPIC -shared  -L" << rootCatEnginePath.string() << "/build/CatScriptCore -lCatScriptCore -lstdc++ -gdwarf-4\n";
         
         return ss.str();
 

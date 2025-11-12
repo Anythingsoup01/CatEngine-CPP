@@ -16,4 +16,4 @@ Entities:
       Texture: 17002799958257037877
       Tiling: 1
     ScriptComponent:
-      ClassName: ""
+      ClassName: PlayerController

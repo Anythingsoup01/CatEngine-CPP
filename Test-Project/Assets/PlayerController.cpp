@@ -1,16 +1,19 @@
-#include <CatEngine/Scripting/ScriptInclude.h>
-using namespace CatEngine;
+#include "PlayerController.h"
 
-class PlayerController : public IScriptObject
+namespace CatRuntime
 {
-public:
-    void Start() override
+    void PlayerController::Start()
     {
-        //Put here to start at runtime
+
     }
 
-    void Update(float ts) override
+    void PlayerController::Update(float ts)
     {
-        //Put here to run during runtime
+
     }
-};
+
+    PlayerController* PlayerController::Create(uint64_t entityID)
+    {
+        return new PlayerController(entityID);
+    }
+}
