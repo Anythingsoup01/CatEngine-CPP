@@ -5,7 +5,6 @@
 #include <string>
 #include <cstdint>
 
-struct Type;
 struct Object;
 
 namespace CatRuntime
@@ -19,10 +18,9 @@ namespace CatRuntime
 
     CE_ADD_INTERNAL_CALL(Input_IsKeyDown, bool, uint16_t);
 
-    CE_ADD_INTERNAL_CALL(Object_HasComponent, bool, Type);
+    CE_ADD_INTERNAL_CALL(Object_HasComponent, bool, uint64_t, std::string);
     CE_ADD_INTERNAL_CALL(Object_FindObjectByName, uint64_t, std::string);
 
-    CE_ADD_INTERNAL_CALL(GetScriptInstance, Object, uint64_t);
 
     CE_ADD_INTERNAL_CALL(Rigidbody2D_ApplyForce, void, uint64_t, Vector2, Vector2, bool);
     CE_ADD_INTERNAL_CALL(Rigidbody2D_ApplyForceToCenter, void, uint64_t, Vector2, bool);

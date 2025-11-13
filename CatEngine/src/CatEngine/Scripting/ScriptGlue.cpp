@@ -1,13 +1,24 @@
 #include "cepch.h"
 #include "ScriptGlue.h"
 
+#include "CatEngine/Core/Input.h"
+#include "CatEngine/Core/KeyCodes.h"
+#include "CatEngine/Core/MouseCodes.h"
+#include "CatEngine/Math/Math.h"
+#include "CatEngine/Scene/Scene.h"
+#include "CatEngine/Scene/Entity.h"
 #include "ScriptEngine.h"
 
 #include "CatEngine/Physics/Physics2D.h"
 
 namespace CatEngine
 {
-    Entity ScriptGlue::GetEntity(UUID entityID)
+
+    static std::unordered_map <std::string, std::function<bool(Entity)>> s_EntityHasComponentFuncs;
+
+#define CE_ADD_INTERNAL_CALL(Name) capy_add_internal_call(#Name, (void*)&Name)
+
+	static Entity GetEntity(UUID entityID)
 	{
 		Ref<Scene> scene = ScriptEngine::GetSceneContext();
 		CE_ASSERT(scene);
@@ -16,176 +27,20 @@ namespace CatEngine
 		return entity;
 	}
 
-	bool ScriptGlue::Input_IsKeyDown(KeyCode keyCode)
+	static bool Input_IsKeyDown(KeyCode keyCode)
 	{
 		return Input::IsKeyPressed(keyCode);
 	}
 #pragma region Object
 
-    template<typename T>
-	bool ScriptGlue::Object_HasComponent(UUID entityID, T component)
+	static bool Object_HasComponent(UUID entityID, const std::string& componentType)
 	{
-		Entity entity = GetEntity(entityID);
-        return entity.HasComponent<T>();
+		const Entity& entity = GetEntity(entityID);
+        CE_ASSERT(s_EntityHasComponentFuncs.find(componentType) != s_EntityHasComponentFuncs.end());
+		return s_EntityHasComponentFuncs.at(componentType)(entity);
 	}
-    template<>
-    bool ScriptGlue::Object_HasComponent(UUID entityID, TagComponent component)
-    {
-		Entity entity = GetEntity(entityID);
-        return entity.HasComponent<TagComponent>();
-    }
-    template<>
-    bool ScriptGlue::Object_HasComponent(UUID entityID, LayerComponent component)
-    {
-		Entity entity = GetEntity(entityID);
-        return entity.HasComponent<LayerComponent>();
-    }
-    template<>
-    bool ScriptGlue::Object_HasComponent(UUID entityID, TransformComponent component)
-    {
-		Entity entity = GetEntity(entityID);
-        return entity.HasComponent<TransformComponent>();
-    }
-    template<>
-    bool ScriptGlue::Object_HasComponent(UUID entityID, CameraComponent component)
-    {
-		Entity entity = GetEntity(entityID);
-        return entity.HasComponent<CameraComponent>();
-    }
-    template<>
-    bool ScriptGlue::Object_HasComponent(UUID entityID, SpriteRendererComponent component)
-    {
-		Entity entity = GetEntity(entityID);
-        return entity.HasComponent<SpriteRendererComponent>();
-    }
-    template<>
-    bool ScriptGlue::Object_HasComponent(UUID entityID, CircleRendererComponent component)
-    {
-		Entity entity = GetEntity(entityID);
-        return entity.HasComponent<CircleRendererComponent>();
-    }
-    template<>
-    bool ScriptGlue::Object_HasComponent(UUID entityID, BoxCollider2DComponent component)
-    {
-		Entity entity = GetEntity(entityID);
-        return entity.HasComponent<BoxCollider2DComponent>();
-    }
-    template<>
-    bool ScriptGlue::Object_HasComponent(UUID entityID, CircleCollider2DComponent component)
-    {
-		Entity entity = GetEntity(entityID);
-        return entity.HasComponent<CircleCollider2DComponent>();
-    }
-    template<>
-    bool ScriptGlue::Object_HasComponent(UUID entityID, Rigidbody2DComponent component)
-    {
-		Entity entity = GetEntity(entityID);
-        return entity.HasComponent<Rigidbody2DComponent>();
-    }
-    template<>
-    bool ScriptGlue::Object_HasComponent(UUID entityID, ScriptComponent component)
-    {
-		Entity entity = GetEntity(entityID);
-        return entity.HasComponent<ScriptComponent>();
-    }
 
-    template<typename T>
-	T ScriptGlue::Object_GetComponent(UUID entityID)
-	{
-        static_assert(false, "Component not supported!");
-	}
-    template<>
-    TagComponent ScriptGlue::Object_GetComponent<TagComponent>(UUID entityID)
-    {
-		Entity entity = GetEntity(entityID);
-        if (entity.HasComponent<TagComponent>())
-            return entity.GetComponent<TagComponent>();
-        CE_API_ERROR("Entity does not have component!");
-        return TagComponent();
-    }
-    template<>
-    LayerComponent ScriptGlue::Object_GetComponent<LayerComponent>(UUID entityID)
-    {
-		Entity entity = GetEntity(entityID);
-        if (entity.HasComponent<LayerComponent>())
-            return entity.GetComponent<LayerComponent>();
-        CE_API_ERROR("Entity does not have component!");
-        return LayerComponent();
-    }
-    template<>
-    TransformComponent ScriptGlue::Object_GetComponent<TransformComponent>(UUID entityID)
-    {
-		Entity entity = GetEntity(entityID);
-        if (entity.HasComponent<TransformComponent>())
-            return entity.GetComponent<TransformComponent>();
-        CE_API_ERROR("Entity does not have component!");
-        return TransformComponent();
-    }
-    template<>
-    CameraComponent ScriptGlue::Object_GetComponent<CameraComponent>(UUID entityID)
-    {
-		Entity entity = GetEntity(entityID);
-        if (entity.HasComponent<CameraComponent>())
-            return entity.GetComponent<CameraComponent>();
-        CE_API_ERROR("Entity does not have component!");
-        return CameraComponent();
-    }
-    template<>
-    SpriteRendererComponent ScriptGlue::Object_GetComponent<SpriteRendererComponent>(UUID entityID)
-    {
-		Entity entity = GetEntity(entityID);
-        if (entity.HasComponent<SpriteRendererComponent>())
-            return entity.GetComponent<SpriteRendererComponent>();
-        CE_API_ERROR("Entity does not have component!");
-        return SpriteRendererComponent();
-    }
-    template<>
-    CircleRendererComponent ScriptGlue::Object_GetComponent<CircleRendererComponent>(UUID entityID)
-    {
-		Entity entity = GetEntity(entityID);
-        if (entity.HasComponent<CircleRendererComponent>())
-            return entity.GetComponent<CircleRendererComponent>();
-        CE_API_ERROR("Entity does not have component!");
-        return CircleRendererComponent();
-    }
-    template<>
-    BoxCollider2DComponent ScriptGlue::Object_GetComponent<BoxCollider2DComponent>(UUID entityID)
-    {
-		Entity entity = GetEntity(entityID);
-        if (entity.HasComponent<BoxCollider2DComponent>())
-            return entity.GetComponent<BoxCollider2DComponent>();
-        CE_API_ERROR("Entity does not have component!");
-        return BoxCollider2DComponent();
-    }
-    template<>
-    CircleCollider2DComponent ScriptGlue::Object_GetComponent<CircleCollider2DComponent>(UUID entityID)
-    {
-		Entity entity = GetEntity(entityID);
-        if (entity.HasComponent<CircleCollider2DComponent>())
-            return entity.GetComponent<CircleCollider2DComponent>();
-        CE_API_ERROR("Entity does not have component!");
-        return CircleCollider2DComponent();
-    }
-    template<>
-    Rigidbody2DComponent ScriptGlue::Object_GetComponent<Rigidbody2DComponent>(UUID entityID)
-    {
-		Entity entity = GetEntity(entityID);
-        if (entity.HasComponent<Rigidbody2DComponent>())
-            return entity.GetComponent<Rigidbody2DComponent>();
-        CE_API_ERROR("Entity does not have component!");
-        return Rigidbody2DComponent();
-    }
-    template<>
-    ScriptComponent ScriptGlue::Object_GetComponent<ScriptComponent>(UUID entityID)
-    {
-		Entity entity = GetEntity(entityID);
-        if (entity.HasComponent<ScriptComponent>())
-            return entity.GetComponent<ScriptComponent>();
-        CE_API_ERROR("Entity does not have component!");
-        return ScriptComponent();
-    }
-
-	uint64_t ScriptGlue::Object_FindObjectByName(const std::string& name)
+    static uint64_t Object_FindObjectByName(const std::string& name)
 	{
 		Ref<Scene> scene = ScriptEngine::GetSceneContext();
 		CE_ASSERT(scene);
@@ -196,39 +51,37 @@ namespace CatEngine
 			return 0;
 
 		return entity.GetUUID();
-
 	}
 
 #pragma endregion
 
 #pragma region Scripts
 
-	void* ScriptGlue::GetScriptInstance(UUID entityID)
-	{
-		//return ScriptEngine::GetManagedInstance(entityID);
-        return nullptr;
-	}
 
 #pragma endregion
 
 
 #pragma region Rigidbody2D
 
-	void ScriptGlue::Rigidbody2D_ApplyForce(Rigidbody2DComponent& rb2d, const glm::vec2* impulse, const glm::vec2* point, bool wake)
+	static void Rigidbody2D_ApplyForce(UUID entityID, glm::vec2* impulse, glm::vec2* point, bool wake)
 	{
-		Physics2D::ApplyForce(rb2d, *impulse, *point, wake);
+		const Entity& entity = GetEntity(entityID);
+		Physics2D::ApplyForce(entity, *impulse, *point, wake);
 	}
-	void ScriptGlue::Rigidbody2D_ApplyForceToCenter(Rigidbody2DComponent& rb2d, const glm::vec2* impulse, bool wake)
+	static void Rigidbody2D_ApplyForceToCenter(UUID entityID, glm::vec2* impulse, bool wake)
 	{
-		Physics2D::ApplyForceToCenter(rb2d, *impulse, wake);
+		const Entity& entity = GetEntity(entityID);
+		Physics2D::ApplyForceToCenter(entity, *impulse, wake);
 	}
-	void ScriptGlue::Rigidbody2D_ApplyLinearImpulse(Rigidbody2DComponent& rb2d, const glm::vec2* impulse, const glm::vec2* point, bool wake)
+	static void Rigidbody2D_ApplyLinearImpulse(UUID entityID, glm::vec2* impulse, glm::vec2* point, bool wake)
 	{
-		Physics2D::ApplyLinearImpulse(rb2d, *impulse, *point, wake);
+		const Entity& entity = GetEntity(entityID);
+		Physics2D::ApplyLinearImpulse(entity, *impulse, *point, wake);
 	}
-	void ScriptGlue::Rigidbody2D_ApplyLinearImpulseToCenter(Rigidbody2DComponent& rb2d, const glm::vec2* impulse, bool wake)
+	static void Rigidbody2D_ApplyLinearImpulseToCenter(UUID entityID, glm::vec2* impulse, bool wake)
 	{
-		Physics2D::ApplyLinearImpulseToCenter(rb2d, *impulse, wake);
+		const Entity& entity = GetEntity(entityID);
+		Physics2D::ApplyLinearImpulseToCenter(entity, *impulse, wake);
 	}
 
 
@@ -236,46 +89,109 @@ namespace CatEngine
 
 #pragma region Transform
 
-	glm::vec3 ScriptGlue::Transform_GetPosition(UUID entityID)
+	static void Transform_GetPosition(UUID entityID, glm::vec3* outPosition)
 	{
-		Entity entity = GetEntity(entityID);
-		return entity.GetComponent<TransformComponent>().Position;
+		const Entity& entity = GetEntity(entityID);
+		*outPosition = entity.GetComponent<TransformComponent>().Position;
 	}
 
-	void ScriptGlue::Transform_SetPosition(UUID entityID, const glm::vec3& position)
+	static void Transform_SetPosition(UUID entityID, glm::vec3* position)
 	{
-		Entity entity = GetEntity(entityID);
+		const Entity& entity = GetEntity(entityID);
 
-		entity.GetComponent<TransformComponent>().Position = position;
+		entity.GetComponent<TransformComponent>().Position = *position;
 	}
 
-	glm::vec3 ScriptGlue::Transform_GetRotation(UUID entityID)
+	static void Transform_GetRotation(UUID entityID, glm::vec3* outRotation)
 	{
-		Entity entity = GetEntity(entityID);
-		return entity.GetComponent<TransformComponent>().Rotation;
+		const Entity& entity = GetEntity(entityID);
+		*outRotation = entity.GetComponent<TransformComponent>().Rotation;
 	}
 
-	void ScriptGlue::Transform_SetRotation(UUID entityID, const glm::vec3& rotation)
+	static void Transform_SetRotation(UUID entityID, glm::vec3* rotation)
 	{
-		Entity entity = GetEntity(entityID);
+		const Entity& entity = GetEntity(entityID);
 
-		entity.GetComponent<TransformComponent>().Rotation = rotation;
+		entity.GetComponent<TransformComponent>().Rotation = *rotation;
 	}
 
-	glm::vec3 ScriptGlue::Transform_GetScale(UUID entityID)
+	static void Transform_GetScale(UUID entityID, glm::vec3* outScale)
 	{
-		Entity entity = GetEntity(entityID);
-		return entity.GetComponent<TransformComponent>().Scale;
+		const Entity& entity = GetEntity(entityID);
+		*outScale = entity.GetComponent<TransformComponent>().Scale;
 	}
 
-	void ScriptGlue::Transform_SetScale(UUID entityID, const glm::vec3& scale)
+	static void Transform_SetScale(UUID entityID, glm::vec3* scale)
 	{
-		Entity entity = GetEntity(entityID);
+		const Entity& entity = GetEntity(entityID);
 
-		entity.GetComponent<TransformComponent>().Scale = scale;
+		entity.GetComponent<TransformComponent>().Scale = *scale;
 	}
 
 #pragma endregion
 
 
+	template<typename ... Component>
+	static void RegisterComponent()
+	{
+
+		([]()
+		{
+			std::string_view fullTypeName = typeid(Component).name();
+			size_t pos = fullTypeName.find_last_of(":");
+			std::string_view typeName = fullTypeName.substr(pos + 1);
+			pos = typeName.size() - sizeof("Component");
+			std::string_view componentName = typeName.substr(0, pos + 1);
+
+			s_EntityHasComponentFuncs[componentName.data()] = [](Entity entity) { return entity.HasComponent<Component>(); };
+		}(), ...);
+	}
+
+	template<typename ... Component>
+	static void RegisterComponent(ComponentGroup<Component ...>)
+	{
+		RegisterComponent<Component ...>();
+	}
+
+	void ScriptGlue::RegisterComponents()
+	{
+		s_EntityHasComponentFuncs.clear();
+		RegisterComponent(AllComponents{});
+	}
+
+	void ScriptGlue::RegisterFunctions()
+	{
+		CE_ADD_INTERNAL_CALL(Input_IsKeyDown);
+
+#pragma region Object
+
+		CE_ADD_INTERNAL_CALL(Object_HasComponent);
+		CE_ADD_INTERNAL_CALL(Object_FindObjectByName);
+
+
+#pragma endregion
+
+#pragma region Scripts
+
+
+#pragma endregion
+
+
+#pragma region Rigidbody2D
+		CE_ADD_INTERNAL_CALL(Rigidbody2D_ApplyForce);
+		CE_ADD_INTERNAL_CALL(Rigidbody2D_ApplyForceToCenter);
+		CE_ADD_INTERNAL_CALL(Rigidbody2D_ApplyLinearImpulse);
+		CE_ADD_INTERNAL_CALL(Rigidbody2D_ApplyLinearImpulseToCenter);
+#pragma endregion
+
+#pragma region Transform
+		CE_ADD_INTERNAL_CALL(Transform_GetPosition);
+		CE_ADD_INTERNAL_CALL(Transform_SetPosition);
+		CE_ADD_INTERNAL_CALL(Transform_GetRotation);
+		CE_ADD_INTERNAL_CALL(Transform_SetRotation);
+		CE_ADD_INTERNAL_CALL(Transform_GetScale);
+		CE_ADD_INTERNAL_CALL(Transform_SetScale);
+#pragma endregion
+
+	}
 }

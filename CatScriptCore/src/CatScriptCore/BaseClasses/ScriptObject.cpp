@@ -1,6 +1,7 @@
 #include "ScriptObject.h"
 
-namespace CatEngine
+namespace CatRuntime
 {
-
+    void ScriptObject::Start() {}
+    void ScriptObject::Update(float ts) {}
 }

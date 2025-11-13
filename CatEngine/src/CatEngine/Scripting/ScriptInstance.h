@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CatScriptCore.h"
+#include "CatEngine/Scene/Entity.h"
 #include <unordered_map>
 
 namespace CatEngine
@@ -11,8 +12,6 @@ namespace CatEngine
 	public:
 		ScriptInstance(Ref<ScriptClass> scriptClass, Entity entity);
         ~ScriptInstance();
-
-        void SetEntityID(UUID entityID);
 
 		void InvokeUpdateMethod(float ts);
 		void InvokeStartMethod();
@@ -50,8 +49,6 @@ namespace CatEngine
         CapyMethod* m_UpdateMethod;
         CapyMethod* m_CollisionEnterMethod;
         CapyMethod* m_CollisionExitMethod;
-
-        CapyMethod* m_SetUUIDMethod;
 
 		void* m_Instance = nullptr;
 

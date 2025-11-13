@@ -15,6 +15,6 @@ Project = {
 
     flags = {
         "-fPIC",
-        "-gdwarf-2",
+        "-gdwarf-4",
     },
 }

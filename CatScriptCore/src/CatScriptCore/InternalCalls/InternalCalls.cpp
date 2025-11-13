@@ -7,8 +7,6 @@ namespace CatRuntime
     CE_INITIALIZE_INTERNAL_CALL(Object_HasComponent);
     CE_INITIALIZE_INTERNAL_CALL(Object_FindObjectByName);
 
-    CE_INITIALIZE_INTERNAL_CALL(GetScriptInstance);
-
     CE_INITIALIZE_INTERNAL_CALL(Rigidbody2D_ApplyForce);
     CE_INITIALIZE_INTERNAL_CALL(Rigidbody2D_ApplyForceToCenter);
     CE_INITIALIZE_INTERNAL_CALL(Rigidbody2D_ApplyLinearImpulse);

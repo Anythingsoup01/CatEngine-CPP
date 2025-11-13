@@ -1,0 +1,2 @@
+CompileFlags:
+  Add: [-I/home/anyth/Doge/Dev/CatEngine/CatEngine/src, -I/home/anyth/Doge/Dev/CatEngine/vendor/spdlog/include, -I/home/anyth/Doge/Dev/CatEngine/vendor/glm, -I/home/anyth/Doge/Dev/CatEngine/vendor/entt, -I/home/anyth/Doge/Dev/CatEngine/vendor/Box2D/include, -DCE_SCRIPT_COMPILATION]

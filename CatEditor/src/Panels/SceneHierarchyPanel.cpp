@@ -482,21 +482,22 @@ namespace CatEngine
 
 					for (const auto& [name, field] : fields)
 					{
-                        void* data;
 						switch (field.Type)
 						{
 						case ScriptFieldType::Float:
 						{
-                            scriptInstance->GetFieldData<float>(name, data);
-							if (ImGui::DragFloat(name.c_str(), (float*)data))
-								scriptInstance->SetFieldData(name, data);
+                            float data;
+                            scriptInstance->GetFieldData<float>(name, &data);
+							if (ImGui::DragFloat(name.c_str(), &data))
+								scriptInstance->SetFieldData(name, &data);
 							break;
 						}
 						case ScriptFieldType::Double:
 						{
-							scriptInstance->GetFieldData<double>(name, data);
-							if (ImGui::DragFloat(name.c_str(), (float*)data))
-								scriptInstance->SetFieldData(name, data);
+                            double data;
+							scriptInstance->GetFieldData<double>(name, &data);
+							if (ImGui::DragFloat(name.c_str(), &(float&)data))
+								scriptInstance->SetFieldData(name, &data);
 							break;
 						}
 						case ScriptFieldType::SByte:
@@ -507,51 +508,58 @@ namespace CatEngine
 							break;
 						case ScriptFieldType::Int16:
 						{
-							scriptInstance->GetFieldData<int16_t>(name, data);
-							if (ImGui::DragInt(name.c_str(), (int*)data))
-								scriptInstance->SetFieldData(name, data);
+                            int16_t data;
+							scriptInstance->GetFieldData<int16_t>(name, &data);
+							if (ImGui::DragInt(name.c_str(), &(int&)data))
+								scriptInstance->SetFieldData(name, &data);
 							break;
 						}
 						case ScriptFieldType::Int32:
 						{
-							scriptInstance->GetFieldData<int32_t>(name, data);
-							if (ImGui::DragInt(name.c_str(), (int*)data))
-								scriptInstance->SetFieldData(name, data);
+                            int32_t data;
+							scriptInstance->GetFieldData<int32_t>(name, &data);
+							if (ImGui::DragInt(name.c_str(), &data))
+								scriptInstance->SetFieldData(name, &data);
 							break;
 						}
 						case ScriptFieldType::Int64:
 						{
-							scriptInstance->GetFieldData<int64_t>(name, data);
-							if (ImGui::DragInt(name.c_str(), (int*)data))
-								scriptInstance->SetFieldData(name, data);
+                            int64_t data;
+							scriptInstance->GetFieldData<int64_t>(name, &data);
+							if (ImGui::DragInt(name.c_str(), &(int&)data))
+								scriptInstance->SetFieldData(name, &data);
 							break;
 						}
 						case ScriptFieldType::Boolean:
 						{
-							scriptInstance->GetFieldData<bool>(name, data);
-							if (ImGui::Checkbox(name.c_str(), (bool*)data))
-								scriptInstance->SetFieldData(name, data);
+                            bool data;
+							scriptInstance->GetFieldData<bool>(name, &data);
+							if (ImGui::Checkbox(name.c_str(), &data))
+								scriptInstance->SetFieldData(name, &data);
 							break;
 						}
 						case ScriptFieldType::UInt16:
 						{
-							scriptInstance->GetFieldData<uint16_t>(name, data);
-							if (ImGui::DragInt(name.c_str(), (int*)data))
-								scriptInstance->SetFieldData(name, data);
+                            uint16_t data;
+							scriptInstance->GetFieldData<uint16_t>(name, &data);
+							if (ImGui::DragInt(name.c_str(), &(int&)data))
+								scriptInstance->SetFieldData(name, &data);
 							break;
 						}
 						case ScriptFieldType::UInt32:
 						{
-							scriptInstance->GetFieldData<uint32_t>(name, data);
-							if (ImGui::DragInt(name.c_str(), (int*)data))
-								scriptInstance->SetFieldData(name, data);
+                            uint32_t data;
+							scriptInstance->GetFieldData<uint32_t>(name, &data);
+							if (ImGui::DragInt(name.c_str(), &(int&)data))
+								scriptInstance->SetFieldData(name, &data);
 							break;
 						}
 						case ScriptFieldType::UInt64:
 						{
-							scriptInstance->GetFieldData<uint64_t>(name, data);
-							if (ImGui::DragInt(name.c_str(), (int*)data))
-								scriptInstance->SetFieldData(name, data);
+                            uint64_t data;
+							scriptInstance->GetFieldData<uint64_t>(name, &data);
+							if (ImGui::DragInt(name.c_str(), &(int&)data))
+								scriptInstance->SetFieldData(name, &data);
 							break;
 						}
 						case ScriptFieldType::String:
@@ -560,23 +568,26 @@ namespace CatEngine
 						}
 						case ScriptFieldType::Vector2:
 						{
-							scriptInstance->GetFieldData<glm::vec2>(name, data);
-							if (ImGui::DragFloat2(name.c_str(), glm::value_ptr(*(glm::vec2*)data)))
-								scriptInstance->SetFieldData(name, data);
+                            glm::vec2 data;
+							scriptInstance->GetFieldData<glm::vec2>(name, &data);
+							if (ImGui::DragFloat2(name.c_str(), glm::value_ptr(data)))
+								scriptInstance->SetFieldData(name, &data);
 							break;
 						}
 						case ScriptFieldType::Vector3:
 						{
-							scriptInstance->GetFieldData<glm::vec3>(name, data);
-							if (ImGui::DragFloat3(name.c_str(), glm::value_ptr(*(glm::vec3*)data)))
-								scriptInstance->SetFieldData(name, data);
+                            glm::vec3 data;
+							scriptInstance->GetFieldData<glm::vec3>(name, &data);
+							if (ImGui::DragFloat3(name.c_str(), glm::value_ptr(data)))
+								scriptInstance->SetFieldData(name, &data);
 							break;
 						}
 						case ScriptFieldType::Vector4:
 						{
-							scriptInstance->GetFieldData<glm::vec4>(name, data);
-							if (ImGui::DragFloat4(name.c_str(), glm::value_ptr(*(glm::vec4*)data)))
-								scriptInstance->SetFieldData(name, data);
+                            glm::vec4 data;
+							scriptInstance->GetFieldData<glm::vec4>(name, &data);
+							if (ImGui::DragFloat4(name.c_str(), glm::value_ptr(data)))
+								scriptInstance->SetFieldData(name, &data);
 							break;
 						}
                         case ScriptFieldType::TransformComponent:
@@ -591,8 +602,7 @@ namespace CatEngine
 
                                     if (entity.HasComponent<TransformComponent>())
                                     {
-                                        data = &entity.GetComponent<TransformComponent>();
-                                        scriptInstance->SetFieldData(name, data);
+                                        scriptInstance->SetFieldData(name, &entity.GetComponent<TransformComponent>());
                                     }
                                 }
                                 ImGui::EndDragDropTarget();
@@ -624,162 +634,161 @@ namespace CatEngine
 							
 							switch (field.Type)
 							{
-                                void* data;
-                                case ScriptFieldType::Float:
-                                {
-                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
-                                    scriptFieldInstance.GetValue<float>(data);
+							case ScriptFieldType::Float:
+							{
+								ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
+								float data; scriptFieldInstance.GetValue<float>(&data);
 
-                                    if (ImGui::DragFloat(name.c_str(), (float*)data))
-                                    {
-                                        scriptFieldInstance.SetValue(data);
-                                    }
-                                    break;
-                                }
-                                case ScriptFieldType::Double:
-                                {
-                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
-                                    scriptFieldInstance.GetValue<double>(data);
+								if (ImGui::DragFloat(name.c_str(), &data))
+								{
+									scriptFieldInstance.SetValue(&data);
+								}
+								break;
+							}
+							case ScriptFieldType::Double:
+							{
+								ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
+								double data; scriptFieldInstance.GetValue<double>(&data);
 
-                                    if (ImGui::DragFloat(name.c_str(), (float*)data))
+								if (ImGui::DragFloat(name.c_str(), &(float&)data))
+								{
+									scriptFieldInstance.SetValue(&data);
+								}
+								break;
+							}
+							case ScriptFieldType::SByte:
+							{
+								break;
+							}
+							case ScriptFieldType::Char:
+								break;
+							case ScriptFieldType::Int16:
+							{
+								ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
+								int16_t data; scriptFieldInstance.GetValue<int16_t>(&data);
+								if (ImGui::DragInt(name.c_str(), &(int&)data))
+								{
+									scriptFieldInstance.SetValue(&data);
+								}
+								break;
+							}
+							case ScriptFieldType::Int32:
+							{
+								ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
+								int32_t data; scriptFieldInstance.GetValue<int32_t>(&data);
+								if (ImGui::DragInt(name.c_str(), &data))
+								{
+									scriptFieldInstance.SetValue(&data);
+								}
+								break;
+							}
+							case ScriptFieldType::Int64:
+							{
+								ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
+								int64_t data; scriptFieldInstance.GetValue<int64_t>(&data);
+								if (ImGui::DragInt(name.c_str(), &(int&)data))
+								{
+									scriptFieldInstance.SetValue(&data);
+								}
+								break;
+							}
+							case ScriptFieldType::Boolean:
+							{
+								ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
+								bool data; scriptFieldInstance.GetValue<bool>(&data);
+								if (ImGui::Checkbox(name.c_str(), &data))
+								{
+									scriptFieldInstance.SetValue(&data);
+								}
+								break;
+							}
+							case ScriptFieldType::UInt16:
+							{
+								ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
+								uint16_t data; scriptFieldInstance.GetValue<uint16_t>(&data);
+								if (ImGui::DragInt(name.c_str(), &(int&)data))
+								{
+									scriptFieldInstance.SetValue(&data);
+								}
+								break;
+							}
+							case ScriptFieldType::UInt32:
+							{
+								ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
+								uint32_t data; scriptFieldInstance.GetValue<uint32_t>(&data);
+								if (ImGui::DragInt(name.c_str(), &(int&)data))
+								{
+									scriptFieldInstance.SetValue(&data);
+								}
+								break;
+							}
+							case ScriptFieldType::UInt64:
+							{
+								ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
+								uint64_t data; scriptFieldInstance.GetValue<uint64_t>(&data);
+								if (ImGui::DragInt(name.c_str(), &(int&)data))
+								{
+									scriptFieldInstance.SetValue(&data);
+								}
+								break;
+							}
+							case ScriptFieldType::String:
+							{
+								break;
+							}
+							case ScriptFieldType::Vector2:
+							{
+								ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
+								glm::vec2 data; scriptFieldInstance.GetValue<glm::vec2>(&data);
+								if (ImGui::DragFloat2(name.c_str(), glm::value_ptr(data)))
+								{
+									scriptFieldInstance.SetValue(&data);
+								}
+								break;
+							}
+							case ScriptFieldType::Vector3:
+							{
+								ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
+								glm::vec3 data; scriptFieldInstance.GetValue<glm::vec3>(&data);
+								if (ImGui::DragFloat3(name.c_str(), glm::value_ptr(data)))
+								{
+									scriptFieldInstance.SetValue(&data);
+								}
+								break;
+							}
+							case ScriptFieldType::Vector4:
+							{
+								ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
+								glm::vec4 data; scriptFieldInstance.GetValue<glm::vec4>(&data);
+								if (ImGui::DragFloat4(name.c_str(), glm::value_ptr(data)))
+								{
+									scriptFieldInstance.SetValue(&data);
+								}
+								break;
+							}
+							case ScriptFieldType::TransformComponent:
+                            {
+                                ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
+                                ImGui::Button("TransformComponent (Has Data)");
+                                if (ImGui::BeginDragDropTarget())
+                                {
+                                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SCENE_HIERARCHY_ITEM"))
                                     {
-                                        scriptFieldInstance.SetValue((double*)data);
-                                    }
-                                    break;
-                                }
-                                case ScriptFieldType::SByte:
-                                {
-                                    break;
-                                }
-                                case ScriptFieldType::Char:
-                                break;
-                                case ScriptFieldType::Int16:
-                                {
-                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
-                                    scriptFieldInstance.GetValue<int16_t>(data);
-                                    if (ImGui::DragInt(name.c_str(), (int*)data))
-                                    {
-                                        scriptFieldInstance.SetValue((int16_t*)data);
-                                    }
-                                    break;
-                                }
-                                case ScriptFieldType::Int32:
-                                {
-                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
-                                    scriptFieldInstance.GetValue<int32_t>(data);
-                                    if (ImGui::DragInt(name.c_str(), (int*)data))
-                                    {
-                                        scriptFieldInstance.SetValue((int32_t*)data);
-                                    }
-                                    break;
-                                }
-                                case ScriptFieldType::Int64:
-                                {
-                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
-                                    scriptFieldInstance.GetValue<int64_t>(data);
-                                    if (ImGui::DragInt(name.c_str(), (int*)data))
-                                    {
-                                        scriptFieldInstance.SetValue((int64_t*)data);
-                                    }
-                                    break;
-                                }
-                                case ScriptFieldType::Boolean:
-                                {
-                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
-                                    scriptFieldInstance.GetValue<bool>(data);
-                                    if (ImGui::Checkbox(name.c_str(), (bool*)data))
-                                    {
-                                        scriptFieldInstance.SetValue((bool*)data);
-                                    }
-                                    break;
-                                }
-                                case ScriptFieldType::UInt16:
-                                {
-                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
-                                    scriptFieldInstance.GetValue<uint16_t>(data);
-                                    if (ImGui::DragInt(name.c_str(), (int*)data))
-                                    {
-                                        scriptFieldInstance.SetValue((uint16_t*)data);
-                                    }
-                                    break;
-                                }
-                                case ScriptFieldType::UInt32:
-                                {
-                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
-                                    scriptFieldInstance.GetValue<uint32_t>(data);
-                                    if (ImGui::DragInt(name.c_str(), (int*)data))
-                                    {
-                                        scriptFieldInstance.SetValue((uint32_t*)data);
-                                    }
-                                    break;
-                                }
-                                case ScriptFieldType::UInt64:
-                                {
-                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
-                                    scriptFieldInstance.GetValue<uint64_t>(data);
-                                    if (ImGui::DragInt(name.c_str(), (int*)data))
-                                    {
-                                        scriptFieldInstance.SetValue((uint64_t*)data);
-                                    }
-                                    break;
-                                }
-                                case ScriptFieldType::String:
-                                {
-                                    break;
-                                }
-                                case ScriptFieldType::Vector2:
-                                {
-                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
-                                    scriptFieldInstance.GetValue<glm::vec2>(data);
-                                    if (ImGui::DragFloat2(name.c_str(), glm::value_ptr(*(glm::vec2*)data)))
-                                    {
-                                        scriptFieldInstance.SetValue((glm::vec2*)data);
-                                    }
-                                    break;
-                                }
-                                case ScriptFieldType::Vector3:
-                                {
-                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
-                                    scriptFieldInstance.GetValue<glm::vec3>(data);
-                                    if (ImGui::DragFloat3(name.c_str(), glm::value_ptr(*(glm::vec3*)data)))
-                                    {
-                                        scriptFieldInstance.SetValue((glm::vec3*)data);
-                                    }
-                                    break;
-                                }
-                                case ScriptFieldType::Vector4:
-                                {
-                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
-                                    scriptFieldInstance.GetValue<glm::vec4>(data);
-                                    if (ImGui::DragFloat4(name.c_str(), glm::value_ptr(*(glm::vec4*)data)))
-                                    {
-                                        scriptFieldInstance.SetValue((glm::vec4*)data);
-                                    }
-                                    break;
-                                }
-                                case ScriptFieldType::TransformComponent:
-                                {
-                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
-                                    ImGui::Button("TransformComponent (Has Data)");
-                                    if (ImGui::BeginDragDropTarget())
-                                    {
-                                        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SCENE_HIERARCHY_ITEM"))
+                                        UUID entityID = *(UUID*)payload->Data;
+                                        auto entity = m_Context->GetEntityByUUID(entityID);
+
+                                        if (entity.HasComponent<TransformComponent>())
                                         {
-                                            UUID entityID = *(UUID*)payload->Data;
-                                            auto entity = m_Context->GetEntityByUUID(entityID);
-
-                                            if (entity.HasComponent<TransformComponent>())
-                                            {
-                                                scriptFieldInstance.SetValue(&entity.GetComponent<TransformComponent>());
-                                            }
+                                            scriptFieldInstance.SetValue(&entity.GetComponent<TransformComponent>());
                                         }
-                                        ImGui::EndDragDropTarget();
                                     }
-                                    break;
-
+                                    ImGui::EndDragDropTarget();
                                 }
-                                case ScriptFieldType::Rigidbody2DComponent:
                                 break;
+
+                            }
+                            case ScriptFieldType::Rigidbody2DComponent:
+                            break;
                             }
                         }
                         else
@@ -788,23 +797,23 @@ namespace CatEngine
                             {
                                 case ScriptFieldType::Float:
                                 {
-                                    float* data = (float*)field.ClassField->SymHandle;
-                                    if (ImGui::DragFloat(name.c_str(), data))
+                                    float data = 0;
+                                    if (ImGui::DragFloat(name.c_str(), &data))
                                     {
                                         ScriptFieldInstance& sfi = scriptFields[name];
                                         sfi.Field = field;
-                                        sfi.SetValue(data);
+                                        sfi.SetValue(&data);
                                     }
                                     break;
                                 }
                                 case ScriptFieldType::Double:
                                 {
-                                    double* data = (double*)field.ClassField->SymHandle;
-                                    if (ImGui::DragFloat(name.c_str(), (float*)data))
+                                    double data = 0;
+                                    if (ImGui::DragFloat(name.c_str(), &(float&)data))
                                     {
                                         ScriptFieldInstance& sfi = scriptFields[name];
                                         sfi.Field = field;
-                                        sfi.SetValue(data);
+                                        sfi.SetValue(&data);
                                     }
                                     break;
                                 }
@@ -816,78 +825,78 @@ namespace CatEngine
 								break;
                                 case ScriptFieldType::Int16:
                                 {
-                                    int16_t* data = (int16_t*)field.ClassField->SymHandle;
-                                    if (ImGui::DragInt(name.c_str(), (int*)data))
+                                    int16_t data = 0;
+                                    if (ImGui::DragInt(name.c_str(), &(int&)data))
                                     {
                                         ScriptFieldInstance& sfi = scriptFields[name];
                                         sfi.Field = field;
-                                        sfi.SetValue(data);
+                                        sfi.SetValue(&data);
                                     }
                                     break;
                                 }
                                 case ScriptFieldType::Int32:
                                 {
-                                    int32_t* data = (int32_t*)field.ClassField->SymHandle;
-                                    if (ImGui::DragInt(name.c_str(), (int*)data))
+                                    int32_t data = 0;
+                                    if (ImGui::DragInt(name.c_str(), &(int&)data))
                                     {
                                         ScriptFieldInstance& sfi = scriptFields[name];
                                         sfi.Field = field;
-                                        sfi.SetValue(data);
+                                        sfi.SetValue(&data);
                                     }
                                     break;
                                 }
                                 case ScriptFieldType::Int64:
                                 {
-                                    int64_t* data = (int64_t*)field.ClassField->SymHandle;
-                                    if (ImGui::DragInt(name.c_str(), (int*)data))
+                                    int64_t data = 0;
+                                    if (ImGui::DragInt(name.c_str(), &((int&)data)))
                                     {
                                         ScriptFieldInstance& sfi = scriptFields[name];
                                         sfi.Field = field;
-                                        sfi.SetValue(data);
+                                        sfi.SetValue(&data);
                                     }
                                     break;
                                 }
                                 case ScriptFieldType::Boolean:
                                 {
-                                    bool* data = (bool*)field.ClassField;
-                                    if (ImGui::Checkbox(name.c_str(), data))
+                                    bool data = false;
+                                    if (ImGui::Checkbox(name.c_str(), &data))
                                     {
                                         ScriptFieldInstance& sfi = scriptFields[name];
                                         sfi.Field = field;
-                                        sfi.SetValue(data);
+                                        sfi.SetValue(&data);
                                     }
                                     break;
                                 }
                                 case ScriptFieldType::UInt16:
                                 {
-                                    uint16_t* data = (uint16_t*)field.ClassField->SymHandle;
-                                    if (ImGui::DragInt(name.c_str(), (int*)data))
+                                    uint16_t data = 0;
+                                    if (ImGui::DragInt(name.c_str(), &(int&)data))
                                     {
                                         ScriptFieldInstance& sfi = scriptFields[name];
                                         sfi.Field = field;
-                                        sfi.SetValue(data);
+                                        sfi.SetValue(&data);
                                     }
                                     break;
                                 }
                                 case ScriptFieldType::UInt32:
                                 {
-                                    uint32_t* data = (uint32_t*)field.ClassField->SymHandle;
-                                    if (ImGui::DragInt(name.c_str(), (int*)data))
+                                    uint32_t data = 0;
+                                    if (ImGui::DragInt(name.c_str(), &(int&)data))
                                     {
                                         ScriptFieldInstance& sfi = scriptFields[name];
                                         sfi.Field = field;
-                                        sfi.SetValue(data);
+                                        sfi.SetValue(&data);
                                     }
                                     break;
                                 }
                                 case ScriptFieldType::UInt64:
                                 {
-                                    uint64_t* data = (uint64_t*)field.ClassField->SymHandle;
-                                    if (ImGui::DragInt(name.c_str(), (int*)data))
+                                    uint64_t data = 0;
+                                    if (ImGui::DragInt(name.c_str(), &(int&)data))
                                     {
                                         ScriptFieldInstance& sfi = scriptFields[name];
                                         sfi.Field = field;
-                                        sfi.SetValue(data);
+                                        sfi.SetValue(&data);
                                     }
                                     break;
                                 }
@@ -897,34 +906,34 @@ namespace CatEngine
                                 }
                                 case ScriptFieldType::Vector2:
                                 {
-                                    glm::vec2* data = (glm::vec2*)field.ClassField;
-                                    if (ImGui::DragFloat2(name.c_str(), glm::value_ptr(*data)))
+                                    glm::vec2 data(0);
+                                    if (ImGui::DragFloat2(name.c_str(), glm::value_ptr(data)))
                                     {
                                         ScriptFieldInstance& sfi = scriptFields[name];
                                         sfi.Field = field;
-                                        sfi.SetValue(data);
+                                        sfi.SetValue(&data);
                                     }
                                     break;
                                 }
                                 case ScriptFieldType::Vector3:
                                 {
-                                    glm::vec3* data = (glm::vec3*)field.ClassField;
-                                    if (ImGui::DragFloat3(name.c_str(), glm::value_ptr(*data)))
+                                    glm::vec3 data(0);
+                                    if (ImGui::DragFloat3(name.c_str(), glm::value_ptr(data)))
                                     {
                                         ScriptFieldInstance& sfi = scriptFields[name];
                                         sfi.Field = field;
-                                        sfi.SetValue(data);
+                                        sfi.SetValue(&data);
                                     }
                                     break;
                                 }
                                 case ScriptFieldType::Vector4:
                                 {
-                                    glm::vec4* data = (glm::vec4*)field.ClassField;
-                                    if (ImGui::DragFloat4(name.c_str(), glm::value_ptr(*data)))
+                                    glm::vec4 data(0);
+                                    if (ImGui::DragFloat4(name.c_str(), glm::value_ptr(data)))
                                     {
                                         ScriptFieldInstance& sfi = scriptFields[name];
                                         sfi.Field = field;
-                                        sfi.SetValue(data);
+                                        sfi.SetValue(&data);
                                     }
                                     break;
                                 }
@@ -942,7 +951,7 @@ namespace CatEngine
                                             if (entity.HasComponent<TransformComponent>())
                                             {
                                                 ScriptFieldInstance& sfi = scriptFields[name];
-                                                memcpy(field.ClassField->SymHandle, &entity.GetComponent<TransformComponent>(), TypeToSize(ScriptFieldType::TransformComponent));
+                                                sfi.SetValue(&entity.GetComponent<TransformComponent>());
                                                 sfi.Field = field;
                                             }
                                         }

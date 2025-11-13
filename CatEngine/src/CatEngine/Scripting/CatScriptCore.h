@@ -2,7 +2,6 @@
 
 #include "CatEngine/Scene/Components/3D/TransformComponent.h"
 #include "CatEngine/Scene/Components/Physics/Rigidbody2D.h"
-#include "IScriptObject.h"
 #include "glm/fwd.hpp"
 #include <cstdint>
 
@@ -10,6 +9,7 @@
 
 namespace CatEngine
 {
+
     enum class ScriptFieldType
 	{
 		None = 0,
@@ -21,12 +21,42 @@ namespace CatEngine
 		TransformComponent, Rigidbody2DComponent,
 	};
 
-    static ScriptFieldType StringToScriptFieldType(const std::string& type)
+    static std::unordered_map<std::string, ScriptFieldType> s_ScriptFieldTypeMap =
+	{
+		{"float", ScriptFieldType::Float},
+		{"double", ScriptFieldType::Double},
+		{"null",ScriptFieldType::SByte},
+		{"char",ScriptFieldType::Char},
+		{"int16_t", ScriptFieldType::Int16},
+		{"int32_t", ScriptFieldType::Int32},
+		{"int", ScriptFieldType::Int32},
+		{"int64_t", ScriptFieldType::Int64},
+		{"bool", ScriptFieldType::Boolean},
+		{"uint16_t", ScriptFieldType::UInt16},
+		{"uint32_t", ScriptFieldType::UInt32},
+		{"unsigned int", ScriptFieldType::UInt32},
+		{"uint64_t", ScriptFieldType::UInt64},
+		{"std::string", ScriptFieldType::String},
+		{"Vector2", ScriptFieldType::Vector2},
+		{"Vector3", ScriptFieldType::Vector3},
+		{"Vector4", ScriptFieldType::Vector4},
+		{"Transform", ScriptFieldType::TransformComponent},
+		{"Rigidbody2D", ScriptFieldType::Rigidbody2DComponent},
+
+	};
+
+    static ScriptFieldType CapyTypeStringToScriptFieldType(const std::string& capyTypeStr)
     {
-        
+        auto it = s_ScriptFieldTypeMap.find(capyTypeStr);
+
+        if (it != s_ScriptFieldTypeMap.end())
+            return it->second;
+
+        CE_API_ERROR("Not supported type {}", capyTypeStr);
+        return ScriptFieldType::None;
     }
 
-	struct ScriptField
+    struct ScriptField
 	{
 		ScriptFieldType Type;
 		std::string Name;

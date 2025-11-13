@@ -1,10 +1,8 @@
-#include "CatEngine/Scripting/CatScriptCore.h"
 #include "cepch.h"
 #include "ScriptClass.h"
 
 #include "ScriptInstance.h"
-#include <cstdint>
-#include <cstring>
+
 
 #ifdef CE_PLATFORM_LINUX
 #include <dlfcn.h>
@@ -17,7 +15,7 @@ namespace CatEngine
         m_CapyClass = capy_class_from_name(image, nameSpace, className);
     }
 
-    void* ScriptClass::Instantiate()
+    void* ScriptClass::Instantiate(UUID entityID)
     {
         CapyMethod* m = capy_method_from_class(m_CapyClass, "Create");
         if (!m)
@@ -25,7 +23,7 @@ namespace CatEngine
             CE_API_CRITICAL("NO CREATE FUNCTION FOUND!");
             return nullptr;
         }
-        return capy_function_call_from_method(m, {});
+        return capy_function_call_from_method(m, { entityID.uuid() });
     }
 
     CapyMethod* ScriptClass::GetMethod(const std::string& methodName)

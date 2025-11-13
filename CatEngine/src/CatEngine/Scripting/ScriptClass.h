@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CatScriptCore.h"
+#include "CatEngine/Core/UUID.h"
 
 namespace CatEngine
 {
@@ -10,12 +11,13 @@ namespace CatEngine
         ScriptClass() = default;
         ScriptClass(CapyImage* image, const std::string& nameSpace, const std::string& className);
 
-        void* Instantiate();
+        void* Instantiate(UUID entityID);
 
         CapyMethod* GetMethod(const std::string& methodName);
 
         void* InvokeMethod(CapyMethod* method, void* instance, const std::vector<RuntimeValue>& values);
 
+        std::unordered_map<std::string, ScriptField>& GetFieldsNC() { return m_Fields; }
         const std::unordered_map<std::string, ScriptField>& GetFields() const { return m_Fields; }
         std::unordered_map<std::string, ScriptField> m_Fields;
     private:

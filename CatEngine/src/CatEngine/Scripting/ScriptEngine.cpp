@@ -213,20 +213,17 @@ namespace CatEngine
                     CapyClass* klassPtr = klass.get();
                     for (auto& [name, field] : klassPtr->VTable->Fields)
                     {
-                        s_ScriptData->EntityClasses[klass->ClassName]->m_Fields[name] = ScriptField{StringToScriptFieldType(field->FieldTypeString), name, field.get()};
+                        s_ScriptData->EntityClasses[klass->ClassName]->m_Fields[name] = ScriptField{CapyTypeStringToScriptFieldType(field->FieldTypeString), name, field.get()};
                     }
 
                 }
-
-
-
             }
 
             std::vector<std::string> coreLib = capy_get_core_libraries_from_domain("CatAppDomain");
 
 
-            //ScriptGlue::RegisterFunctions();
-            //ScriptGlue::RegisterComponents();
+            ScriptGlue::RegisterFunctions();
+            ScriptGlue::RegisterComponents();
 
             CE_API_WARN("{}", capy_dump_domain("CatAppDomain"));
         });
@@ -249,7 +246,6 @@ namespace CatEngine
 		{
 			UUID entityID = e.GetUUID();
 			Ref<ScriptInstance> instance = CreateRef<ScriptInstance>(s_ScriptData->EntityClasses[sc.ClassName], e);
-            instance->SetEntityID(entityID);
 			s_ScriptData->EntityInstances[entityID] = instance;
 
 			// Copy field value

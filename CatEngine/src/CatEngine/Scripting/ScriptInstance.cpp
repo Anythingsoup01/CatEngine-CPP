@@ -20,7 +20,7 @@ namespace CatEngine
 	ScriptInstance::ScriptInstance(Ref<ScriptClass> scriptClass, Entity entity)
 		: m_ScriptClass(scriptClass)
 	{ 
-        m_Instance = scriptClass->Instantiate();
+        m_Instance = scriptClass->Instantiate(entity.GetUUID());
         for (auto& [name, field] :scriptClass->GetFields())
         {
             size_t valueSize = TypeToSize(field.Type);
@@ -40,13 +40,24 @@ namespace CatEngine
             m_DefaultFieldDatas[name] = copy;
         }
 
+        for (auto& [name, field] : m_ScriptClass->m_Fields)
+        {
+            CapyField* cf = field.ClassField;
+
+            if (!cf->SymHandle && cf->ClassMember)
+            {
+                cf->SymHandle = m_Instance;
+                char* data = static_cast<char*>(cf->SymHandle) + cf->Offset;
+                cf->SymHandle = static_cast<void*>(data);
+            }
+
+        }
+
         m_StartMethod = scriptClass->GetMethod("Start");
         m_UpdateMethod = scriptClass->GetMethod("Update");
 
         m_CollisionEnterMethod = scriptClass->GetMethod("OnCollisionEnter");
         m_CollisionExitMethod = scriptClass->GetMethod("OnCollisionExit");
-
-        m_SetUUIDMethod = scriptClass->GetMethod("SetInstanceID");
 
 	}
 
@@ -59,14 +70,6 @@ namespace CatEngine
         }
 
         m_DefaultFieldDatas.clear();
-    }
-
-    void ScriptInstance::SetEntityID(UUID entityID)
-    {
-        if (!m_SetUUIDMethod)
-            CE_API_CRITICAL("CAN'T ACCESS SETUUID!");
-        else
-            m_ScriptClass->InvokeMethod(m_SetUUIDMethod, m_Instance, { (int)entityID });
     }
 
 	void ScriptInstance::InvokeUpdateMethod(float ts)

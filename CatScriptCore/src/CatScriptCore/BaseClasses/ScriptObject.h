@@ -10,10 +10,8 @@ namespace CatRuntime
     class ScriptObject : public Object
     {
     public:
-        virtual void Start() {}
-        virtual void Update(float ts) {}
-        //virtual void OnCollisionEnter(const Entity& other) {}
-        //virtual void OnCollisionExit(const Entity& other) {}
+        virtual void Start();
+        virtual void Update(float ts);
 
     protected:
     };
