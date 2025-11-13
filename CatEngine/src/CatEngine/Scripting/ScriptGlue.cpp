@@ -11,6 +11,9 @@
 
 #include "CatEngine/Physics/Physics2D.h"
 
+#include "CatEngine/Scene/Components/Components.h"
+#include <cstring>
+
 namespace CatEngine
 {
 
@@ -33,10 +36,10 @@ namespace CatEngine
 	}
 #pragma region Object
 
-	static bool Object_HasComponent(UUID entityID, const std::string& componentType)
+	static bool Object_HasComponent(UUID entityID, const char* componentType)
 	{
 		const Entity& entity = GetEntity(entityID);
-        CE_ASSERT(s_EntityHasComponentFuncs.find(componentType) != s_EntityHasComponentFuncs.end());
+        CE_API_ASSERT(s_EntityHasComponentFuncs.find(componentType) != s_EntityHasComponentFuncs.end(), "Component not found: {}", componentType);
 		return s_EntityHasComponentFuncs.at(componentType)(entity);
 	}
 
@@ -137,13 +140,12 @@ namespace CatEngine
 
 		([]()
 		{
-			std::string_view fullTypeName = typeid(Component).name();
-			size_t pos = fullTypeName.find_last_of(":");
-			std::string_view typeName = fullTypeName.substr(pos + 1);
-			pos = typeName.size() - sizeof("Component");
-			std::string_view componentName = typeName.substr(0, pos + 1);
+			const char* typeName = ComponentToString<Component>();
 
-			s_EntityHasComponentFuncs[componentName.data()] = [](Entity entity) { return entity.HasComponent<Component>(); };
+            std::string name(typeName);
+            name = name.substr(0, name.length() - strlen("Component"));
+
+			s_EntityHasComponentFuncs[name] = [](Entity entity) { return entity.HasComponent<Component>(); };
 		}(), ...);
 	}
 

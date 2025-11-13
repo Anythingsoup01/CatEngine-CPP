@@ -7,11 +7,16 @@ namespace CatRuntime
     class PlayerController : public ScriptObject
     {
     public:
-        PlayerController(uint64_t entityID) { SetInstanceID(entityID); }
+        PlayerController(uint64_t entityID) { m_InstanceID = entityID; }
         virtual void Start() override;
         virtual void Update(float ts) override;
+        virtual void OnCollisionEnter(uint64_t other) override;
+        virtual void OnCollisionExit(uint64_t other) override;
+
+        void TestingPointers(void* data);
 
         static PlayerController* Create(uint64_t entityID);
+
     private:
 #   define PUBLIC
         float m_PlayerHealth = 15.0f;

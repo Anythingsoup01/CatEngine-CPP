@@ -16,3 +16,5 @@
 #include <unordered_set>
 
 #include "BaseClasses/ScriptObject.h"
+
+#include "InternalCalls/InternalCalls.h"

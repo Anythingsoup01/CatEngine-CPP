@@ -288,18 +288,16 @@ namespace CatEngine
         if (s_ScriptData->EntityInstances.find(uuidB) != s_ScriptData->EntityInstances.end())
             scriptB = s_ScriptData->EntityInstances[uuidB];
 
-        const auto& entityA = s_ScriptData->SceneContext->GetEntityByUUID(uuidA);
-        const auto& entityB = s_ScriptData->SceneContext->GetEntityByUUID(uuidB);
 
         switch (type)
         {
             case CollisionType::Begin:
-                if (scriptA) scriptA->InvokeOnCollisionEnter(entityB);
-                if (scriptB) scriptB->InvokeOnCollisionEnter(entityA);
+                if (scriptA) scriptA->InvokeOnCollisionEnter(uuidB);
+                if (scriptB) scriptB->InvokeOnCollisionEnter(uuidA);
                 break;
             case CollisionType::End:
-                if (scriptA) scriptA->InvokeOnCollisionExit(entityB);
-                if (scriptB) scriptB->InvokeOnCollisionExit(entityA);
+                if (scriptA) scriptA->InvokeOnCollisionExit(uuidB);
+                if (scriptB) scriptB->InvokeOnCollisionExit(uuidA);
                 break;
             default: break;
         }

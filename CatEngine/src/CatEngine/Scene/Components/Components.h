@@ -31,4 +31,11 @@ namespace CatEngine
 		SpriteRendererComponent, CircleRendererComponent,
         BoxCollider2DComponent, CircleCollider2DComponent, Rigidbody2DComponent,
 		ScriptComponent>;
+
+    template<typename T>
+    const char* ComponentToString() { return "NULL"; }
+
+    template<> const char* ComponentToString<TagComponent>();
+
+
 }

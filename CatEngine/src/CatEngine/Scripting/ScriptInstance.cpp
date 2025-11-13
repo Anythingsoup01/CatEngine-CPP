@@ -81,14 +81,14 @@ namespace CatEngine
 	{
         m_ScriptClass->InvokeMethod(m_StartMethod, m_Instance, {});
     }
-    void ScriptInstance::InvokeOnCollisionEnter(const Entity& other)
+    void ScriptInstance::InvokeOnCollisionEnter(const UUID& other)
     {
-        m_ScriptClass->InvokeMethod(m_CollisionEnterMethod, m_Instance, { (int)other });
+        m_ScriptClass->InvokeMethod(m_CollisionEnterMethod, m_Instance, { other.uuid() });
     }
 
-    void ScriptInstance::InvokeOnCollisionExit(const Entity& other)
+    void ScriptInstance::InvokeOnCollisionExit(const UUID& other)
     {
-        m_ScriptClass->InvokeMethod(m_CollisionExitMethod, m_Instance, { (int)other });
+        m_ScriptClass->InvokeMethod(m_CollisionExitMethod, m_Instance, { other.uuid() });
     }
 	
     bool ScriptInstance::GetFieldDataInternal(const std::string& name, void* buffer)

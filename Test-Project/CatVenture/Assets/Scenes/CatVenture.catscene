@@ -15,18 +15,8 @@ Entities:
       Color: [1, 0.0265282393, 0.0265282393, 1]
       Texture: 3252004842661640856
       Tiling: 1
-    Rigidbody2DComponent:
-      BodyType: 0
-      FixedRotation: false
-    BoxCollider2DComponent:
-      Offset: [0, 0]
-      Size: [0.5, 0.5]
-      Rotation: 0
-      ShowColliderBounds: false
-      Density: 1
-      Friction: 0.5
-      Restitution: 0
-      RestitutionThreshold: 0.5
+    ScriptComponent:
+      ClassName: EnemyController
   - Entity: 5114399343120810540
     TagComponent:
       Tag: Player
