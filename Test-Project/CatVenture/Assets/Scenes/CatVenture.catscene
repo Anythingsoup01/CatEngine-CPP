@@ -2,13 +2,13 @@ Scene: SampleScene
 Entities:
   - Entity: 515535472521845481
     TagComponent:
-      Tag: Enemy
+      Tag: None
     LayerComponent:
-      Layer: ""
+      Layer: Default
     NameComponent:
       Name: Enemy
     TransformComponent:
-      Position: [6.40930986, 0, 0]
+      Position: [10.3831263, -0.0127658844, 0]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     SpriteRendererComponent:
@@ -17,13 +17,13 @@ Entities:
       Tiling: 1
   - Entity: 5114399343120810540
     TagComponent:
-      Tag: Player
+      Tag: None
     LayerComponent:
-      Layer: ""
+      Layer: Default
     NameComponent:
       Name: Player
     TransformComponent:
-      Position: [-7.16797495, 7.85291195e-06, -0.0089721838]
+      Position: [-5.53849268, -0.15319562, 0]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     SpriteRendererComponent:
@@ -57,15 +57,15 @@ Entities:
       ClassName: PlayerController
   - Entity: 14096084207158609928
     TagComponent:
-      Tag: Ground
+      Tag: None
     LayerComponent:
-      Layer: ""
+      Layer: Default
     NameComponent:
       Name: Ground
     TransformComponent:
-      Position: [0, -1.28375435, 0]
+      Position: [2.28792953, -1.46803474, 0]
       Rotation: [0, 0, 0]
-      Scale: [43.2058258, 1, 1]
+      Scale: [21.25, 1, 1]
     SpriteRendererComponent:
       Color: [1, 1, 1, 1]
       Texture: 0

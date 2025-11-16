@@ -88,7 +88,10 @@ namespace CatEngine
 
         bool m_ProjectActive = false;
 
-        Ref<Scene> m_ActiveScene;
+        Ref<Scene> m_CurrentScene;
+
+        Ref<Scene> m_RuntimeScene;
+        Ref<Scene> m_SimulationScene;
         Ref<Scene> m_EditorScene;
 
         AssetHandle m_CurrentSceneHandle = 0;

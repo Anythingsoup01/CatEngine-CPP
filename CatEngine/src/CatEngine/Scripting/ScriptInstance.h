@@ -29,6 +29,8 @@ namespace CatEngine
 			bool success = GetFieldDataInternal(name, &s_FieldValueBuffer);
 			if (success)
                 return *(T*)s_FieldValueBuffer;
+
+            return T();
 		}
 
 		template<typename T>

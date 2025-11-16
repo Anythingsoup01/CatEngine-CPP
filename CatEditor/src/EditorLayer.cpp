@@ -37,14 +37,15 @@ namespace CatEngine
         m_SceneViewportPanel = SceneViewportPanel(fbSpec);
         m_SceneCameraPanel = SceneViewportPanel(fbSpec);
 
-        m_ActiveScene = CreateRef<Scene>();
+        m_EditorScene = CreateRef<Scene>();
 
         m_MouseInUse = false;
 
-        m_SceneHierarchyPanel.SetContext(m_ActiveScene);
-        m_SceneViewportPanel.SetContext(m_ActiveScene);
-        m_SceneCameraPanel.SetContext(m_ActiveScene);
-        ScriptEngine::SetSceneContext(m_ActiveScene);
+        m_SceneHierarchyPanel.SetContext(m_EditorScene);
+        m_SceneViewportPanel.SetContext(m_EditorScene);
+        m_SceneCameraPanel.SetContext(m_EditorScene);
+        ScriptEngine::SetSceneContext(m_EditorScene);
+        m_CurrentScene = m_EditorScene;
 
         auto commandLineArgs = Application::Get().GetSpecification().CommandlineArgs;
         if (commandLineArgs.Count > 1)
@@ -195,7 +196,7 @@ namespace CatEngine
         }
         
         {
-            auto view = m_ActiveScene->GetAllComponentsWith<TransformComponent, CircleCollider2DComponent>();
+            auto view = m_EditorScene->GetAllComponentsWith<TransformComponent, CircleCollider2DComponent>();
 
             for (auto entity : view)
             {
@@ -218,7 +219,7 @@ namespace CatEngine
         }
 
         {
-            auto view = m_ActiveScene->GetAllComponentsWith<TransformComponent, BoxCollider2DComponent>();
+            auto view = m_EditorScene->GetAllComponentsWith<TransformComponent, BoxCollider2DComponent>();
 
             for (auto entity : view)
             {
@@ -291,7 +292,7 @@ namespace CatEngine
             RenderCommand::Clear({ 0.1, 0.1, 0.1, 1.0});
             m_SceneViewportPanel.ClearFramebufferAttachment(1, -1);
 
-            m_ActiveScene->OnUpdateEditor(deltaTime, m_EditorCamera);
+            m_CurrentScene->OnUpdateEditor(deltaTime, m_EditorCamera);
 
             auto [mx, my] = ImGui::GetMousePos();
             const glm::vec2* viewportBounds = m_SceneViewportPanel.GetPanelBounds();
@@ -306,7 +307,7 @@ namespace CatEngine
             if ((mouseX >= 0 && mouseY >= 0 && mouseX < (int)viewportSize.x && mouseY < (int)viewportSize.y))
             {
                 int pixelData = m_SceneViewportPanel.ReadPixelData(1, mouseX, mouseY);
-                m_HoveredEntity = pixelData == -1 ? Entity() : Entity((entt::entity)pixelData, m_ActiveScene.get());
+                m_HoveredEntity = pixelData == -1 ? Entity() : Entity((entt::entity)pixelData, m_EditorScene.get());
             }
 
             OnOverlayRender();
@@ -325,7 +326,7 @@ namespace CatEngine
 
             m_SceneCameraPanel.BindFramebuffer();
             RenderCommand::Clear({ 0.1, 0.1, 0.1, 1.0});
-            m_ActiveScene->OnUpdateMainCameraPreview(deltaTime);
+            m_EditorScene->OnUpdateMainCameraPreview(deltaTime);
 
             m_SceneCameraPanel.UnbindFramebuffer();
         }
@@ -342,7 +343,7 @@ namespace CatEngine
 
             m_SceneCameraPanel.BindFramebuffer();
             RenderCommand::Clear({ 0.1, 0.1, 0.1, 1.0});
-            m_ActiveScene->OnUpdateRuntime(deltaTime);
+            m_RuntimeScene->OnUpdateRuntime(deltaTime);
 
             m_SceneCameraPanel.UnbindFramebuffer();
         }
@@ -352,7 +353,7 @@ namespace CatEngine
 
             RenderCommand::Clear({ 0.1, 0.1, 0.1, 1.0});
 
-            m_ActiveScene->OnUpdateRuntime(deltaTime);
+            m_RuntimeScene->OnUpdateRuntime(deltaTime);
 
             m_SceneViewportPanel.UnbindFramebuffer();
 
@@ -376,7 +377,7 @@ namespace CatEngine
             RenderCommand::Clear({ 0.1, 0.1, 0.1, 1.0});
             m_SceneViewportPanel.ClearFramebufferAttachment(1, -1);
 
-            m_ActiveScene->OnUpdateSimulation(deltaTime, m_EditorCamera);
+            m_EditorScene->OnUpdateSimulation(deltaTime, m_EditorCamera);
 
             auto [mx, my] = ImGui::GetMousePos();
             const glm::vec2* viewportBounds = m_SceneViewportPanel.GetPanelBounds();
@@ -391,7 +392,7 @@ namespace CatEngine
             if ((mouseX >= 0 && mouseY >= 0 && mouseX < (int)viewportSize.x && mouseY < (int)viewportSize.y))
             {
                 int pixelData = m_SceneViewportPanel.ReadPixelData(1, mouseX, mouseY);
-                m_HoveredEntity = pixelData == -1 ? Entity() : Entity((entt::entity)pixelData, m_ActiveScene.get());
+                m_HoveredEntity = pixelData == -1 ? Entity() : Entity((entt::entity)pixelData, m_EditorScene.get());
             }
             m_SceneViewportPanel.UnbindFramebuffer();
         }
@@ -615,7 +616,7 @@ namespace CatEngine
         {
             if (!m_EditorScenePath.empty())
             {
-                SceneSerializer serializer(m_ActiveScene);
+                SceneSerializer serializer(m_EditorScene);
                 serializer.Serialize(m_EditorScenePath.string());
                 if (AssetManager::IsAssetHandleValid(m_CurrentSceneHandle))
                 {
@@ -633,16 +634,18 @@ namespace CatEngine
 		CE_PROFILE_FUNCTION();
 
         Ref<Scene> readOnlyScene = AssetManager::GetAsset<Scene>(handle);
-        Ref<Scene> newScene = Scene::Copy(readOnlyScene);
+        Ref<Scene> newScene = CreateRef<Scene>();
+        readOnlyScene->CopyTo(newScene);
 
         m_EditorScene = newScene;
 
         m_EditorScene->OnViewportResize(m_SceneViewportPanel.GetWidth(), m_SceneViewportPanel.GetHeight());
-        m_ActiveScene = m_EditorScene;
-        m_SceneHierarchyPanel.SetContext(m_ActiveScene);
-        m_SceneViewportPanel.SetContext(m_ActiveScene);
-        m_SceneCameraPanel.SetContext(m_ActiveScene);
-        ScriptEngine::SetSceneContext(m_ActiveScene);
+        m_SceneHierarchyPanel.SetContext(m_EditorScene);
+        m_SceneViewportPanel.SetContext(m_EditorScene);
+        m_SceneCameraPanel.SetContext(m_EditorScene);
+        ScriptEngine::SetSceneContext(m_EditorScene);
+
+        m_CurrentScene = m_EditorScene;
 
         std::filesystem::path savePath = Project::GetAssetDirectory() / Project::GetActive()->GetEditorAssetManager()->GetFilePath(handle);
 
@@ -659,11 +662,12 @@ namespace CatEngine
 
         m_EditorScene = CreateRef<Scene>();
         m_EditorScene->OnViewportResize(m_SceneViewportPanel.GetWidth(), m_SceneViewportPanel.GetHeight());
-        m_ActiveScene = m_EditorScene;
-        m_SceneHierarchyPanel.SetContext(m_ActiveScene);
-        m_SceneViewportPanel.SetContext(m_ActiveScene);
-        m_SceneCameraPanel.SetContext(m_ActiveScene);
-        ScriptEngine::SetSceneContext(m_ActiveScene);
+        m_SceneHierarchyPanel.SetContext(m_EditorScene);
+        m_SceneViewportPanel.SetContext(m_EditorScene);
+        m_SceneCameraPanel.SetContext(m_EditorScene);
+        ScriptEngine::SetSceneContext(m_EditorScene);
+
+        m_CurrentScene = m_EditorScene;
     }
 
     void EditorLayer::SaveProject()
@@ -714,20 +718,24 @@ namespace CatEngine
 
         m_SceneState = SceneState::Play;
 
-        m_EditorScene = Scene::Copy(m_ActiveScene);
-        m_SceneHierarchyPanel.SetContext(m_ActiveScene);
-        m_SceneViewportPanel.SetContext(m_ActiveScene);
-        m_SceneCameraPanel.SetContext(m_ActiveScene);
-        ScriptEngine::SetSceneContext(m_ActiveScene);
-        m_ActiveScene->OnRuntimeStart();
+        m_RuntimeScene = CreateRef<Scene>();
+
+        m_EditorScene->CopyTo(m_RuntimeScene);
+
+        m_SceneHierarchyPanel.SetContext(m_RuntimeScene);
+        m_SceneViewportPanel.SetContext(m_RuntimeScene);
+        m_SceneCameraPanel.SetContext(m_RuntimeScene);
+        ScriptEngine::SetSceneContext(m_RuntimeScene);
+        m_RuntimeScene->OnRuntimeStart();
+        m_CurrentScene = m_RuntimeScene;
     }
 
 	void EditorLayer::OnScenePause(bool isPaused)
 	{
 		if (isPaused)
-			m_ActiveScene->OnPauseStart();
+			m_RuntimeScene->OnPauseStart();
 		else
-			m_ActiveScene->OnPauseStop();
+			m_RuntimeScene->OnPauseStop();
 	}
 
     void EditorLayer::OnSceneStop()
@@ -735,13 +743,15 @@ namespace CatEngine
 		CE_PROFILE_FUNCTION();
 
         m_SceneState = SceneState::Edit;
+        m_RuntimeScene->OnRuntimeStop();
 
-        m_ActiveScene->OnRuntimeStop();
-        m_ActiveScene = Scene::Copy(m_EditorScene);
-        m_SceneHierarchyPanel.SetContext(m_ActiveScene);
-        m_SceneViewportPanel.SetContext(m_ActiveScene);
-        m_SceneCameraPanel.SetContext(m_ActiveScene);
-        ScriptEngine::SetSceneContext(m_ActiveScene);
+        m_RuntimeScene = nullptr;
+
+        m_SceneHierarchyPanel.SetContext(m_EditorScene);
+        m_SceneViewportPanel.SetContext(m_EditorScene);
+        m_SceneCameraPanel.SetContext(m_EditorScene);
+        ScriptEngine::SetSceneContext(m_EditorScene);
+        m_CurrentScene = m_EditorScene;
     }
 
     void EditorLayer::OnSceneSimulateStart()
@@ -750,23 +760,32 @@ namespace CatEngine
 
         m_SceneState = SceneState::Simulate;
      
-		m_EditorScene = Scene::Copy(m_ActiveScene);
-        m_SceneHierarchyPanel.SetContext(m_ActiveScene);
-        m_SceneViewportPanel.SetContext(m_ActiveScene);
-        m_SceneCameraPanel.SetContext(m_ActiveScene);
-        ScriptEngine::SetSceneContext(m_ActiveScene);
-        m_ActiveScene->OnSimulationStart();
+        m_SimulationScene = CreateRef<Scene>();
+
+		m_EditorScene->CopyTo(m_SimulationScene);
+        m_SceneHierarchyPanel.SetContext(m_SimulationScene);
+        m_SceneViewportPanel.SetContext(m_SimulationScene);
+        m_SceneCameraPanel.SetContext(m_SimulationScene);
+        ScriptEngine::SetSceneContext(m_SimulationScene);
+        m_SimulationScene->OnSimulationStart();
+        m_CurrentScene = m_SimulationScene;
     }
+
     void EditorLayer::OnSceneSimulateStop()
     {
 		CE_PROFILE_FUNCTION();
 
         m_SceneState = SceneState::Edit;
-        m_ActiveScene = Scene::Copy(m_EditorScene);
-        m_SceneHierarchyPanel.SetContext(m_ActiveScene);
-        m_SceneViewportPanel.SetContext(m_ActiveScene);
-        m_SceneCameraPanel.SetContext(m_ActiveScene);
-        ScriptEngine::SetSceneContext(m_ActiveScene);
+        m_SimulationScene->OnSimulationStop();
+
+
+        m_SimulationScene = nullptr;
+
+        m_SceneHierarchyPanel.SetContext(m_EditorScene);
+        m_SceneViewportPanel.SetContext(m_EditorScene);
+        m_SceneCameraPanel.SetContext(m_EditorScene);
+        ScriptEngine::SetSceneContext(m_EditorScene);
+        m_CurrentScene = m_EditorScene;
     }
 
     void EditorLayer::DuplicateEntity()
@@ -776,7 +795,7 @@ namespace CatEngine
         Entity entity = m_SceneHierarchyPanel.GetSelectedEntity();
         if (entity)
         {
-            m_ActiveScene->DuplicateEntity(entity);
+            m_CurrentScene->DuplicateEntity(entity);
         }
     }
     void EditorLayer::DeleteEntity()
@@ -786,7 +805,7 @@ namespace CatEngine
         Entity entity = m_SceneHierarchyPanel.GetSelectedEntity();
         if (entity)
         {
-            m_ActiveScene->DeleteEntity(entity);
+            m_CurrentScene->DeleteEntity(entity);
             m_SceneHierarchyPanel.SetSelectedEntity();
         }
     }
@@ -807,7 +826,7 @@ namespace CatEngine
         if (m_CopiedEntity)
         {
             // TODO : Make it to where entity doesn't need to exist
-            Entity pastedEntity = m_ActiveScene->PasteEntity(m_CopiedEntity);
+            Entity pastedEntity = m_CurrentScene->PasteEntity(m_CopiedEntity);
             m_SceneHierarchyPanel.SetSelectedEntity(pastedEntity);
         }
     }

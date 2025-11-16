@@ -41,44 +41,17 @@ namespace CatEngine
         ShutdownRuntime();
     }
 
-    template<typename... Component>
-        static void CopyComponent(entt::registry& dst, entt::registry& src, const std::unordered_map<UUID, entt::entity>& enttMap)
-        {
-            ([&]()
-             {
-             auto view = src.view<Component>();
-             for (auto srcEntity : view)
-             {
-             UUID uuid = src.get<IDComponent>(srcEntity).ID;
-             CE_API_ASSERT(enttMap.find(uuid) != enttMap.end(), "ID Not found!");
-             entt::entity dstEnttID = enttMap.at(uuid);
-
-             // Skip components that are always present in the destination
-             if constexpr (std::is_same_v<Component, IDComponent> ||
-                     std::is_same_v<Component, TransformComponent> ||
-                     std::is_same_v<Component, TagComponent> ||
-                     std::is_same_v<Component, LayerComponent>)
-             {
-             continue; // Already created
-             }
-
-             // Get the source component
-            auto& srcComp = src.get<Component>(srcEntity);
-
-            // Safe emplace or replace
-            if (dst.any_of<Component>(dstEnttID))
-                dst.replace<Component>(dstEnttID, srcComp);
-            else
-                dst.emplace<Component>(dstEnttID, srcComp);
-
-        }
-    }(), ...);
-	}
-
-	template<typename... Component>
-	static void CopyComponent(ComponentGroup<Component ... >, entt::registry& dst, entt::registry& src, const std::unordered_map<UUID, entt::entity>& enttMap)
+	template<typename T>
+	static void CopyComponent(entt::registry& dstRegistry, entt::registry& srcRegistry, const std::unordered_map<UUID, entt::entity>& enttMap)
 	{
-		CopyComponent<Component ...>(dst, src, enttMap);
+		auto srcEntities = srcRegistry.view<T>();
+		for (auto srcEntity : srcEntities)
+		{
+			entt::entity destEntity = enttMap.at(srcRegistry.get<IDComponent>(srcEntity).ID);
+
+			auto& srcComponent = srcRegistry.get<T>(srcEntity);
+			auto& destComponent = dstRegistry.emplace_or_replace<T>(destEntity, srcComponent);
+		}
 	}
 
 	template<typename... Component>
@@ -96,17 +69,18 @@ namespace CatEngine
 		CopyComponentIfExists<Component ...>(dst, src);
 	}
 
-    Ref<Scene> Scene::Copy(Ref<Scene> src)
+    void Scene::CopyTo(Ref<Scene>& target)
     {
         CE_PROFILE_FUNCTION();
 
-        Ref<Scene> dst = CreateRef<Scene>();
+        target->m_Registry.clear();
+        target->m_EntityMap.clear();   // if you keep a UUID→entity map
 
-        dst->m_ViewportWidth = src->m_ViewportWidth;
-        dst->m_ViewportHeight = src->m_ViewportHeight;
+        target->m_ViewportWidth = m_ViewportWidth;
+        target->m_ViewportHeight = m_ViewportHeight;
 
-        auto& srcRegistry = src->m_Registry;
-        auto& dstRegistry = dst->m_Registry;
+        auto& srcRegistry = m_Registry;
+        auto& dstRegistry = target->m_Registry;
 
         std::unordered_map<UUID, entt::entity> enttMap;
 
@@ -115,24 +89,20 @@ namespace CatEngine
         for (auto e : idView)
         {
             UUID uuid = srcRegistry.get<IDComponent>(e).ID;
-            enttMap[uuid] = dst->CreateEntityWithUUID(uuid);
+            auto name = srcRegistry.get<NameComponent>(e).Name;
+            enttMap[uuid] = target->CreateEntityWithUUID(uuid, name);
         }
 
-        // 2) Copy all components except IDComponent
-        using CopyableComponents = ComponentGroup<
-            SpriteRendererComponent,
-            CircleRendererComponent,
-            CameraComponent,
-            Rigidbody2DComponent,
-            BoxCollider2DComponent,
-            CircleCollider2DComponent,
-            ScriptComponent
-                >;
-
-
-        CopyComponent(CopyableComponents{}, dstRegistry, srcRegistry, enttMap);
-
-        return dst;
+        CopyComponent<TagComponent>(dstRegistry, srcRegistry, enttMap);
+        CopyComponent<LayerComponent>(dstRegistry, srcRegistry, enttMap);
+        CopyComponent<TransformComponent>(dstRegistry, srcRegistry, enttMap);
+        CopyComponent<CameraComponent>(dstRegistry, srcRegistry, enttMap);
+        CopyComponent<SpriteRendererComponent>(dstRegistry, srcRegistry, enttMap);
+        CopyComponent<CircleRendererComponent>(dstRegistry, srcRegistry, enttMap);
+        CopyComponent<BoxCollider2DComponent>(dstRegistry, srcRegistry, enttMap);
+        CopyComponent<CircleCollider2DComponent>(dstRegistry, srcRegistry, enttMap);
+        CopyComponent<Rigidbody2DComponent>(dstRegistry, srcRegistry, enttMap);
+        CopyComponent<ScriptComponent>(dstRegistry, srcRegistry, enttMap);
     }
 
     void Scene::OnUpdateEditor(Time ts, EditorCamera& camera)
