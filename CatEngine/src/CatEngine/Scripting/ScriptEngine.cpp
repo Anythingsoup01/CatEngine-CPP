@@ -51,6 +51,14 @@ namespace CatEngine
 	///////////////////////////////////////////////////////
 	// SCRIPT ENGINE //////////////////////////////////////
 	///////////////////////////////////////////////////////
+
+
+    static void InternalComponentDataSet(void* ptr, void* value)
+    {
+        uint64_t* idPtr = reinterpret_cast<uint64_t*>(ptr);
+        *idPtr = *reinterpret_cast<uint64_t*>(value);
+    }
+
     void ScriptEngine::Init()
 	{
         capy_init();
@@ -63,6 +71,9 @@ namespace CatEngine
         s_ScriptData->CoreLibraryPath = Application::Get().GetMainPath() / "build/CatScriptCore/libCatScriptCore.so";
 
         capy_domain_library_open(s_ScriptData->AppDomain, s_ScriptData->CoreLibraryPath.c_str(), true);
+
+        capy_add_type_setter("Transform", InternalComponentDataSet);
+        capy_add_type_setter("Rigidbody2D", InternalComponentDataSet);
 
 	}
 
@@ -167,18 +178,9 @@ namespace CatEngine
 
 	void ScriptEngine::OnRuntimeStop()
 	{
-        if (s_ScriptData->SceneContext) 
-        {
-            // 1) Destroy all script instances while scene is valid
-            s_ScriptData->EntityInstances.clear();
-
-            // 2) Optionally clear field data too
-            s_ScriptData->EntityScriptFields.clear();
-
-            // 3) SceneContext can be safely null now
-            s_ScriptData->SceneContext = nullptr;
-        }		
-		if (s_ScriptData->SourceFileReloadPending || !s_ScriptData->MainThreadQueue.empty())
+        s_ScriptData->SceneContext = nullptr;
+		
+        if (s_ScriptData->SourceFileReloadPending || !s_ScriptData->MainThreadQueue.empty())
 			Application::Get().SubmitToMainThread(s_ScriptData->MainThreadQueue.at(0));
 	}
 

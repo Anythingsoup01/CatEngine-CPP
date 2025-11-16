@@ -637,7 +637,9 @@ namespace CatEngine
         Ref<Scene> newScene = CreateRef<Scene>();
         readOnlyScene->CopyTo(newScene);
 
+
         m_EditorScene = newScene;
+        
 
         m_EditorScene->OnViewportResize(m_SceneViewportPanel.GetWidth(), m_SceneViewportPanel.GetHeight());
         m_SceneHierarchyPanel.SetContext(m_EditorScene);

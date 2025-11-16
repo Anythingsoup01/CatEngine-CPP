@@ -24,20 +24,12 @@ namespace CatEngine
         for (auto& [name, field] :scriptClass->GetFields())
         {
             size_t valueSize = TypeToSize(field.Type);
-            void* copy = malloc(valueSize);
-            if (copy == nullptr)
-            {
-                CE_API_ASSERT(false, "Failed to malloc data! : NAME - {}", name);
-            }
+            std::vector<uint8_t> buffer(valueSize);
 
-            memcpy(copy, field.ClassField, valueSize);
+            if (field.ClassField)
+                memcpy(buffer.data(), field.ClassField, valueSize);
 
-            if(copy == nullptr)
-            {
-                CE_API_ASSERT(false, "Failed to memcpy data! : NAME - {}", name);
-            }
-
-            m_DefaultFieldDatas[name] = copy;
+            m_DefaultFieldDatas[name] = std::move(buffer);
         }
 
         m_StartMethod = scriptClass->GetMethod("Start");
@@ -50,10 +42,13 @@ namespace CatEngine
 
     ScriptInstance::~ScriptInstance()
     {
-        for (auto& [name, data] : m_DefaultFieldDatas)
+        if (!m_Instance)
+            return;
+
+        // Restore default field data safely
+        for (auto& [name, buffer] : m_DefaultFieldDatas)
         {
-            SetFieldData(name, data);
-            free(data);
+            SetFieldData(name, buffer.data());
         }
 
         m_DefaultFieldDatas.clear();
@@ -88,9 +83,7 @@ namespace CatEngine
 
         ScriptField field = it->second;
 
-        uint8_t* src = (uint8_t*)m_Instance + field.ClassField->Offset;
-
-        memcpy(buffer, src, TypeToSize(field.Type));
+        capy_field_data_get(m_Instance, field.ClassField, buffer);
         return true;
     }
 
@@ -104,11 +97,7 @@ namespace CatEngine
 
         ScriptField field = it->second;    
 
-        // Correct destination = instance memory + field offset
-        
-        uint8_t* dest = (uint8_t*)m_Instance + field.ClassField->Offset;
-
-        memcpy(dest, value, TypeToSize(field.Type));
+        capy_field_data_set(m_Instance, field.ClassField, value, sizeof(value));
     }
 }
 

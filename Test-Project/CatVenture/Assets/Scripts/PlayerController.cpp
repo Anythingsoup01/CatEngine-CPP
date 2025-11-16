@@ -9,12 +9,12 @@ namespace CatRuntime
 
     void PlayerController::Start()
     {
-        m_Transform.position() = {0,0,0};
 
     }
 
     void PlayerController::Update(float ts)
     {
+        m_Transform.position() = {0,0,0};
         m_RB2D.ApplyForce({0, m_PlayerSpeed}, {0, 0});
         std::cout << "Player Speed: " << m_PlayerSpeed << "\n";
     }

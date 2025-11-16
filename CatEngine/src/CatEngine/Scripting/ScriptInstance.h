@@ -54,7 +54,7 @@ namespace CatEngine
 
 		void* m_Instance = nullptr;
 
-        std::unordered_map<std::string, void*> m_DefaultFieldDatas;
+        std::unordered_map<std::string, std::vector<uint8_t>> m_DefaultFieldDatas;
 
 		static inline char s_FieldValueBuffer[8];
 

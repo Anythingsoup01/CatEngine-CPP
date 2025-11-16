@@ -73,9 +73,6 @@ namespace CatEngine
     {
         CE_PROFILE_FUNCTION();
 
-        target->m_Registry.clear();
-        target->m_EntityMap.clear();   // if you keep a UUID→entity map
-
         target->m_ViewportWidth = m_ViewportWidth;
         target->m_ViewportHeight = m_ViewportHeight;
 
