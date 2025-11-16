@@ -12,5 +12,7 @@ namespace CatEngine
 
 		CircleRendererComponent() = default;
 		CircleRendererComponent(const CircleRendererComponent&) = default;
+
+        ~CircleRendererComponent() = default;
 	};
 }

@@ -1,7 +1,9 @@
 #include "Object.h"
 #include "CatScriptCore/InternalCalls/InternalCalls.h"
-#include "CatScriptCore/Scene/Component/CircleRenderer.h"
-#include "CatScriptCore/Scene/Component/Transform.h"
+
+#include "CircleRenderer.h"
+#include "SpriteRenderer.h"
+#include "Rigidbody2D.h"
 
 #include <iostream>
 
@@ -10,12 +12,6 @@
 namespace CatRuntime
 {
 
-    Object::Object(uint64_t entityID)
-    {
-        m_InstanceID = entityID;
-    }
-
-
     #define HasComponentOverload(Type, Instance) \
     template <> bool Object::HasComponent<Type>() { return Internal_Object_HasComponent(Instance, Type); }
 
@@ -23,6 +19,8 @@ namespace CatRuntime
 
     HasComponentOverload(Transform, m_InstanceID);
     HasComponentOverload(CircleRenderer, m_InstanceID);
+    HasComponentOverload(SpriteRenderer, m_InstanceID);
+    HasComponentOverload(Rigidbody2D, m_InstanceID);
 
     template<typename T> T Object::GetComponent() { return T(0); };
     
@@ -38,4 +36,6 @@ namespace CatRuntime
 
     GetComponentOverload(Transform, m_InstanceID);
     GetComponentOverload(CircleRenderer, m_InstanceID);
+    GetComponentOverload(SpriteRenderer, m_InstanceID);
+    GetComponentOverload(Rigidbody2D, m_InstanceID);
 }

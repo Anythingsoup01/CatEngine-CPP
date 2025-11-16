@@ -19,4 +19,6 @@ namespace CatRuntime
     CE_INITIALIZE_INTERNAL_CALL(Transform_GetScale);
     CE_INITIALIZE_INTERNAL_CALL(Transform_SetScale);
 
+    CE_INITIALIZE_INTERNAL_CALL(Sprite_GetColor);
+    CE_INITIALIZE_INTERNAL_CALL(Sprite_SetColor);
 }

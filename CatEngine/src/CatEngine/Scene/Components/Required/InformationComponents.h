@@ -6,6 +6,7 @@
 
 namespace CatEngine
 {
+
 	struct IDComponent
 	{
 		UUID ID;
@@ -14,6 +15,8 @@ namespace CatEngine
 		IDComponent(const IDComponent&) = default;
         IDComponent(const UUID& id)
             : ID(id) {}
+
+        ~IDComponent() = default;
 	};
 
 	struct TagComponent
@@ -24,6 +27,8 @@ namespace CatEngine
 		TagComponent(const TagComponent&) = default;
 		TagComponent(const std::string& tag)
 			: Tag(tag) {}
+
+        ~TagComponent() = default;
 	};
 
 	struct LayerComponent
@@ -35,6 +40,7 @@ namespace CatEngine
 		LayerComponent(const std::string& layer)
 			: Layer(layer) {}
 
+        ~LayerComponent() = default;
 	};
 
 	struct NameComponent
@@ -45,6 +51,8 @@ namespace CatEngine
 		NameComponent(const NameComponent&) = default;
 		NameComponent(const std::string& name)
 			: Name(name) {}
+
+        ~NameComponent() = default;
 	};
 
 	//struct ObjectStateComponent

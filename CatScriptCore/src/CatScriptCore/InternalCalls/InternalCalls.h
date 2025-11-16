@@ -23,10 +23,10 @@ namespace CatRuntime
     CE_ADD_INTERNAL_CALL(Object_FindObjectByName, uint64_t, const char*);
 
 
-    CE_ADD_INTERNAL_CALL(Rigidbody2D_ApplyForce, void, uint64_t, Vector2, Vector2, bool);
-    CE_ADD_INTERNAL_CALL(Rigidbody2D_ApplyForceToCenter, void, uint64_t, Vector2, bool);
-    CE_ADD_INTERNAL_CALL(Rigidbody2D_ApplyLinearImpulse, void, Vector2, Vector2, bool);
-    CE_ADD_INTERNAL_CALL(Rigidbody2D_ApplyLinearImpulseToCenter, void, Vector2, bool);
+    CE_ADD_INTERNAL_CALL(Rigidbody2D_ApplyForce, void, uint64_t, Vector2*, Vector2*, bool);
+    CE_ADD_INTERNAL_CALL(Rigidbody2D_ApplyForceToCenter, void, uint64_t, Vector2*, bool);
+    CE_ADD_INTERNAL_CALL(Rigidbody2D_ApplyLinearImpulse, void, uint64_t, Vector2*, Vector2*, bool);
+    CE_ADD_INTERNAL_CALL(Rigidbody2D_ApplyLinearImpulseToCenter, void, uint64_t, Vector2*, bool);
 
     CE_ADD_INTERNAL_CALL(Transform_GetPosition, void, uint64_t, Vector3*);
     CE_ADD_INTERNAL_CALL(Transform_SetPosition, void, uint64_t, Vector3*);
@@ -34,4 +34,7 @@ namespace CatRuntime
     CE_ADD_INTERNAL_CALL(Transform_SetRotation, void, uint64_t, Vector3*);
     CE_ADD_INTERNAL_CALL(Transform_GetScale, void, uint64_t, Vector3*);
     CE_ADD_INTERNAL_CALL(Transform_SetScale, void, uint64_t, Vector3*);
+
+    CE_ADD_INTERNAL_CALL(Sprite_GetColor, void, uint64_t, Vector4*);
+    CE_ADD_INTERNAL_CALL(Sprite_SetColor, void, uint64_t, Vector4*);
 }

@@ -9,7 +9,7 @@ namespace CatRuntime
     class EnemyController : public ScriptObject
     {
     public:
-        EnemyController(uint64_t entityID) { m_InstanceID = entityID; }
+        EnemyController(uint64_t entityID) : ScriptObject(entityID) {}
         virtual void Start() override;
         virtual void Update(float ts) override;
 
@@ -18,7 +18,6 @@ namespace CatRuntime
     private:
 #   define PUBLIC
 
-        Transform m_Transform;
 
         //TransformComponent m_Test;
         //TransformComponent m_Test3;

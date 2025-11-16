@@ -22,5 +22,6 @@ namespace CatEngine
 
 		BoxCollider2DComponent() = default;
 		BoxCollider2DComponent(const BoxCollider2DComponent&) = default;
+        ~BoxCollider2DComponent() = default;
 	};
 }

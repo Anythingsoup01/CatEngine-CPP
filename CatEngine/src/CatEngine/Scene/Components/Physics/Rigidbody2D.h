@@ -17,5 +17,6 @@ namespace CatEngine
 
 		Rigidbody2DComponent() = default;
 		Rigidbody2DComponent(const Rigidbody2DComponent&) = default;
+        ~Rigidbody2DComponent() = default;
 	};
 }

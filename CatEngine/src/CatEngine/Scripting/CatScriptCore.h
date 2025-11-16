@@ -73,17 +73,17 @@ namespace CatEngine
 		}
 
 		template<typename T>
-		void GetValue(void* value)
+		T GetValue()
 		{
 			static_assert(sizeof(T) <= 128, "Type to large!");
-			memcpy(value, m_Data, sizeof(T));
-		}
+		    return *(T*)m_Data;
+        }
 
 		template<typename T>
-		void SetValue(T* value)
+		void SetValue(T value)
 		{
 			static_assert(sizeof(T) <= 128, "Type to large!");
-			memcpy(m_Data, value, sizeof(T));
+			memcpy(m_Data, &value, sizeof(T));
 		}
 
 	private:

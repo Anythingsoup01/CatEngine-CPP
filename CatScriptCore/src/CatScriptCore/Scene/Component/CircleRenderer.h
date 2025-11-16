@@ -1,11 +1,11 @@
 #pragma once
 
-#include "CatScriptCore/Scene/Component/Object.h"
 #include "CatScriptCore/Types/Types.h"
+#include "InternalObjectData.h"
 
 namespace CatRuntime
 {
-	class CircleRenderer : public Object
+	class CircleRenderer : public InternalObjectData
 	{
     public:
         CircleRenderer() = default;

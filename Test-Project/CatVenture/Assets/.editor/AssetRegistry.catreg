@@ -1,13 +1,13 @@
 AssetRegistry:
-  - Handle: 7495987576117382183
-    FilePath: Scenes/CatVenture.catscene
-    Type: Scene
-  - Handle: 3714317741061739081
-    FilePath: Textures/car3.png
+  - Handle: 800972892075515834
+    FilePath: Textures/car.png
     Type: Texture2D
   - Handle: 5072754188735139086
     FilePath: Textures/car2.jpeg
     Type: Texture2D
-  - Handle: 800972892075515834
-    FilePath: Textures/car.png
+  - Handle: 3714317741061739081
+    FilePath: Textures/car3.png
     Type: Texture2D
+  - Handle: 7495987576117382183
+    FilePath: Scenes/CatVenture.catscene
+    Type: Scene

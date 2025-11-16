@@ -42,6 +42,9 @@ namespace CatEngine
         void OnUpdateSimulation(Time time, EditorCamera& camera);
         void OnUpdateRuntime(Time ts);
 
+
+        void ShutdownRuntime();
+
         void OnViewportResize(uint32_t width, uint32_t height);
 
 		void DuplicateEntity(Entity entity);

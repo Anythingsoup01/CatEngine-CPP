@@ -20,6 +20,8 @@ namespace CatEngine
 		TransformComponent(const glm::vec3& position)
 			: Position(position) {}
 
+        ~TransformComponent() = default;
+
 		glm::mat4 GetTransform() const
 		{
 			glm::mat4 rotation = glm::toMat4(glm::quat(Rotation));
@@ -28,5 +30,6 @@ namespace CatEngine
 				* rotation
 				* glm::scale(glm::mat4(1.f), Scale);
 		}
+
 	};
 }

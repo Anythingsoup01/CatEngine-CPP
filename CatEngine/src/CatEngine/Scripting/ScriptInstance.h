@@ -23,19 +23,19 @@ namespace CatEngine
 		Ref<ScriptClass> GetScriptClass() { return m_ScriptClass; }
 
 		template<typename T>
-		void GetFieldData(const std::string& name, void* value)
+		T GetFieldData(const std::string& name)
 		{
 			static_assert(sizeof(T) <= 128, "Type to large!");
-			bool success = GetFieldDataInternal(name, value);
-			if (!success)
-				memset(value, 0, sizeof(T));
+			bool success = GetFieldDataInternal(name, &s_FieldValueBuffer);
+			if (success)
+                return *(T*)s_FieldValueBuffer;
 		}
 
 		template<typename T>
-		void SetFieldData(const std::string& name, T* value)
+		void SetFieldData(const std::string& name, T value)
 		{
 			static_assert(sizeof(T) <= 128, "Type to large!");
-			SetFieldDataInternal(name, value);
+			SetFieldDataInternal(name, &value);
 		}
 		//CatScriptObject* GetManagedObject() { return m_Instance; }
 

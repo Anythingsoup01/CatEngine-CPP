@@ -1,20 +1,16 @@
 #pragma once
 
-#include "CatScriptCore/InternalCalls/InternalCalls.h"
-#include <memory>
+#include <cstdint>
+#include "Transform.h"
 
 namespace CatRuntime
 {
 
-
-	class Object
+	class Object : InternalObjectData
 	{
     public:
-        Object() = default;
-        Object(uint64_t entityID);
-        virtual ~Object() = default;
-
-        uint64_t GetInternalInstanceID() const { return m_InstanceID; }
+        Object(uint64_t entityID) : transform(entityID), InternalObjectData(entityID) {}
+        Transform transform;
 
         template<typename T>
         bool HasComponent();
@@ -23,7 +19,6 @@ namespace CatRuntime
         T GetComponent();
 
     protected :
-        uint64_t m_InstanceID = 0;
 
 
     private:

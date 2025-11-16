@@ -15,5 +15,7 @@ namespace CatEngine
 		ScriptComponent() = default;
 		ScriptComponent(const ScriptComponent&) = default;
 
+        ~ScriptComponent() = default;
+
 	};
 }

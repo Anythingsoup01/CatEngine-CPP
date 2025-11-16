@@ -715,11 +715,11 @@ namespace CatEngine
         m_SceneState = SceneState::Play;
 
         m_EditorScene = Scene::Copy(m_ActiveScene);
-        m_ActiveScene->OnRuntimeStart();
         m_SceneHierarchyPanel.SetContext(m_ActiveScene);
         m_SceneViewportPanel.SetContext(m_ActiveScene);
         m_SceneCameraPanel.SetContext(m_ActiveScene);
         ScriptEngine::SetSceneContext(m_ActiveScene);
+        m_ActiveScene->OnRuntimeStart();
     }
 
 	void EditorLayer::OnScenePause(bool isPaused)
@@ -751,19 +751,17 @@ namespace CatEngine
         m_SceneState = SceneState::Simulate;
      
 		m_EditorScene = Scene::Copy(m_ActiveScene);
-        m_ActiveScene->OnSimulationStart();
         m_SceneHierarchyPanel.SetContext(m_ActiveScene);
         m_SceneViewportPanel.SetContext(m_ActiveScene);
         m_SceneCameraPanel.SetContext(m_ActiveScene);
         ScriptEngine::SetSceneContext(m_ActiveScene);
+        m_ActiveScene->OnSimulationStart();
     }
     void EditorLayer::OnSceneSimulateStop()
     {
 		CE_PROFILE_FUNCTION();
 
         m_SceneState = SceneState::Edit;
-        
-		m_ActiveScene->OnSimulationStop();
         m_ActiveScene = Scene::Copy(m_EditorScene);
         m_SceneHierarchyPanel.SetContext(m_ActiveScene);
         m_SceneViewportPanel.SetContext(m_ActiveScene);

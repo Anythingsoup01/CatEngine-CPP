@@ -18,5 +18,7 @@ namespace CatEngine
 		SpriteRendererComponent(const SpriteRendererComponent&) = default;
 		SpriteRendererComponent(const glm::vec4& color, AssetHandle texture)
 			: Color(color), Texture(texture) {}
+
+        ~SpriteRendererComponent() = default;
 	};
 }

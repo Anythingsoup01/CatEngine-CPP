@@ -133,6 +133,22 @@ namespace CatEngine
 
 #pragma endregion
 
+#pragma region Sprite
+
+    static void Sprite_GetColor(UUID entityID, glm::vec4* outColor)
+	{
+		const Entity& entity = GetEntity(entityID);
+		*outColor = entity.GetComponent<SpriteRendererComponent>().Color;
+	}
+
+	static void Sprite_SetColor(UUID entityID, glm::vec4* color)
+	{
+		const Entity& entity = GetEntity(entityID);
+		entity.GetComponent<SpriteRendererComponent>().Color = *color;
+	}
+
+#pragma endregion
+
 
 	template<typename ... Component>
 	static void RegisterComponent()
@@ -195,5 +211,11 @@ namespace CatEngine
 		CE_ADD_INTERNAL_CALL(Transform_SetScale);
 #pragma endregion
 
+#pragma region Sprite
+
+        CE_ADD_INTERNAL_CALL(Sprite_GetColor);
+	    CE_ADD_INTERNAL_CALL(Sprite_SetColor);
+
+#pragma endregion
 	}
 }

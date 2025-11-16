@@ -14,5 +14,6 @@ namespace CatEngine
 
 		CameraComponent() = default;
 		CameraComponent(const CameraComponent&) = default;
+        ~CameraComponent() = default;
 	};
 }

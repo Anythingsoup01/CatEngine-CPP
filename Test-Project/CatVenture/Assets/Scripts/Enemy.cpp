@@ -9,16 +9,16 @@ namespace CatRuntime
 
     void EnemyController::Start()
     {
-        m_Transform = GetComponent<Transform>();
+        transform.position() = {0, 0, 0};
     }
     void EnemyController::Update(float ts)
     {
-        Vector3 pos = m_Transform.Position();
+        Vector3 pos = transform.position();
 
         if (Input_IsKeyDown(65))
             pos.x -= 1 * ts;
 
-        m_Transform.Position(pos);
+        transform.position() = pos;
     }
 
     EnemyController* EnemyController::Create(uint64_t entityID)

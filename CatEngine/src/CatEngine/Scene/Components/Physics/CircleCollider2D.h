@@ -22,5 +22,6 @@ namespace CatEngine
 
 		CircleCollider2DComponent() = default;
 		CircleCollider2DComponent(const CircleCollider2DComponent&) = default;
+        ~CircleCollider2DComponent() = default;
 	};
 }

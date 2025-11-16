@@ -1,5 +1,3 @@
-#include "CatEngine/Core/Core.h"
-#include "CatEngine/Scripting/ScriptGlue.h"
 #include "cepch.h"
 #include "ScriptEngine.h"
 
@@ -20,6 +18,7 @@
 #include "CatEngine/Scene/Components/Components.h"
 
 #include "CatEngine/Project/Project.h"
+#include "CatEngine/Scripting/ScriptGlue.h"
 
 static bool s_ReloadFileWatcher = false;
 
@@ -168,10 +167,17 @@ namespace CatEngine
 
 	void ScriptEngine::OnRuntimeStop()
 	{
-		s_ScriptData->SceneContext = nullptr;
+        if (s_ScriptData->SceneContext) 
+        {
+            // 1) Destroy all script instances while scene is valid
+            s_ScriptData->EntityInstances.clear();
 
-		s_ScriptData->EntityInstances.clear();
-		
+            // 2) Optionally clear field data too
+            s_ScriptData->EntityScriptFields.clear();
+
+            // 3) SceneContext can be safely null now
+            s_ScriptData->SceneContext = nullptr;
+        }		
 		if (s_ScriptData->SourceFileReloadPending || !s_ScriptData->MainThreadQueue.empty())
 			Application::Get().SubmitToMainThread(s_ScriptData->MainThreadQueue.at(0));
 	}

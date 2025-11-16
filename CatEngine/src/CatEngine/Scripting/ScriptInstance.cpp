@@ -40,19 +40,6 @@ namespace CatEngine
             m_DefaultFieldDatas[name] = copy;
         }
 
-        for (auto& [name, field] : m_ScriptClass->m_Fields)
-        {
-            CapyField* cf = field.ClassField;
-
-            if (!cf->SymHandle && cf->ClassMember)
-            {
-                cf->SymHandle = m_Instance;
-                char* data = static_cast<char*>(cf->SymHandle) + cf->Offset;
-                cf->SymHandle = static_cast<void*>(data);
-            }
-
-        }
-
         m_StartMethod = scriptClass->GetMethod("Start");
         m_UpdateMethod = scriptClass->GetMethod("Update");
 
@@ -65,7 +52,7 @@ namespace CatEngine
     {
         for (auto& [name, data] : m_DefaultFieldDatas)
         {
-            SetFieldDataInternal(name, data);
+            SetFieldData(name, data);
             free(data);
         }
 
@@ -100,7 +87,10 @@ namespace CatEngine
             return false;
 
         ScriptField field = it->second;
-        memcpy(buffer, field.ClassField->SymHandle, TypeToSize(field.Type));
+
+        uint8_t* src = (uint8_t*)m_Instance + field.ClassField->Offset;
+
+        memcpy(buffer, src, TypeToSize(field.Type));
         return true;
     }
 
@@ -112,9 +102,13 @@ namespace CatEngine
         if (it == fields.end())
             return;
 
-        ScriptField field = it->second;
+        ScriptField field = it->second;    
 
-        memcpy(field.ClassField->SymHandle, value, TypeToSize(field.Type));
+        // Correct destination = instance memory + field offset
+        
+        uint8_t* dest = (uint8_t*)m_Instance + field.ClassField->Offset;
+
+        memcpy(dest, value, TypeToSize(field.Type));
     }
 }
 
