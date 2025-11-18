@@ -27,7 +27,6 @@ namespace CatEngine {
 		IMGUI_CHECKVERSION();
 		ImGui::CreateContext();
 		ImGuiIO& io = ImGui::GetIO(); (void)io;
-		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
 #       ifndef CE_DISPLAY_WAYLAND
@@ -38,8 +37,8 @@ namespace CatEngine {
 
 		// ImGui Style
 		ImGui::StyleColorsDark();
-		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-		io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+		io.ConfigFlags &= ~ImGuiConfigFlags_NavEnableKeyboard;
+		io.ConfigFlags &= ~ImGuiConfigFlags_NavEnableGamepad;
 
 		ImGuiStyle& style = ImGui::GetStyle();
 		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
@@ -48,7 +47,7 @@ namespace CatEngine {
 			style.Colors[ImGuiCol_WindowBg].w = 1.0f;
 		}
 
-		SetDarkThemeColors();
+		//SetDarkThemeColors();
 		SetDefaultEditorStyle();
 
 		Application& app = Application::Get();

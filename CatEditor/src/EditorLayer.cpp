@@ -85,12 +85,12 @@ namespace CatEngine
                 case SceneState::Play:
                 {
                     OnUpdateRuntime(deltaTime);
+                    OnUpdateEditor(deltaTime);
                     break;
                 }
                 case SceneState::Simulate:
                 {
                     OnUpdateSimulation(deltaTime);
-                    OnUpdateMainCameraPreview(deltaTime);
                     break;
                 }
                 case SceneState::Pause:
@@ -369,15 +369,16 @@ namespace CatEngine
                 m_EditorCamera.SetViewportSize((float)m_SceneViewportPanel.GetWidth(), (float)m_SceneViewportPanel.GetHeight());
             }
 
-            if (!ImGuizmo::IsUsing() && (!m_BlockMouseEvents))
-                m_EditorCamera.OnUpdate(deltaTime);
+            m_EditorCamera.AllowEvents(!ImGuizmo::IsUsing() && m_BlockMouseEvents);
+
+            m_EditorCamera.OnUpdate(deltaTime);
 
             m_SceneViewportPanel.BindFramebuffer();
             
             RenderCommand::Clear({ 0.1, 0.1, 0.1, 1.0});
             m_SceneViewportPanel.ClearFramebufferAttachment(1, -1);
 
-            m_EditorScene->OnUpdateSimulation(deltaTime, m_EditorCamera);
+            m_SimulationScene->OnUpdateSimulation(deltaTime, m_EditorCamera);
 
             auto [mx, my] = ImGui::GetMousePos();
             const glm::vec2* viewportBounds = m_SceneViewportPanel.GetPanelBounds();
@@ -395,6 +396,17 @@ namespace CatEngine
                 m_HoveredEntity = pixelData == -1 ? Entity() : Entity((entt::entity)pixelData, m_EditorScene.get());
             }
             m_SceneViewportPanel.UnbindFramebuffer();
+
+            if (m_SceneCameraPanel.IsActive())
+            {
+                m_SceneCameraPanel.BindFramebuffer();
+            
+                RenderCommand::Clear({ 0.1, 0.1, 0.1, 1.0});
+                m_SceneCameraPanel.ClearFramebufferAttachment(1, -1);
+                m_SimulationScene->OnUpdateMainCameraPreview(deltaTime);
+                m_SceneCameraPanel.UnbindFramebuffer();
+
+            }
         }
 
     }
@@ -730,14 +742,22 @@ namespace CatEngine
         ScriptEngine::SetSceneContext(m_RuntimeScene);
         m_RuntimeScene->OnRuntimeStart();
         m_CurrentScene = m_RuntimeScene;
+
+        if (m_IsScenePaused)
+            m_CurrentScene->OnPauseStart();
+
     }
 
 	void EditorLayer::OnScenePause(bool isPaused)
 	{
+
+        if (m_SceneState == SceneState::Edit)
+            return;
+
 		if (isPaused)
-			m_RuntimeScene->OnPauseStart();
+			m_CurrentScene->OnPauseStart();
 		else
-			m_RuntimeScene->OnPauseStop();
+			m_CurrentScene->OnPauseStop();
 	}
 
     void EditorLayer::OnSceneStop()

@@ -18,6 +18,8 @@ namespace CatRuntime
     template<typename T> bool Object::HasComponent() { return false; }
 
     HasComponentOverload(Transform, m_InstanceID);
+    HasComponentOverload(Tag, m_InstanceID);
+    HasComponentOverload(Layer, m_InstanceID);
     HasComponentOverload(CircleRenderer, m_InstanceID);
     HasComponentOverload(SpriteRenderer, m_InstanceID);
     HasComponentOverload(Rigidbody2D, m_InstanceID);
@@ -35,6 +37,8 @@ namespace CatRuntime
     } \
 
     GetComponentOverload(Transform, m_InstanceID);
+    GetComponentOverload(Tag, m_InstanceID);
+    GetComponentOverload(Layer, m_InstanceID);
     GetComponentOverload(CircleRenderer, m_InstanceID);
     GetComponentOverload(SpriteRenderer, m_InstanceID);
     GetComponentOverload(Rigidbody2D, m_InstanceID);

@@ -1,8 +1,5 @@
 #include "Enemy.h"
 
-#include "CatScriptCore/InternalCalls/InternalCalls.h"
-#include "CatScriptCore/Scene/Component/Transform.h"
-#include "CatScriptCore/Scene/Component/CircleRenderer.h"
 
 namespace CatRuntime
 {
@@ -14,9 +11,6 @@ namespace CatRuntime
     void EnemyController::Update(float ts)
     {
         Vector3 pos = transform.position();
-
-        if (Input_IsKeyDown(65))
-            pos.x -= 1 * ts;
 
         transform.position() = pos;
     }

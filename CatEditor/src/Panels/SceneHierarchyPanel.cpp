@@ -243,16 +243,16 @@ namespace CatEngine
 		}
 
 		DrawComponent<TransformComponent>("Transform", selection, [](auto& component) {
-			ImGuiDraw::DrawVec3Control("Position", component.Position, 0.1f, 0.0f, 0.0f);
+			ImGuiDraw::Vec3("Position", component.Position, 0.1f, 0.0f, 0.0f);
 			glm::vec3 rotation = glm::degrees(component.Rotation);
-			ImGuiDraw::DrawVec3Control("Rotation", rotation, 0.1f, 0.0f, 0.0f);
+			ImGuiDraw::Vec3("Rotation", rotation, 0.1f, 0.0f, 0.0f);
 			component.Rotation = glm::radians(rotation);
-			ImGuiDraw::DrawVec3Control("Scale", component.Scale, 0.1f, 0.0f, 0.0f);
+			ImGuiDraw::Vec3("Scale", component.Scale, 0.1f, 0.0f, 0.0f);
 		}, false);
 		 
 		DrawComponent<SpriteRendererComponent>("Sprite Renderer", selection, [](auto& component) 
 		{
-			ImGuiDraw::DrawColorEdit4Control("Color", component.Color);
+			ImGuiDraw::ColorEdit4("Color", component.Color);
 		
             std::string label = "None";
             AssetHandle handle = component.Texture;
@@ -301,15 +301,15 @@ namespace CatEngine
 
 
 
-			ImGuiDraw::DrawVec1Control("Tiling Factor", component.TilingFactor, 0.1f, 0.f, 100.f);
+			ImGuiDraw::Vec1("Tiling Factor", component.TilingFactor, 0.1f, 0.f, 100.f);
 		});
 		
         DrawComponent<CircleRendererComponent>("Circle Renderer", selection, [](auto& component)
 		{
-			ImGuiDraw::DrawColorEdit4Control("Color", component.Color);
+			ImGuiDraw::ColorEdit4("Color", component.Color);
 
-			ImGuiDraw::DrawVec1Control("Thickness", component.Thickness, 0.025f, 0.f, 1.f);
-			ImGuiDraw::DrawVec1Control("Fade", component.Fade, 0.00025f, 0.f, 1.f);
+			ImGuiDraw::Vec1("Thickness", component.Thickness, 0.025f, 0.f, 1.f);
+			ImGuiDraw::Vec1("Fade", component.Fade, 0.00025f, 0.f, 1.f);
 		});
 
         DrawComponent<CameraComponent>("Camera", selection, [](auto& component) 
@@ -336,40 +336,40 @@ namespace CatEngine
 				ImGui::EndCombo();
 			}
 			auto& primary = component.Primary;
-			ImGui::Checkbox("Primary Camera", &primary);
+            ImGuiDraw::CheckBox("Primary Camera", primary);
 
 			if (camera.GetProjectionType() == SceneCamera::ProjectionType::Perspectice)
 			{
 				auto vertFov = glm::degrees(camera.GetPerspectiveVerticalFov());
-				if (ImGui::DragFloat("Vertical FOV", &vertFov))
+				if (ImGuiDraw::Vec1("Vertical FOV", vertFov))
 					camera.SetPerspectiveVerticalFov(glm::radians(vertFov));
 
 				auto nearClip = camera.GetPerspectiveNearClip();
-				if (ImGui::DragFloat("Near Clip", &nearClip, .01f, 0.f))
+				if (ImGuiDraw::Vec1("Near Clip", nearClip, .01f, 0.f))
 					camera.SetPerspectiveNearClip(nearClip);
 
 				auto farClip = camera.GetPerspectiveFarClip();
-				if (ImGui::DragFloat("Far Clip", &farClip, .01f, 0.f))
+				if (ImGuiDraw::Vec1("Far Clip", farClip, .01f, 0.f))
 					camera.SetPerspectiveFarClip(farClip);
 			}
 
 			if (camera.GetProjectionType() == SceneCamera::ProjectionType::Orthographic)
 			{
 				auto size = camera.GetOrthographicSize();
-				if (ImGui::DragFloat("FOV", &size))
+				if (ImGuiDraw::Vec1("FOV", size))
 					camera.SetOrthographicSize(size);
 
 				auto nearClip = camera.GetOrthographicNearClip();
-				if (ImGui::DragFloat("Near Clip", &nearClip, .01f, 0.f))
+				if (ImGuiDraw::Vec1("Near Clip", nearClip, .01f, 0.f))
 					camera.SetOrthographicNearClip(nearClip);
 
 				auto farClip = camera.GetOrthographicFarClip();
-				if (ImGui::DragFloat("Far Clip", &farClip, .01f, 0.f))
+				if (ImGuiDraw::Vec1("Far Clip", farClip, .01f, 0.f))
 					camera.SetOrthographicFarClip(farClip);
 			}
 
             auto& fixed = component.FixedAspectRatio;
-            ImGui::Checkbox("Fixed Aspect Ratio", &fixed);
+            ImGuiDraw::CheckBox("Fixed Aspect Ratio", fixed);
             
 		});
 
@@ -395,7 +395,7 @@ namespace CatEngine
 					ImGui::EndCombo();
 				}
 
-				ImGui::Checkbox("Fixed Rotation", &component.FixedRotation);
+                ImGuiDraw::CheckBox("Fixed Rotation", component.FixedRotation);
 			});
 
 		DrawComponent<BoxCollider2DComponent>("BoxCollider 2D", selection, [](auto& component)
@@ -408,14 +408,14 @@ namespace CatEngine
 				float& restitution = component.Restitution;
 				float& restitutionThreshold = component.RestitutionThreshold;
 
-				ImGuiDraw::DrawVec2Control("Offset", component.Offset);
-				ImGuiDraw::DrawVec2Control("Size", component.Size, 0.025f, 0.0001f, 100000.f);
-				ImGuiDraw::DrawVec1Control("Rotation", component.Rotation, 0.025f, 0, 0);
-				ImGuiDraw::DrawCheckBox("Show Collider", component.ShowColliderBounds);
-				ImGuiDraw::DrawVec1Control("Density", component.Density, 0.025f, 0.0001f, 100000.f);
-				ImGuiDraw::DrawVec1Control("Friction", component.Friction, 0.025f, 0.0001f, 100000.f);
-				ImGuiDraw::DrawVec1Control("Restitution", component.Restitution, 0.025f, 0.0001f, 100000.f);
-				ImGuiDraw::DrawVec1Control("Restitution Threshold", component.RestitutionThreshold, 0.025f, 0.0001f, 100000.f);
+				ImGuiDraw::Vec2("Offset", component.Offset);
+				ImGuiDraw::Vec2("Size", component.Size, 0.025f, 0.0001f, 100000.f);
+				ImGuiDraw::Vec1("Rotation", component.Rotation, 0.025f, 0, 0);
+				ImGuiDraw::CheckBox("Show Collider", component.ShowColliderBounds);
+				ImGuiDraw::Vec1("Density", component.Density, 0.025f, 0.0001f, 100000.f);
+				ImGuiDraw::Vec1("Friction", component.Friction, 0.025f, 0.0001f, 100000.f);
+				ImGuiDraw::Vec1("Restitution", component.Restitution, 0.025f, 0.0001f, 100000.f);
+				ImGuiDraw::Vec1("Restitution Threshold", component.RestitutionThreshold, 0.025f, 0.0001f, 100000.f);
 			});
 
 		DrawComponent<CircleCollider2DComponent>("CircleCollider 2D", selection, [](auto& component)
@@ -428,13 +428,13 @@ namespace CatEngine
 				float& restitution = component.Restitution;
 				float& restitutionThreshold = component.RestitutionThreshold;
 
-				ImGuiDraw::DrawVec2Control("Offset", component.Offset);
-				ImGuiDraw::DrawVec1Control("Radius", component.Radius, 0.025f, 0.0001f, 100000.f);
-				ImGuiDraw::DrawCheckBox("Show Collider", component.ShowColliderBounds);
-				ImGuiDraw::DrawVec1Control("Density", component.Density, 0.025f, 0.0001f, 100000.f);
-				ImGuiDraw::DrawVec1Control("Friction", component.Friction, 0.025f, 0.0001f, 100000.f);
-				ImGuiDraw::DrawVec1Control("Restitution", component.Restitution, 0.025f, 0.0001f, 100000.f);
-				ImGuiDraw::DrawVec1Control("Restitution Threshold", component.RestitutionThreshold, 0.025f, 0.0001f, 100000.f);
+				ImGuiDraw::Vec2("Offset", component.Offset);
+				ImGuiDraw::Vec1("Radius", component.Radius, 0.025f, 0.0001f, 100000.f);
+				ImGuiDraw::CheckBox("Show Collider", component.ShowColliderBounds);
+				ImGuiDraw::Vec1("Density", component.Density, 0.025f, 0.0001f, 100000.f);
+				ImGuiDraw::Vec1("Friction", component.Friction, 0.025f, 0.0001f, 100000.f);
+				ImGuiDraw::Vec1("Restitution", component.Restitution, 0.025f, 0.0001f, 100000.f);
+				ImGuiDraw::Vec1("Restitution Threshold", component.RestitutionThreshold, 0.025f, 0.0001f, 100000.f);
 			});
 
 		DrawComponent<ScriptComponent>("Script", selection, [selection, this](auto& component) mutable
@@ -442,18 +442,17 @@ namespace CatEngine
             auto& sc = component;
 			const auto& entityClasses = ScriptEngine::GetScriptClasses();
 
-			//UI::ScopedStyleColor textColor(ImGuiCol_Text, ImVec4(0.9f, 0.2f, 0.3f, 1.0f), !scriptClassExists);
-
             std::vector<const char*> classes = {""};
             for (auto& [className, scriptClass] : entityClasses)
             {
                 classes.push_back(className.c_str());
             }
 
-            if (ImGui::Combo("Class", &sc.SelectedScript, classes.data(), classes.size()))
+            if (ImGuiDraw::Combo("Class", sc.SelectedScript, classes))
             {
                 sc.ClassName = sc.SelectedScript != 0 ? classes.at(sc.SelectedScript) : "";
             }
+
 
             if (!sc.Loaded && !sc.ClassName.empty())
             {
@@ -487,14 +486,14 @@ namespace CatEngine
 						case ScriptFieldType::Float:
 						{
                             float data = scriptInstance->GetFieldData<float>(name);
-							if (ImGui::DragFloat(name.c_str(), &data))
+							if (ImGuiDraw::Vec1(name, data))
 								scriptInstance->SetFieldData(name, data);
 							break;
 						}
 						case ScriptFieldType::Double:
 						{
                             double data = scriptInstance->GetFieldData<double>(name);
-							if (ImGui::DragFloat(name.c_str(), &(float&)data))
+							if (ImGuiDraw::Vec1(name, (float&)data))
 								scriptInstance->SetFieldData(name, data);
 							break;
 						}
@@ -507,49 +506,49 @@ namespace CatEngine
 						case ScriptFieldType::Int16:
 						{
                             int16_t data = scriptInstance->GetFieldData<int16_t>(name);
-							if (ImGui::DragInt(name.c_str(), &(int&)data))
+							if (ImGuiDraw::Int1(name, (int&)data))
 								scriptInstance->SetFieldData(name, data);
 							break;
 						}
 						case ScriptFieldType::Int32:
 						{
                             int32_t data = scriptInstance->GetFieldData<int32_t>(name);
-							if (ImGui::DragInt(name.c_str(), &data))
+							if (ImGuiDraw::Int1(name, data))
 								scriptInstance->SetFieldData(name, data);
 							break;
 						}
 						case ScriptFieldType::Int64:
 						{
                             int64_t data = scriptInstance->GetFieldData<int64_t>(name);
-							if (ImGui::DragInt(name.c_str(), &(int&)data))
+							if (ImGuiDraw::Int1(name, (int&)data))
 								scriptInstance->SetFieldData(name, data);
 							break;
 						}
 						case ScriptFieldType::Boolean:
 						{
                             bool data = scriptInstance->GetFieldData<bool>(name);
-							if (ImGui::Checkbox(name.c_str(), &data))
+							if (ImGuiDraw::CheckBox(name, data))
 								scriptInstance->SetFieldData(name, data);
 							break;
 						}
 						case ScriptFieldType::UInt16:
 						{
                             uint16_t data = scriptInstance->GetFieldData<uint16_t>(name);
-							if (ImGui::DragInt(name.c_str(), &(int&)data))
+							if (ImGuiDraw::Int1(name, (int&)data))
 								scriptInstance->SetFieldData(name, data);
 							break;
 						}
 						case ScriptFieldType::UInt32:
 						{
                             uint32_t data = scriptInstance->GetFieldData<uint32_t>(name);
-							if (ImGui::DragInt(name.c_str(), &(int&)data))
+							if (ImGuiDraw::Int1(name, (int&)data))
 								scriptInstance->SetFieldData(name, data);
 							break;
 						}
 						case ScriptFieldType::UInt64:
 						{
                             uint64_t data = scriptInstance->GetFieldData<uint64_t>(name);
-							if (ImGui::DragInt(name.c_str(), &(int&)data))
+							if (ImGuiDraw::Int1(name, (int&)data))
 								scriptInstance->SetFieldData(name, &data);
 							break;
 						}
@@ -560,42 +559,29 @@ namespace CatEngine
 						case ScriptFieldType::Vector2:
 						{
                             glm::vec2 data = scriptInstance->GetFieldData<glm::vec2>(name);
-							if (ImGui::DragFloat2(name.c_str(), glm::value_ptr(data)))
+							if (ImGuiDraw::Vec2(name, data))
 								scriptInstance->SetFieldData(name, data);
 							break;
 						}
 						case ScriptFieldType::Vector3:
 						{
                             glm::vec3 data = scriptInstance->GetFieldData<glm::vec3>(name);
-							if (ImGui::DragFloat3(name.c_str(), glm::value_ptr(data)))
+							if (ImGuiDraw::Vec3(name, data))
 								scriptInstance->SetFieldData(name, data);
 							break;
 						}
 						case ScriptFieldType::Vector4:
 						{
                             glm::vec4 data = scriptInstance->GetFieldData<glm::vec4>(name);
-							if (ImGui::DragFloat4(name.c_str(), glm::value_ptr(data)))
+							if (ImGuiDraw::Vec4(name, data))
 								scriptInstance->SetFieldData(name, data);
 							break;
 						}
                         case ScriptFieldType::TransformComponent:
                         {
-                            ImGui::Button("TransformComponent (Has Data)");
-                            if (ImGui::BeginDragDropTarget())
-                            {
-                                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SCENE_HIERARCHY_ITEM"))
-                                {
-                                    UUID entityID = *(UUID*)payload->Data;
-                                    auto entity = m_Context->GetEntityByUUID(entityID);
-
-                                    if (entity.HasComponent<TransformComponent>())
-                                    {
-                                        uint64_t id = entityID.uuid();
-                                        scriptInstance->SetFieldData(name, id);
-                                    }
-                                }
-                                ImGui::EndDragDropTarget();
-                            }
+                            std::string labelName = field.ComponentName.empty() ? "(empty)" : field.ComponentName;
+                            labelName.append(" (TransformComponent)");
+                            ImGuiDraw::Component(name, labelName);
                             break;
 
                         }
@@ -628,7 +614,7 @@ namespace CatEngine
 								ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
 								float data = scriptFieldInstance.GetValue<float>();
 
-								if (ImGui::DragFloat(name.c_str(), &data))
+								if (ImGuiDraw::Vec1(name, data))
 								{
 									scriptFieldInstance.SetValue(data);
 								}
@@ -639,7 +625,7 @@ namespace CatEngine
 								ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
 								double data = scriptFieldInstance.GetValue<double>();
 
-								if (ImGui::DragFloat(name.c_str(), &(float&)data))
+								if (ImGuiDraw::Vec1(name, (float&)data))
 								{
 									scriptFieldInstance.SetValue(data);
 								}
@@ -655,7 +641,7 @@ namespace CatEngine
 							{
 								ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
 								int16_t data = scriptFieldInstance.GetValue<int16_t>();
-								if (ImGui::DragInt(name.c_str(), &(int&)data))
+								if (ImGuiDraw::Int1(name, (int&)data))
 								{
 									scriptFieldInstance.SetValue(data);
 								}
@@ -665,7 +651,7 @@ namespace CatEngine
 							{
 								ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
 								int32_t data = scriptFieldInstance.GetValue<int32_t>();
-								if (ImGui::DragInt(name.c_str(), &data))
+								if (ImGuiDraw::Int1(name, (int&)data))
 								{
 									scriptFieldInstance.SetValue(data);
 								}
@@ -675,7 +661,7 @@ namespace CatEngine
 							{
 								ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
 								int64_t data = scriptFieldInstance.GetValue<int64_t>();
-								if (ImGui::DragInt(name.c_str(), &(int&)data))
+								if (ImGuiDraw::Int1(name, (int&)data))
 								{
 									scriptFieldInstance.SetValue(data);
 								}
@@ -685,7 +671,7 @@ namespace CatEngine
 							{
 								ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
 								bool data = scriptFieldInstance.GetValue<bool>();
-								if (ImGui::Checkbox(name.c_str(), &data))
+								if (ImGuiDraw::CheckBox(name, data))
 								{
 									scriptFieldInstance.SetValue(&data);
 								}
@@ -695,7 +681,7 @@ namespace CatEngine
 							{
 								ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
 								uint16_t data = scriptFieldInstance.GetValue<uint16_t>();
-								if (ImGui::DragInt(name.c_str(), &(int&)data))
+								if (ImGuiDraw::Int1(name, (int&)data))
 								{
 									scriptFieldInstance.SetValue(data);
 								}
@@ -705,7 +691,7 @@ namespace CatEngine
 							{
 								ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
 								uint32_t data = scriptFieldInstance.GetValue<uint32_t>();
-								if (ImGui::DragInt(name.c_str(), &(int&)data))
+								if (ImGuiDraw::Int1(name, (int&)data))
 								{
 									scriptFieldInstance.SetValue(data);
 								}
@@ -715,7 +701,7 @@ namespace CatEngine
 							{
 								ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
 								uint64_t data = scriptFieldInstance.GetValue<uint64_t>();
-								if (ImGui::DragInt(name.c_str(), &(int&)data))
+								if (ImGuiDraw::Int1(name, (int&)data))
 								{
 									scriptFieldInstance.SetValue(data);
 								}
@@ -729,7 +715,7 @@ namespace CatEngine
 							{
 								ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
 								glm::vec2 data = scriptFieldInstance.GetValue<glm::vec2>();
-								if (ImGui::DragFloat2(name.c_str(), glm::value_ptr(data)))
+								if (ImGuiDraw::Vec2(name, data))
 								{
 									scriptFieldInstance.SetValue(data);
 								}
@@ -739,7 +725,7 @@ namespace CatEngine
 							{
 								ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
 								glm::vec3 data =scriptFieldInstance.GetValue<glm::vec3>();
-								if (ImGui::DragFloat3(name.c_str(), glm::value_ptr(data)))
+								if (ImGuiDraw::Vec3(name, data))
 								{
 									scriptFieldInstance.SetValue(data);
 								}
@@ -749,7 +735,7 @@ namespace CatEngine
 							{
 								ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
 								glm::vec4 data = scriptFieldInstance.GetValue<glm::vec4>();
-								if (ImGui::DragFloat4(name.c_str(), glm::value_ptr(data)))
+								if (ImGuiDraw::Vec4(name, data))
 								{
 									scriptFieldInstance.SetValue(data);
 								}
@@ -758,7 +744,9 @@ namespace CatEngine
 							case ScriptFieldType::TransformComponent:
                             {
                                 ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
-                                ImGui::Button("TransformComponent (Has Data)");
+                                std::string labelName = field.ComponentName;
+                                labelName.append(" (TransformComponent)");
+                                ImGuiDraw::Component(name, labelName);
                                 if (ImGui::BeginDragDropTarget())
                                 {
                                     if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SCENE_HIERARCHY_ITEM"))
@@ -769,6 +757,7 @@ namespace CatEngine
                                         if (entity.HasComponent<TransformComponent>())
                                         {
                                             uint64_t id = entityID.uuid();
+                                            field.ComponentName = entity.GetName();
                                             scriptFieldInstance.SetValue(id);
                                         }
                                     }
@@ -788,7 +777,7 @@ namespace CatEngine
                                 case ScriptFieldType::Float:
                                 {
                                     float data = 0;
-                                    if (ImGui::DragFloat(name.c_str(), &data))
+                                    if (ImGuiDraw::Vec1(name, data))
                                     {
                                         ScriptFieldInstance& sfi = scriptFields[name];
                                         sfi.Field = field;
@@ -799,7 +788,7 @@ namespace CatEngine
                                 case ScriptFieldType::Double:
                                 {
                                     double data = 0;
-                                    if (ImGui::DragFloat(name.c_str(), &(float&)data))
+                                    if (ImGuiDraw::Vec1(name, (float&)data))
                                     {
                                         ScriptFieldInstance& sfi = scriptFields[name];
                                         sfi.Field = field;
@@ -816,7 +805,7 @@ namespace CatEngine
                                 case ScriptFieldType::Int16:
                                 {
                                     int16_t data = 0;
-                                    if (ImGui::DragInt(name.c_str(), &(int&)data))
+                                    if (ImGuiDraw::Int1(name, (int&)data))
                                     {
                                         ScriptFieldInstance& sfi = scriptFields[name];
                                         sfi.Field = field;
@@ -827,7 +816,7 @@ namespace CatEngine
                                 case ScriptFieldType::Int32:
                                 {
                                     int32_t data = 0;
-                                    if (ImGui::DragInt(name.c_str(), &(int&)data))
+                                    if (ImGuiDraw::Int1(name, (int&)data))
                                     {
                                         ScriptFieldInstance& sfi = scriptFields[name];
                                         sfi.Field = field;
@@ -838,7 +827,7 @@ namespace CatEngine
                                 case ScriptFieldType::Int64:
                                 {
                                     int64_t data = 0;
-                                    if (ImGui::DragInt(name.c_str(), &((int&)data)))
+                                    if (ImGuiDraw::Int1(name, (int&)data))
                                     {
                                         ScriptFieldInstance& sfi = scriptFields[name];
                                         sfi.Field = field;
@@ -849,7 +838,7 @@ namespace CatEngine
                                 case ScriptFieldType::Boolean:
                                 {
                                     bool data = false;
-                                    if (ImGui::Checkbox(name.c_str(), &data))
+                                    if (ImGuiDraw::CheckBox(name, data))
                                     {
                                         ScriptFieldInstance& sfi = scriptFields[name];
                                         sfi.Field = field;
@@ -860,7 +849,7 @@ namespace CatEngine
                                 case ScriptFieldType::UInt16:
                                 {
                                     uint16_t data = 0;
-                                    if (ImGui::DragInt(name.c_str(), &(int&)data))
+                                    if (ImGuiDraw::Int1(name, (int&)data))
                                     {
                                         ScriptFieldInstance& sfi = scriptFields[name];
                                         sfi.Field = field;
@@ -871,7 +860,7 @@ namespace CatEngine
                                 case ScriptFieldType::UInt32:
                                 {
                                     uint32_t data = 0;
-                                    if (ImGui::DragInt(name.c_str(), &(int&)data))
+                                    if (ImGuiDraw::Int1(name, (int&)data))
                                     {
                                         ScriptFieldInstance& sfi = scriptFields[name];
                                         sfi.Field = field;
@@ -882,7 +871,7 @@ namespace CatEngine
                                 case ScriptFieldType::UInt64:
                                 {
                                     uint64_t data = 0;
-                                    if (ImGui::DragInt(name.c_str(), &(int&)data))
+                                    if (ImGuiDraw::Int1(name, (int&)data))
                                     {
                                         ScriptFieldInstance& sfi = scriptFields[name];
                                         sfi.Field = field;
@@ -897,7 +886,7 @@ namespace CatEngine
                                 case ScriptFieldType::Vector2:
                                 {
                                     glm::vec2 data(0);
-                                    if (ImGui::DragFloat2(name.c_str(), glm::value_ptr(data)))
+                                    if (ImGuiDraw::Vec2(name, data))
                                     {
                                         ScriptFieldInstance& sfi = scriptFields[name];
                                         sfi.Field = field;
@@ -908,7 +897,7 @@ namespace CatEngine
                                 case ScriptFieldType::Vector3:
                                 {
                                     glm::vec3 data(0);
-                                    if (ImGui::DragFloat3(name.c_str(), glm::value_ptr(data)))
+                                    if (ImGuiDraw::Vec3(name, data))
                                     {
                                         ScriptFieldInstance& sfi = scriptFields[name];
                                         sfi.Field = field;
@@ -919,7 +908,7 @@ namespace CatEngine
                                 case ScriptFieldType::Vector4:
                                 {
                                     glm::vec4 data(0);
-                                    if (ImGui::DragFloat4(name.c_str(), glm::value_ptr(data)))
+                                    if (ImGuiDraw::Vec4(name, data))
                                     {
                                         ScriptFieldInstance& sfi = scriptFields[name];
                                         sfi.Field = field;
@@ -930,7 +919,7 @@ namespace CatEngine
 
                                 case ScriptFieldType::TransformComponent:
                                 {
-                                    ImGui::Button("TransformComponent (empty)");
+                                    ImGuiDraw::Component(name, "TransformComponent (empty)");
                                     if (ImGui::BeginDragDropTarget())
                                     {
                                         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SCENE_HIERARCHY_ITEM"))
@@ -943,6 +932,7 @@ namespace CatEngine
                                                 ScriptFieldInstance& sfi = scriptFields[name];
                                                 uint64_t id = entityID.uuid();
                                                 sfi.SetValue(id);
+                                                field.ComponentName = entity.GetName();
                                                 sfi.Field = field;
                                             }
                                         }

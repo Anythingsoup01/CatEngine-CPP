@@ -2,10 +2,17 @@
 
 namespace CatRuntime
 {
-    CE_INITIALIZE_INTERNAL_CALL(Input_IsKeyDown);
+    CE_INITIALIZE_INTERNAL_CALL(Input_IsKeyPressed);
+    CE_INITIALIZE_INTERNAL_CALL(Input_IsKeyReleased);
 
     CE_INITIALIZE_INTERNAL_CALL(Object_HasComponent);
     CE_INITIALIZE_INTERNAL_CALL(Object_FindObjectByName);
+
+    CE_INITIALIZE_INTERNAL_CALL(Object_GetLayer);
+    CE_INITIALIZE_INTERNAL_CALL(Object_SetLayer);
+
+    CE_INITIALIZE_INTERNAL_CALL(Object_GetTag);
+    CE_INITIALIZE_INTERNAL_CALL(Object_SetTag);
 
     CE_INITIALIZE_INTERNAL_CALL(Rigidbody2D_ApplyForce);
     CE_INITIALIZE_INTERNAL_CALL(Rigidbody2D_ApplyForceToCenter);

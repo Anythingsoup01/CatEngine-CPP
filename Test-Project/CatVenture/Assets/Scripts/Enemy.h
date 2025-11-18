@@ -1,6 +1,6 @@
 #pragma once
 
-#include <CatScriptCore/ScriptIncludes.h>
+#include <CatScriptCore/ScriptInclude.h>
 
 #include "CatScriptCore/Scene/Component/Transform.h"
 

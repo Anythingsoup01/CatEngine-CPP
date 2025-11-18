@@ -8,6 +8,8 @@
 namespace CatEngine
 {
 
+    std::vector<std::string> names = {"name", "x", "y", "z", "a"};
+
 	static float GetOffset(const size_t& size)
 	{
 		if (size >= 50)
@@ -34,109 +36,134 @@ namespace CatEngine
 	}
 
 	template<typename T>
-	static void DrawImGuiColorEdit(T& values)
+	static bool ImGuiColorEdit(T& values)
 	{
 		static_assert(false);
+        return false;
 	}
 
 	template<>
-	void DrawImGuiColorEdit<glm::vec4>(glm::vec4& values)
+	bool ImGuiColorEdit<glm::vec4>(glm::vec4& values)
 	{
-
+        bool triggered = false;
 		ImGui::PushMultiItemsWidths(4, (ImGui::GetColumnWidth() * .95f));
 		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 3,0 });
 
-		ImGui::ColorEdit4("##CO", glm::value_ptr(values), ImGuiColorEditFlags_NoInputs);
+		if (ImGui::ColorEdit4("##CO", glm::value_ptr(values), ImGuiColorEditFlags_NoInputs)) triggered = true;
 
 		ImGui::PopStyleVar(1);
+        return triggered;
 	}
 
 	template<>
-	void DrawImGuiColorEdit<glm::vec3>(glm::vec3& values)
+	bool ImGuiColorEdit<glm::vec3>(glm::vec3& values)
 	{
+        bool triggered = false;
 		ImGui::PushMultiItemsWidths(3, (ImGui::GetColumnWidth() * .95f));
 		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 3,0 });
 
-		ImGui::ColorEdit3("##CO", glm::value_ptr(values), ImGuiColorEditFlags_NoInputs);
+		if (ImGui::ColorEdit3("##CO", glm::value_ptr(values), ImGuiColorEditFlags_NoInputs)) triggered = true;
 
 		ImGui::PopStyleVar(1);
+        return triggered;
 	}
 
 	template<typename T>
-	void DrawImGuiDragFloat(T& values, float step, float min, float max)
+	bool ImGuiDragFloat(T& values, float step, float min, float max)
 	{
 		static_assert(false);
+        return false;
 	}
 
 	template<>
-    void DrawImGuiDragFloat<glm::vec4>(glm::vec4& values, float step, float min, float max)
+    bool ImGuiDragFloat<glm::vec4>(glm::vec4& values, float step, float min, float max)
 	{
-
-		ImGui::PushMultiItemsWidths(4, (ImGui::GetColumnWidth() * .95f));
-		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 3,0 });
+        bool triggered = false;
 		for (int i = 0; i < 4; i++)
 		{
+            ImGui::TableSetColumnIndex(i + 1);
 			ImGui::PushID(i);
-			ImGui::DragFloat("##", &values[i], step, min, max, "%.2f");
-			ImGui::PopItemWidth();
-			ImGui::SameLine();
+            ImGui::PushItemWidth(-1.0f);
+            ImGui::Text("%s", names[i + 1].c_str());
+            ImGui::SameLine();
+			if (ImGui::DragFloat("##", &values[i], step, min, max, "%.2f")) triggered = true;
+            ImGui::PopItemWidth();
 			ImGui::PopID();
 		}
-		ImGui::PopStyleVar(1);
+        return triggered;
 	}
 
 	template<>
-	void DrawImGuiDragFloat<glm::vec3>(glm::vec3& values, float step, float min, float max)
+	bool ImGuiDragFloat<glm::vec3>(glm::vec3& values, float step, float min, float max)
 	{
-
-		ImGui::PushMultiItemsWidths(3, (ImGui::GetColumnWidth() * .95f));
-		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 3,0 });
+        bool triggered = false;
 		for (int i = 0; i < 3; i++)
 		{
+            ImGui::TableSetColumnIndex(i + 1);
 			ImGui::PushID(i);
-			ImGui::DragFloat("##", &values[i], step, min, max, "%.2f");
-			ImGui::PopItemWidth();
-			ImGui::SameLine();
+            ImGui::PushItemWidth(-1.0f);
+            ImGui::Text("%s", names[i + 1].c_str());
+            ImGui::SameLine();
+			if (ImGui::DragFloat("##", &values[i], step, min, max, "%.2f")) triggered = true;
+            ImGui::PopItemWidth();
 			ImGui::PopID();
 		}
-		ImGui::PopStyleVar(1);
+        return triggered;
 	}
 
 	template<>
-	void DrawImGuiDragFloat<glm::vec2>(glm::vec2& values, float step, float min, float max)
+	bool ImGuiDragFloat<glm::vec2>(glm::vec2& values, float step, float min, float max)
 	{
-
-		ImGui::PushMultiItemsWidths(2, (ImGui::GetColumnWidth() * .95f));
-		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 3,0 });
+        bool triggered = false;
 		for (int i = 0; i < 2; i++)
 		{
+            ImGui::TableSetColumnIndex(i + 1);
 			ImGui::PushID(i);
-			ImGui::DragFloat("##", &values[i], step, min, max, "%.2f");
-			ImGui::PopItemWidth();
-			ImGui::SameLine();
+            ImGui::PushItemWidth(-1.0f);
+            ImGui::Text("%s", names[i + 1].c_str());
+            ImGui::SameLine();
+			if (ImGui::DragFloat("##", &values[i], step, min, max, "%.2f")) triggered = true;
+            ImGui::PopItemWidth();
 			ImGui::PopID();
 		}
-		ImGui::PopStyleVar(1);
+        return triggered;
 	}
 
 	template<>
-	void DrawImGuiDragFloat<float>(float& value, float step, float min, float max)
+	bool ImGuiDragFloat<float>(float& value, float step, float min, float max)
 	{
-
-		ImGui::PushMultiItemsWidths(1, (ImGui::GetColumnWidth() * .95f));
-		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 3,0 });
-
-		ImGui::PushID(1);
-		ImGui::DragFloat("##", &value, step, min, max, "%.2f");
-		ImGui::PopItemWidth();
-		ImGui::SameLine();
-		ImGui::PopID();
-
-		ImGui::PopStyleVar(1);
-		ImGui::PushMultiItemsWidths(1, ImGui::GetWindowWidth());
+        bool triggered = false;
+        ImGui::TableSetColumnIndex(1);
+        ImGui::PushID(0);
+        ImGui::PushItemWidth(-1.0f);
+        if (ImGui::DragFloat("##", &value, step, min, max, "%.2f")) triggered = true;
+        ImGui::PopItemWidth();
+        ImGui::PopID();
+        return triggered;
 	}
 
-	void ImGuiDraw::DrawColorEdit4Control(const std::string& label, glm::vec4& values, float columnWidth)
+    template<typename T>
+	bool ImGuiDragInt(T& values, int step, int min, int max)
+	{
+		static_assert(false);
+        return false;
+	}
+
+    template<>
+    bool ImGuiDragInt<int>(int& value, int step, int min, int max)
+    {
+        bool triggered = false;
+        ImGui::TableSetColumnIndex(1);
+        ImGui::PushItemWidth(-1.0f);
+        ImGui::PushID(0);
+        if (ImGui::DragInt("##", &value, step, min, max)) triggered = true;
+        ImGui::PopItemWidth();
+        ImGui::PopID();
+        return triggered;
+    }
+
+
+	bool ImGuiDraw::ColorEdit4(const std::string& label, glm::vec4& values)
 	{
 		ImGui::PushID(label.c_str());
 		ImGui::Columns(2);
@@ -145,14 +172,15 @@ namespace CatEngine
 		ImGui::Text("%s", label.c_str());
 		ImGui::NextColumn();
 
-		DrawImGuiColorEdit<glm::vec4>(values);
+		bool triggered = ImGuiColorEdit<glm::vec4>(values);
 
 		ImGui::EndColumns();
 
 		ImGui::PopID();
+        return triggered;
 	}
 
-	void ImGuiDraw::DrawColorEdit3Control(const std::string& label, glm::vec3& values, float columnWidth)
+	bool ImGuiDraw::ColorEdit3(const std::string& label, glm::vec3& values)
 	{
 		ImGui::PushID(label.c_str());
 		ImGui::Columns(1);
@@ -161,96 +189,223 @@ namespace CatEngine
 		ImGui::Text("%s",label.c_str());
 		ImGui::NextColumn();
 
-		DrawImGuiColorEdit<glm::vec3>(values);
+		bool triggered = ImGuiColorEdit<glm::vec3>(values);
 
 		ImGui::EndColumns();
 
 		ImGui::PopID();
+        return triggered;
 	}
 
-	void ImGuiDraw::DrawVec4Control(const std::string& label, glm::vec4& values, float step, float min, float max, float columnWidth)
+	bool ImGuiDraw::Vec4(const std::string& label, glm::vec4& values, float step, float min, float max)
 	{
+        bool triggered = false;
 		ImGui::PushID(label.c_str());
-		ImGui::Columns(2);
-		ImGui::SetColumnWidth(0, (ImGui::GetWindowWidth() / 4) + GetOffset(label.size()));
-		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 10.f);
-		ImGui::Text("%s",label.c_str());
-		ImGui::NextColumn();
+		if (ImGui::BeginTable("##", 4))
+        {
 
-		DrawImGuiDragFloat<glm::vec4>(values, step, min, max);
+            for (int i = 0; i < 4; i++)
+            {
+                ImGui::TableSetupColumn(names[i].c_str(), ImGuiTableColumnFlags_WidthStretch);
+            }
 
-		ImGui::EndColumns();
-
-		ImGui::PopID();
-	}
-	void ImGuiDraw::DrawVec3Control(const std::string& label, glm::vec3& values, float step, float min, float max, float columnWidth)
-	{
-		ImGui::PushID(label.c_str());
-		ImGui::Columns(2);
-		ImGui::SetColumnWidth(0, (ImGui::GetWindowWidth() / 4) + GetOffset(label.size()));
-		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 10.f);
-		ImGui::Text("%s",label.c_str());
-		ImGui::NextColumn();
-
-		DrawImGuiDragFloat<glm::vec3>(values, step, min, max);
-
-		ImGui::EndColumns();
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0);
+            ImGui::Text("%s",label.c_str());
+		    if (ImGuiDragFloat<glm::vec4>(values, step, min, max)) triggered = true;
+        }
+        
+        ImGui::EndTable();
 
 		ImGui::PopID();
+        return triggered;
 	}
 
-	void ImGuiDraw::DrawVec2Control(const std::string& label, glm::vec2& values, float step, float min, float max, float columnWidth)
+	bool ImGuiDraw::Vec3(const std::string& label, glm::vec3& values, float step, float min, float max)
 	{
+        bool triggered = false;
 		ImGui::PushID(label.c_str());
 
-		ImGui::Columns(2);
+        if (ImGui::BeginTable("##", 4))
+        {
 
-		ImGui::SetColumnWidth(0, (ImGui::GetWindowWidth() / 4) + GetOffset(label.size()));
-		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 10.f);
-		ImGui::Text("%s",label.c_str());
-		ImGui::NextColumn();
+            for (int i = 0; i < 4; i++)
+            {
+                ImGui::TableSetupColumn(names[i].c_str(), ImGuiTableColumnFlags_WidthStretch);
+            }
 
-		DrawImGuiDragFloat<glm::vec2>(values, step, min, max);
-
-		ImGui::EndColumns();
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0);
+            ImGui::Text("%s",label.c_str());
+		    if (ImGuiDragFloat<glm::vec3>(values, step, min, max)) triggered = true;
+        }
+        
+        ImGui::EndTable();
 
 		ImGui::PopID();
+
+        return triggered;
 	}
 
-	void ImGuiDraw::DrawVec1Control(const std::string& label, float& value, float step, float min, float max, float columnWidth)
+	bool ImGuiDraw::Vec2(const std::string& label, glm::vec2& values, float step, float min, float max)
+	{
+        bool triggered = false;
+		ImGui::PushID(label.c_str());
+
+        if (ImGui::BeginTable("##", 3))
+        {
+
+            for (int i = 0; i < 3; i++)
+            {
+                ImGui::TableSetupColumn(names[i].c_str(), ImGuiTableColumnFlags_WidthStretch);
+            }
+
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0);
+            ImGui::Text("%s",label.c_str());
+		    if (ImGuiDragFloat<glm::vec2>(values, step, min, max)) triggered = true;
+        }
+        
+        ImGui::EndTable();
+
+		ImGui::PopID();
+        return triggered;
+	}
+
+	bool ImGuiDraw::Vec1(const std::string& label, float& value, float step, float min, float max)
+	{
+        bool triggered = false;
+		ImGui::PushID(label.c_str());
+
+        if (ImGui::BeginTable("##", 2))
+        {
+
+            for (int i = 0; i < 2; i++)
+            {
+                ImGui::TableSetupColumn(names[i].c_str(), ImGuiTableColumnFlags_WidthStretch);
+            }
+
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0);
+            ImGui::Text("%s",label.c_str());
+		    if (ImGuiDragFloat<float>(value, step, min, max)) triggered = true;
+        }
+        
+        ImGui::EndTable();
+
+		ImGui::PopID();
+
+        return triggered;
+
+	}
+
+	bool ImGuiDraw::Int1(const std::string& label, int& value, int step, int min, int max)
+	{
+        bool triggered = false;
+		ImGui::PushID(label.c_str());
+
+        if (ImGui::BeginTable("##", 2))
+        {
+
+            for (int i = 0; i < 2; i++)
+            {
+                ImGui::TableSetupColumn(names[i].c_str(), ImGuiTableColumnFlags_WidthStretch);
+            }
+
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0);
+            ImGui::Text("%s",label.c_str());
+		    if (ImGuiDragInt<int>(value, step, min, max)) triggered = true;
+        }
+        
+        ImGui::EndTable();
+
+		ImGui::PopID();
+
+        return triggered;
+
+	}
+
+    bool ImGuiDraw::Combo(const std::string& label, int& selection, const std::vector<const char*> list)
+    {
+        bool triggered = false;
+		ImGui::PushID(label.c_str());
+
+        if (ImGui::BeginTable("##", 2))
+        {
+
+            for (int i = 0; i < 2; i++)
+            {
+                ImGui::TableSetupColumn(names[i].c_str(), ImGuiTableColumnFlags_WidthStretch);
+            }
+
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0);
+            ImGui::Text("%s",label.c_str());
+            ImGui::TableSetColumnIndex(1);
+            ImGui::PushItemWidth(-1.0f);
+		    if (ImGui::Combo("##", &selection, list.data(), list.size())) triggered = true;
+            ImGui::PopItemWidth();
+        }
+        
+        ImGui::EndTable();
+
+		ImGui::PopID();
+
+        return triggered;
+
+    }
+
+	bool ImGuiDraw::CheckBox(const std::string& label, bool& active)
+	{
+        bool triggered = false;
+		ImGui::PushID(label.c_str());
+
+		if (ImGui::BeginTable("##", 2))
+        {
+
+            for (int i = 0; i < 2; i++)
+            {
+                ImGui::TableSetupColumn(names[i].c_str(), ImGuiTableColumnFlags_WidthStretch);
+            }
+
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0);
+            ImGui::Text("%s",label.c_str());
+            ImGui::TableSetColumnIndex(1);
+            if (ImGui::Checkbox("##", &active)) triggered = true;
+        }
+        
+        ImGui::EndTable();
+
+		ImGui::PopID();
+        return triggered;
+	}
+
+	void ImGuiDraw::Component(const std::string& label, const std::string& componentName)
 	{
 		ImGui::PushID(label.c_str());
 
-		ImGui::Columns(2);
-		ImGui::SetColumnWidth(0, (ImGui::GetWindowWidth() / 4) + GetOffset(label.size()));
-		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 10.f);
-		ImGui::Text("%s",label.c_str());
-		ImGui::NextColumn();
+		if (ImGui::BeginTable("##", 2))
+        {
 
-		DrawImGuiDragFloat<float>(value, step, min, max);
+            for (int i = 0; i < 2; i++)
+            {
+                ImGui::TableSetupColumn(names[i].c_str(), ImGuiTableColumnFlags_WidthStretch);
+            }
 
-		ImGui::EndColumns();
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0);
+            ImGui::Text("%s",label.c_str());
+            ImGui::TableSetColumnIndex(1);
 
-		ImGui::PopID();
-
-	}
-
-	void ImGuiDraw::DrawCheckBox(const std::string& label, bool& active, float columnWidth)
-	{
-		ImGui::PushID(label.c_str());
-
-		ImGui::Columns(2);
-		ImGui::SetColumnWidth(0, (ImGui::GetWindowWidth() / 4) + GetOffset(label.size()));
-		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 10.f);
-		ImGui::Text("%s",label.c_str());
-		ImGui::NextColumn();
-
-		ImGui::Checkbox("##CB", &active);
-
-		ImGui::EndColumns();
+            ImGui::PushItemWidth(-1.0f);
+            ImGui::Button(componentName.c_str());
+            ImGui::PopItemWidth();
+        }
+        
+        ImGui::EndTable();
 
 		ImGui::PopID();
-
 	}
-
 }

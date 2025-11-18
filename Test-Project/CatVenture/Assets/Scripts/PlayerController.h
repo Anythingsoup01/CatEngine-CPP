@@ -1,36 +1,37 @@
 #pragma once
 
-#include <CatScriptCore/ScriptIncludes.h>
-#include "CatScriptCore/Scene/Component/Rigidbody2D.h"
+#include <CatScriptCore/ScriptInclude.h>
 
 namespace CatRuntime
 {
     class PlayerController : public ScriptObject
     {
     public:
-        PlayerController(uint64_t entityID) : ScriptObject(entityID), m_RB2D(entityID) {}
+        PlayerController(uint64_t entityID) : ScriptObject(entityID) {}
+
         virtual void Start() override;
         virtual void Update(float ts) override;
+
         virtual void OnCollisionEnter(uint64_t other) override;
         virtual void OnCollisionExit(uint64_t other) override;
-
 
         static PlayerController* Create(uint64_t entityID);
 
     private:
 #   define PUBLIC
-        float m_PlayerHealth = 15.0f;
-        float m_PlayerSpeed = 25.0f;
+        float m_PlayerTerminalVelocity = 25.0f;
+        float m_PlayerSpeed = 5;
 
         Rigidbody2D m_RB2D;
 
-        Transform m_Transform;
 
-        //TransformComponent m_Test;
-        //TransformComponent m_Test3;
+        Transform m_RedTransform;
 
+        bool m_CanJump = false;
+        bool m_Grounded = false;
+
+        float m_JumpForce = 25.0f;
 
 #   define PRIVATE
-        //Rigidbody2DComponent m_RB2D;
     };
 }

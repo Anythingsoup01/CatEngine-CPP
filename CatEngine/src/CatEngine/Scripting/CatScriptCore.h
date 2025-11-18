@@ -60,7 +60,7 @@ namespace CatEngine
 	{
 		ScriptFieldType Type;
 		std::string Name;
-		CapyField* ClassField;
+        mutable std::string ComponentName;
 	};
 
 	struct ScriptFieldInstance

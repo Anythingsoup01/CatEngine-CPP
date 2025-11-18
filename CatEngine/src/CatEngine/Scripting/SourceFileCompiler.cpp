@@ -71,10 +71,15 @@ namespace CatEngine
 
         std::filesystem::path sourceFilePath = filePath;
         std::filesystem::path compilePath = Project::GetAssetDirectory() / ".build" / filePath.filename();
-        compilePath.replace_extension(".so");
+        compilePath.replace_extension("");
 
+        std::stringstream rmCommand;
+        rmCommand << "rm " << compilePath << "*";
+        system(rmCommand.str().c_str());
+
+        auto ticks = std::chrono::high_resolution_clock::now().time_since_epoch().count();
         std::stringstream ss;
-        ss << "gcc " << sourceFilePath << " -o " << compilePath << " \\\n"
+        ss << "gcc " << sourceFilePath << " -o " << compilePath << ticks << ".so" << " \\\n"
            << "-I" << rootCatEnginePath.string() << "/CatScriptCore/src \\\n"
            << "-fPIC -shared  -L" << rootCatEnginePath.string() << "/build/CatScriptCore -lCatScriptCore -lstdc++ -gdwarf-4\n";
         

@@ -17,3 +17,14 @@
 
 #include "CatScriptCore/BaseClasses/ScriptObject.h"
 
+#include "CatScriptCore/Scene/Component/Rigidbody2D.h"
+#include "CatScriptCore/Scene/Component/SpriteRenderer.h"
+#include "CatScriptCore/Scene/Component/Transform.h"
+#include "CatScriptCore/Scene/Component/Tag.h"
+#include "CatScriptCore/Scene/Component/Layer.h"
+#include "CatScriptCore/Scene/Component/CircleRenderer.h"
+
+
+#include "CatScriptCore/Input/Input.h"
+
+

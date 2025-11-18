@@ -30,10 +30,16 @@ namespace CatEngine
 		return entity;
 	}
 
-	static bool Input_IsKeyDown(KeyCode keyCode)
+	static bool Input_IsKeyPressed(KeyCode keyCode)
 	{
 		return Input::IsKeyPressed(keyCode);
 	}
+
+	static bool Input_IsKeyReleased(KeyCode keyCode)
+	{
+		return Input::IsKeyReleased(keyCode);
+	}
+
 #pragma region Object
 
 	static bool Object_HasComponent(UUID entityID, const char* componentType)
@@ -55,6 +61,45 @@ namespace CatEngine
 
 		return entity.GetUUID();
 	}
+
+
+    static const char* Object_GetLayer(UUID entityID)
+    {
+        const Entity& entity = GetEntity(entityID);
+
+        if (!entity.HasComponent<LayerComponent>()) return "ANON";
+        
+        return entity.GetComponent<LayerComponent>().Layer.c_str();
+        
+    }
+
+    static void Object_SetLayer(UUID entityID, const char* value)
+    {
+        const Entity& entity = GetEntity(entityID);
+
+        if (!entity.HasComponent<LayerComponent>()) return;
+        
+        entity.GetComponent<LayerComponent>().Layer = value;
+    }
+
+    static const char* Object_GetTag(UUID entityID)
+    {
+        const Entity& entity = GetEntity(entityID);
+
+        if (!entity.HasComponent<TagComponent>()) return "ANON";
+        
+        return entity.GetComponent<TagComponent>().Tag.c_str();
+    }
+
+    static void Object_SetTag(UUID entityID, const char* value)
+    {
+        const Entity& entity = GetEntity(entityID);
+
+        if (!entity.HasComponent<TagComponent>()) return;
+        
+        entity.GetComponent<TagComponent>().Tag = value;
+
+    }
 
 #pragma endregion
 
@@ -179,13 +224,17 @@ namespace CatEngine
 
 	void ScriptGlue::RegisterFunctions()
 	{
-		CE_ADD_INTERNAL_CALL(Input_IsKeyDown);
+		CE_ADD_INTERNAL_CALL(Input_IsKeyPressed);
+		CE_ADD_INTERNAL_CALL(Input_IsKeyReleased);
 
 #pragma region Object
 
-		CE_ADD_INTERNAL_CALL(Object_HasComponent);
-		CE_ADD_INTERNAL_CALL(Object_FindObjectByName);
-
+        CE_ADD_INTERNAL_CALL(Object_HasComponent);
+        CE_ADD_INTERNAL_CALL(Object_FindObjectByName);
+        CE_ADD_INTERNAL_CALL(Object_GetLayer);
+        CE_ADD_INTERNAL_CALL(Object_SetLayer);
+        CE_ADD_INTERNAL_CALL(Object_GetTag);
+        CE_ADD_INTERNAL_CALL(Object_SetTag);
 
 #pragma endregion
 
@@ -196,19 +245,19 @@ namespace CatEngine
 
 
 #pragma region Rigidbody2D
-		CE_ADD_INTERNAL_CALL(Rigidbody2D_ApplyForce);
-		CE_ADD_INTERNAL_CALL(Rigidbody2D_ApplyForceToCenter);
-		CE_ADD_INTERNAL_CALL(Rigidbody2D_ApplyLinearImpulse);
-		CE_ADD_INTERNAL_CALL(Rigidbody2D_ApplyLinearImpulseToCenter);
+        CE_ADD_INTERNAL_CALL(Rigidbody2D_ApplyForce);
+        CE_ADD_INTERNAL_CALL(Rigidbody2D_ApplyForceToCenter);
+        CE_ADD_INTERNAL_CALL(Rigidbody2D_ApplyLinearImpulse);
+        CE_ADD_INTERNAL_CALL(Rigidbody2D_ApplyLinearImpulseToCenter);
 #pragma endregion
 
 #pragma region Transform
-		CE_ADD_INTERNAL_CALL(Transform_GetPosition);
-		CE_ADD_INTERNAL_CALL(Transform_SetPosition);
-		CE_ADD_INTERNAL_CALL(Transform_GetRotation);
-		CE_ADD_INTERNAL_CALL(Transform_SetRotation);
-		CE_ADD_INTERNAL_CALL(Transform_GetScale);
-		CE_ADD_INTERNAL_CALL(Transform_SetScale);
+        CE_ADD_INTERNAL_CALL(Transform_GetPosition);
+        CE_ADD_INTERNAL_CALL(Transform_SetPosition);
+        CE_ADD_INTERNAL_CALL(Transform_GetRotation);
+        CE_ADD_INTERNAL_CALL(Transform_SetRotation);
+        CE_ADD_INTERNAL_CALL(Transform_GetScale);
+        CE_ADD_INTERNAL_CALL(Transform_SetScale);
 #pragma endregion
 
 #pragma region Sprite

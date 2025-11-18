@@ -26,8 +26,10 @@ namespace CatEngine
             size_t valueSize = TypeToSize(field.Type);
             std::vector<uint8_t> buffer(valueSize);
 
-            if (field.ClassField)
-                memcpy(buffer.data(), field.ClassField, valueSize);
+            CapyField* cf = scriptClass->m_CapyClass->VTable->Fields[name].get();
+
+            capy_field_data_get(m_Instance, cf, buffer.data());
+                
 
             m_DefaultFieldDatas[name] = std::move(buffer);
         }
@@ -75,29 +77,40 @@ namespace CatEngine
 	
     bool ScriptInstance::GetFieldDataInternal(const std::string& name, void* buffer)
     {
+        {
         const auto& fields = m_ScriptClass->GetFields();
         auto it = fields.find(name);
-
         if (it == fields.end())
             return false;
+        }
+        
+        auto& fields = m_ScriptClass->m_CapyClass->VTable->Fields;
+        auto it = fields.find(name);
+        if (it == fields.end()) return false;
 
-        ScriptField field = it->second;
+        CapyField* cf = it->second.get();
 
-        capy_field_data_get(m_Instance, field.ClassField, buffer);
+        capy_field_data_get(m_Instance, cf, buffer);
         return true;
     }
 
 	void ScriptInstance::SetFieldDataInternal(const std::string& name, void* value)
     {
+        {
         const auto& fields = m_ScriptClass->GetFields();
         auto it = fields.find(name);
-
         if (it == fields.end())
             return;
+        }
+        
+        auto& fields = m_ScriptClass->m_CapyClass->VTable->Fields;
+        auto it = fields.find(name);
+        if (it == fields.end()) return;
 
-        ScriptField field = it->second;    
+        CapyField* cf = it->second.get();
 
-        capy_field_data_set(m_Instance, field.ClassField, value, sizeof(value));
+
+        capy_field_data_set(m_Instance, cf, value, sizeof(value));
     }
 }
 

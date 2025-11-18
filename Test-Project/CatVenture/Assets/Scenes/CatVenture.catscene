@@ -28,7 +28,7 @@ Entities:
       Scale: [1, 1, 1]
     SpriteRendererComponent:
       Color: [0.0332651138, 1, 0.0265282393, 1]
-      Texture: 4876698870779233999
+      Texture: 800972892075515834
       Tiling: 1
     CameraComponent:
       Camera:
@@ -59,13 +59,13 @@ Entities:
     TagComponent:
       Tag: None
     LayerComponent:
-      Layer: Default
+      Layer: Ground
     NameComponent:
       Name: Ground
     TransformComponent:
       Position: [2.28792953, -1.46803474, 0]
       Rotation: [0, 0, 0]
-      Scale: [21.25, 1, 1]
+      Scale: [356.60968, 1, 1]
     SpriteRendererComponent:
       Color: [1, 1, 1, 1]
       Texture: 0

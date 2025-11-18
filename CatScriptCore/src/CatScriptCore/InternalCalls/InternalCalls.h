@@ -1,7 +1,7 @@
 #pragma once
 
-#include "CatScriptCore/Types/Types.h"
 #include "CatScriptCore/Types/Vector.h"
+#include "CatScriptCore/Input/KeyCodes.h"
 
 #include <string>
 #include <cstdint>
@@ -17,11 +17,17 @@ namespace CatRuntime
 #   define CE_INITIALIZE_INTERNAL_CALL(name) \
         name##_func_t name = nullptr;
 
-    CE_ADD_INTERNAL_CALL(Input_IsKeyDown, bool, uint16_t);
+    CE_ADD_INTERNAL_CALL(Input_IsKeyPressed, bool, KeyCode);
+    CE_ADD_INTERNAL_CALL(Input_IsKeyReleased, bool, KeyCode);
 
     CE_ADD_INTERNAL_CALL(Object_HasComponent, bool, uint64_t, const char*);
     CE_ADD_INTERNAL_CALL(Object_FindObjectByName, uint64_t, const char*);
 
+    CE_ADD_INTERNAL_CALL(Object_GetLayer, const char*, uint64_t);
+    CE_ADD_INTERNAL_CALL(Object_SetLayer, void, uint64_t, const char*);
+
+    CE_ADD_INTERNAL_CALL(Object_GetTag, const char*, uint64_t);
+    CE_ADD_INTERNAL_CALL(Object_SetTag, void, uint64_t, const char*);
 
     CE_ADD_INTERNAL_CALL(Rigidbody2D_ApplyForce, void, uint64_t, Vector2*, Vector2*, bool);
     CE_ADD_INTERNAL_CALL(Rigidbody2D_ApplyForceToCenter, void, uint64_t, Vector2*, bool);

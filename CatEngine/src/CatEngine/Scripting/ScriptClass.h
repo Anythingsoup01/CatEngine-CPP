@@ -22,9 +22,8 @@ namespace CatEngine
         std::unordered_map<std::string, ScriptField> m_Fields;
     private:
         std::filesystem::path m_Path;
-        
         CapyClass* m_CapyClass;
 
-
+        friend class ScriptInstance;
     };
 }

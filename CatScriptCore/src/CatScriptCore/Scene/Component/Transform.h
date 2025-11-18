@@ -12,7 +12,6 @@ namespace CatRuntime
         Transform() = default;
         Transform(uint64_t entityID) : InternalObjectData(entityID) {}
 
-        uint64_t GetID() const { return m_InstanceID; };
         // -------- FloatProxy (for .x/.y/.z) --------
         class FloatProxy {
             public:

@@ -178,6 +178,9 @@ namespace CatEngine
 
 	void ScriptEngine::OnRuntimeStop()
 	{
+
+        s_ScriptData->EntityInstances.clear();
+
         s_ScriptData->SceneContext = nullptr;
 		
         if (s_ScriptData->SourceFileReloadPending || !s_ScriptData->MainThreadQueue.empty())
@@ -221,7 +224,7 @@ namespace CatEngine
                     CapyClass* klassPtr = klass.get();
                     for (auto& [name, field] : klassPtr->VTable->Fields)
                     {
-                        s_ScriptData->EntityClasses[klass->ClassName]->m_Fields[name] = ScriptField{CapyTypeStringToScriptFieldType(field->FieldTypeString), name, field.get()};
+                        s_ScriptData->EntityClasses[klass->ClassName]->m_Fields[name] = ScriptField{CapyTypeStringToScriptFieldType(field->FieldTypeString), name};
                     }
 
                 }

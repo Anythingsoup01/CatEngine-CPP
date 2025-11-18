@@ -63,6 +63,8 @@ namespace CatEngine
 			const auto& path = directoryEntry.path();
 			std::string filenameString = path.filename().string();
 
+            if (directoryEntry.path().extension() == ".h") continue;
+
             if (strncmp(filenameString.c_str(), ".", 1) != 0)
             {
                 ImGui::PushID(filenameString.c_str());
@@ -164,7 +166,7 @@ namespace CatEngine
                     if (ImGui::Button("Confirm", {25, 15}))
                     {
                         std::string filePath = m_CurrentDirectory.string().append("/");
-                        filePath.append(buffer).append(".cpp");
+                        filePath.append(buffer).append(".h");
                     
                         std::ofstream out(filePath);
                         if (!out.is_open())
@@ -175,18 +177,60 @@ namespace CatEngine
                         }
 
                         std::stringstream content;
-                        content << "#include <CatEngine/Scripting/ScriptInclude.h>\n"
-                                << "using namespace CatEngine;\n\n"
-                                << "class " << buffer << " : public IScriptObject\n"
-                                << "{\npublic:\n"
-                                << "    void Start() override\n    {\n        //Put here to start at runtime\n    }\n\n"
-                                << "    void Update(float ts) override\n    {\n        //Put here to run during runtime\n    }\n};";
+
+                        content
+                            << "#pragma once\n"
+                            << "#include \"CatScriptCore/ScriptInclude.h\"\n"
+                            << "namespace CatRuntime\n"
+                            << "{\n"
+                            << "    class " << buffer << " : public ScriptObject\n"
+                            << "    {\n"
+                            << "    public:\n"
+                            << "        " << buffer << "(uint64_t entityID) : ScriptObject(entityID) {}\n"
+                            << "        virtual void Start() override;\n"
+                            << "        virtual void Update(float ts) override;\n"
+                            << "        static " << buffer << "* Create(uint64_t);\n"
+                            << "    private:"
+                            << "    // Be sure to put editor variables here, or in the public field!\n"
+                            << "    };\n"
+                            << "}";
 
                         out << content.rdbuf();
 
                         out.close();
-    
-                        
+
+                        filePath.erase(filePath.length() - 1);
+                        filePath.append("cpp");
+                        out.open(filePath.c_str());
+                        if (!out.is_open())
+                        {
+                            CE_API_ERROR("Failed to generate file: {} !", filePath);
+                            type = CreateType::None;
+                            break;
+                        }
+
+                        content.str("");
+
+                        content
+                            << "#include \"" << buffer << ".h\"\n"
+                            << "namespace CatRuntime\n"
+                            << "{\n\n"
+                            << "    void " << buffer << "::Start()\n"
+                            << "    {\n"
+                            << "        // Code placed here runs immediately after pressing play\n"
+                            << "    }\n\n"
+                            << "    void " << buffer <<"::Update(float ts)\n"
+                            << "    {\n"
+                            << "        // Code placed here runs every frame\n"
+                            << "    }\n\n"
+                            << "    " << buffer << "* " << buffer << "::Create(uint64_t entityID) { return new " << buffer << "(entityID); }\n\n"
+                            << "}";
+
+                        out << content.rdbuf();
+
+                        out.close();
+
+                        SourceFileCompiler::AddFile(filePath);
 
                         type = CreateType::None;
 

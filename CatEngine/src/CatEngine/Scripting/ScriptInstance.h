@@ -60,6 +60,5 @@ namespace CatEngine
 
 		friend class ScriptEngine;
 		friend struct ScriptFieldInstance;
-        friend class IScriptObject;
 	};
 }
