@@ -5,7 +5,7 @@
 namespace CatEngine
 {
 
-    using AssetRegistry = std::unordered_map<AssetHandle, Asset::MetaData>;
+    using AssetRegistry = std::unordered_map<AssetHandle, Ref<Asset::MetaData>>;
 
     class EditorAssetManager : public AssetManagerBase
     {
@@ -18,7 +18,7 @@ namespace CatEngine
         AssetHandle ImportAsset(const std::filesystem::path& filePath);
         void DeleteAsset(AssetHandle handle); // TODO: WORK ON THIS
 
-        const Asset::MetaData& GetMetaData(AssetHandle handle) const;
+        const Ref<Asset::MetaData>& GetMetaData(AssetHandle handle) const;
         const std::filesystem::path& GetFilePath(AssetHandle handle) const;
 
         const AssetRegistry& GetAssetRegistry() const { return m_AssetRegistry; }

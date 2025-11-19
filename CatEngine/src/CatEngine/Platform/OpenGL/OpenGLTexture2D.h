@@ -23,15 +23,18 @@ namespace CatEngine
 
         virtual bool IsLoaded() const override { return m_IsLoaded; }
 
+        virtual void RecreateTextureWithNewSpecification(const TextureSpecification& spec, Buffer data) override;
+
         virtual bool operator==(const Texture& other) const override
         {
             return m_RendererID == other.GetRendererID();
         }
-
     private:
         bool m_IsLoaded = false;
         GLenum m_InternalFormat, m_DataFormat;
         TextureSpecification m_Specification;
         RendererID m_RendererID;
+
+        Ref<TextureMetaData> m_MetaData;
     };
 }

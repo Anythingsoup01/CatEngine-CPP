@@ -21,13 +21,13 @@ namespace CatEngine
     {
         s_Instance = this;
 
-        m_IconStartRuntime = TextureImporter::ImportIconTexture("Resources/Icons/Editor/Start-Runtime.png");
-        m_IconPauseRuntime = TextureImporter::ImportIconTexture("Resources/Icons/Editor/Pause-Runtime.png");
-		m_IconPauseRuntimeSelected = TextureImporter::ImportIconTexture("Resources/Icons/Editor/Pause-Runtime-Selected.png");
-		m_IconNextFrameRuntime = TextureImporter::ImportIconTexture("Resources/Icons/Editor/NextFrame-Runtime.png");
-		m_IconStopRuntime = TextureImporter::ImportIconTexture("Resources/Icons/Editor/Stop-Runtime.png");
+        m_IconStartRuntime = TextureImporter::ImportIconTexture({}, "Resources/Icons/Editor/Start-Runtime.png");
+        m_IconPauseRuntime = TextureImporter::ImportIconTexture({}, "Resources/Icons/Editor/Pause-Runtime.png");
+		m_IconPauseRuntimeSelected = TextureImporter::ImportIconTexture({}, "Resources/Icons/Editor/Pause-Runtime-Selected.png");
+		m_IconNextFrameRuntime = TextureImporter::ImportIconTexture({}, "Resources/Icons/Editor/NextFrame-Runtime.png");
+		m_IconStopRuntime = TextureImporter::ImportIconTexture({}, "Resources/Icons/Editor/Stop-Runtime.png");
 
-		m_IconStartSimulation = TextureImporter::ImportIconTexture("Resources/Icons/Editor/Start-Simulation.png");
+		m_IconStartSimulation = TextureImporter::ImportIconTexture({}, "Resources/Icons/Editor/Start-Simulation.png");
 
 
         FramebufferSpecification fbSpec;

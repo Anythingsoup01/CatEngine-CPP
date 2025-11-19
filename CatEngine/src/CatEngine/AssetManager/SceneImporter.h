@@ -9,7 +9,8 @@ namespace CatEngine
     class SceneImporter
     {
     public:
-        static Ref<Scene> ImportScene(AssetHandle handle, const Asset::MetaData& metaData);
+        static Ref<Scene> ImportScene(AssetHandle handle, Ref<Asset::MetaData>& metaData);
+        static Ref<Scene> ConstImportScene(AssetHandle handle, const Ref<Asset::MetaData>& metaData);
         static Ref<Scene> LoadScene(const std::filesystem::path& filePath);
     };
 }

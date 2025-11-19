@@ -2,6 +2,8 @@
 
 #include "CatEngine/Renderer/Texture.h"
 
+#include "CatEngine/Scene/Scene.h"
+
 #include <filesystem>
 
 namespace CatEngine
@@ -15,9 +17,14 @@ namespace CatEngine
 
         void ResetAssetDirectory();
 
+        void SetSelectionHandle(const AssetHandle& handle = 0) { m_SelectionContext = handle; }
+
 	private:
         static void RefreshAssetTree();
+
+        void DrawAsset(const AssetHandle& handle);
     private:
+        static inline AssetBrowserPanel* s_Instance = nullptr;
 
         struct TreeNode
         {
@@ -36,6 +43,8 @@ namespace CatEngine
 
 		Ref<Texture2D> m_DirectoryIcon;
 		Ref<Texture2D> m_FileIcon;
+
+        AssetHandle m_SelectionContext = 0;
 
         friend class ContentBrowserPanel;
 	};

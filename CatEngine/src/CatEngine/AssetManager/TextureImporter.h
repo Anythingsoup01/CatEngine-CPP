@@ -9,7 +9,8 @@ namespace CatEngine
     class TextureImporter
     {
     public:
-        static Ref<Texture2D> ImportTexture2D(AssetHandle handle, const Asset::MetaData& metaData);
-        static Ref<Texture2D> ImportIconTexture(const std::filesystem::path& filePath);
+        static Ref<Texture2D> ImportTexture2D(AssetHandle handle, Ref<Asset::MetaData>& metaData);
+        static Ref<Texture2D> ConstImportTexture2D(AssetHandle handle, const Ref<Asset::MetaData>& metaData);
+        static Ref<Texture2D> ImportIconTexture(const TextureSpecification& spec, Ref<Asset::MetaData>& metaData);
     };
 }

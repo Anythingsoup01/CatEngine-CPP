@@ -14,6 +14,8 @@
 
 #include "CatEngine/AssetManager/AssetManager.h"
 
+#include "Panels/AssetBrowserPanel.h"
+
 namespace CatEngine
 {
 	SceneHierarchyPanel::SceneHierarchyPanel(const Ref<Scene>& scene)
@@ -157,7 +159,7 @@ namespace CatEngine
 			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 10, 4 });
 			float lineHeight = GImGui->Font->LegacySize + GImGui->Style.FramePadding.y * 2.0f;
 			ImGui::Separator();
-			bool open = ImGui::TreeNodeEx((void*)typeid(T).hash_code(), treeNodeFlags, name.c_str());
+			bool open = ImGui::TreeNodeEx((void*)typeid(T).hash_code(), treeNodeFlags, "%s", name.c_str());
 			ImGui::PopStyleVar();
 			ImGui::SameLine(contentRegionAvailable.x - lineHeight);
 			if (ImGui::Button(":", ImVec2{ lineHeight, lineHeight }))
@@ -197,49 +199,73 @@ namespace CatEngine
 	void SceneHierarchyPanel::DrawComponents(Entity selection)
 	{
 		{
-			ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 10,1 });
-			ImGui::Columns(2);
+            if (ImGui::BeginTable("##TAGLAYER", 2))
+            {
+                ImGui::TableSetupColumn("TAG", ImGuiTableColumnFlags_WidthStretch);
+                ImGui::TableSetupColumn("LAYER", ImGuiTableColumnFlags_WidthStretch);
 
-			auto& tag = selection.GetComponent<TagComponent>().Tag;
+                ImGui::TableNextRow();
 
-			char tagBuffer[256];
-			memset(tagBuffer, 0, sizeof(tagBuffer));
-			strncpy(tagBuffer, tag.c_str(), 256);
-			ImGui::Text("Tag");
-			ImGui::SameLine();
-			if (ImGui::InputText("##T", tagBuffer, sizeof(tagBuffer)))
-			{
-				tag = std::string(tagBuffer);
-			}
+                ImGui::TableSetColumnIndex(0);
+                auto& tag = selection.GetComponent<TagComponent>().Tag;
 
-			ImGui::NextColumn();
+                ImGui::PushItemWidth(-1.0f);
+                char tagBuffer[256];
+                memset(tagBuffer, 0, sizeof(tagBuffer));
+                strncpy(tagBuffer, tag.c_str(), 256);
+                ImGui::Text("Tag");
+                ImGui::SameLine();
+                if (ImGui::InputText("##T", tagBuffer, sizeof(tagBuffer)))
+                {
+                    tag = std::string(tagBuffer);
+                }
+                ImGui::PopItemWidth();
 
-			auto& layer = selection.GetComponent<LayerComponent>().Layer;
+                ImGui::TableSetColumnIndex(1);
+                auto& layer = selection.GetComponent<LayerComponent>().Layer;
 
-			char layerBuffer[256];
-			memset(layerBuffer, 0, sizeof(layerBuffer));
-			strncpy(layerBuffer, layer.c_str(), 256);
-			ImGui::Text("Layer");
-			ImGui::SameLine();
-			if (ImGui::InputText("##L", layerBuffer, sizeof(layerBuffer)))
-			{
-				layer = std::string(layerBuffer);
-			}
+                ImGui::PushItemWidth(-1.0f);
+                char layerBuffer[256];
+                memset(layerBuffer, 0, sizeof(layerBuffer));
+                strncpy(layerBuffer, layer.c_str(), 256);
+                ImGui::Text("Layer");
+                ImGui::SameLine();
+                if (ImGui::InputText("##L", layerBuffer, sizeof(layerBuffer)))
+                {
+                    layer = std::string(layerBuffer);
+                }
+                ImGui::PopItemWidth();
 
-			ImGui::Columns(1);
 
-			auto& name = selection.GetComponent<NameComponent>().Name;
+                ImGui::EndTable();
+            }
 
-			char nameBuffer[256];
-			memset(nameBuffer, 0, sizeof(nameBuffer));
-			strncpy(nameBuffer, name.c_str(), 256);
-			ImGui::Text("Name");
-			ImGui::SameLine();
-			if (ImGui::InputText("##N", nameBuffer, sizeof(nameBuffer)))
-			{
-				name = std::string(nameBuffer);
-			}
-			ImGui::PopStyleVar();
+            if (ImGui::BeginTable("##NAME", 1))
+            {
+                ImGui::TableSetupColumn("NAME", ImGuiTableColumnFlags_WidthStretch);
+
+                ImGui::TableNextRow();
+
+                ImGui::TableSetColumnIndex(0);
+                ImGui::PushItemWidth(-1.0f);
+                auto& name = selection.GetComponent<NameComponent>().Name;
+
+                char nameBuffer[256];
+                memset(nameBuffer, 0, sizeof(nameBuffer));
+                strncpy(nameBuffer, name.c_str(), 256);
+                ImGui::Text("Name");
+                ImGui::SameLine();
+                if (ImGui::InputText("##N", nameBuffer, sizeof(nameBuffer)))
+                {
+                    name = std::string(nameBuffer);
+                }
+
+                ImGui::PopItemWidth();
+
+
+                ImGui::EndTable();
+            }
+
 		}
 
 		DrawComponent<TransformComponent>("Transform", selection, [](auto& component) {
@@ -261,8 +287,8 @@ namespace CatEngine
                 if (AssetManager::IsAssetHandleValid(handle) && AssetManager::GetAssetType(handle) == AssetType::Texture2D)
                 {
                     const auto& metaData = Project::GetActive()->GetEditorAssetManager()->GetMetaData(handle);
-                    std::string fileName = metaData.FilePath.filename().string();
-                    size_t extensionLen = metaData.FilePath.extension().string().length();
+                    std::string fileName = metaData->FilePath.filename().string();
+                    size_t extensionLen = metaData->FilePath.extension().string().length();
                     fileName.erase(fileName.length() - extensionLen);
                     label = fileName;
                 }

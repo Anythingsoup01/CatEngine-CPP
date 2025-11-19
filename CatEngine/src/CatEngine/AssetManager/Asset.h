@@ -2,6 +2,8 @@
 
 #include "CatEngine/Core/UUID.h"
 
+#include "CatEngine/Types/TextureTypes.h"
+
 namespace CatEngine
 {
     using AssetHandle = UUID;
@@ -38,14 +40,22 @@ namespace CatEngine
     public:
         struct MetaData
         {
+            std::string AssetName;
             AssetType Type = AssetType::None;
             std::filesystem::path FilePath;
 
             operator bool() const { return Type != AssetType::None; }
         };
 
-        AssetHandle m_Handle;
+        struct TextureMetaData : public MetaData
+        {
+            TextureParameter TextureMinFilter;
+            TextureParameter TextureMagFilter;
+            TextureWrap TextureWrap;
+            ImageFormat TextureFormat;
+        };
 
+        AssetHandle m_Handle;
         virtual AssetType GetType() const = 0;
     };
 }

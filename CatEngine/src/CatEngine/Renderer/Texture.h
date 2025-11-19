@@ -4,21 +4,21 @@
 
 #include "CatEngine/Core/Buffer.h"
 
+#include "CatEngine/Types/TextureTypes.h"
+
 namespace CatEngine
 {
-    enum class ImageFormat
-	{
-		None = 0,
-		R8,
-		RGB8,
-		RGBA8,
-	};
+
 
 	struct TextureSpecification
 	{
+        std::filesystem::path FilePath;
 		uint32_t Width = 1;
 		uint32_t Height = 1;
-		ImageFormat Format = ImageFormat::RGBA8;
+		ImageFormat Format = ImageFormat::NONE;
+        TextureParameter MinFilter = TextureParameter::Linear;
+        TextureParameter MagFilter = TextureParameter::Linear;
+        TextureWrap WrapOption = TextureWrap::Repeat;
 		bool GenerateMips = true;
 	};
 
@@ -40,6 +40,7 @@ namespace CatEngine
 
         virtual bool IsLoaded() const = 0;
 
+
         virtual bool operator==(const Texture& other) const = 0;
 
     };
@@ -51,5 +52,13 @@ namespace CatEngine
 
         static AssetType GetStaticType() { return AssetType::Texture2D; }
         virtual AssetType GetType() const { return GetStaticType(); }
+
+        virtual void RecreateTextureWithNewSpecification(const TextureSpecification& spec, Buffer data) = 0;
+    };
+
+    class TextureHelper
+    {
+    public:
+        static Buffer BufferTexture(const std::filesystem::path& filePath, int& width, int& height);
     };
 }

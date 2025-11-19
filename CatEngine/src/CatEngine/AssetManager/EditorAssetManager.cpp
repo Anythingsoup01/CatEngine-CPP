@@ -7,6 +7,7 @@
 #include <yaml-cpp/yaml.h>
 
 #include "CatEngine/Core/Formatter.h"
+#include "yaml-cpp/emittermanip.h"
 
 namespace CatEngine
 {
@@ -44,7 +45,7 @@ namespace CatEngine
         else
         {
             // Load Asset
-            const Asset::MetaData& metaData = GetMetaData(handle);
+            const Ref<Asset::MetaData>& metaData = GetMetaData(handle);
             asset = AssetImporter::ImportAsset(handle, metaData);
             if (!asset) 
             {
@@ -73,18 +74,18 @@ namespace CatEngine
         if (!IsAssetHandleValid(handle))
             return AssetType::None;
 
-        return m_AssetRegistry.at(handle).Type;
+        return m_AssetRegistry.at(handle)->Type;
     }
 
     AssetHandle EditorAssetManager::ImportAsset(const std::filesystem::path& filePath)
     {
         AssetHandle handle;
-        Asset::MetaData metaData;
+        Ref<Asset::MetaData> metaData = CreateRef<Asset::MetaData>();
 
-        metaData.FilePath = filePath;
-        metaData.Type = GetAssetTypeFromFileExtension(filePath);
+        metaData->FilePath = filePath;
+        metaData->Type = GetAssetTypeFromFileExtension(filePath);
 
-        Ref<Asset> asset = AssetImporter::ImportAsset(handle, metaData);
+        Ref<Asset> asset = AssetImporter::ImportAsset(handle, metaData, true);
         if (asset)
         {
             asset->m_Handle = handle;
@@ -107,9 +108,9 @@ namespace CatEngine
             m_LoadedAssets.erase(handle);
     }
 
-    const Asset::MetaData& EditorAssetManager::GetMetaData(AssetHandle handle) const
+    const Ref<Asset::MetaData>& EditorAssetManager::GetMetaData(AssetHandle handle) const
     {
-        static Asset::MetaData s_NullMetaData;
+        static Ref<Asset::MetaData> s_NullMetaData;
         if (!IsAssetHandleValid(handle))
             return s_NullMetaData;
 
@@ -118,7 +119,7 @@ namespace CatEngine
 
     const std::filesystem::path& EditorAssetManager::GetFilePath(AssetHandle handle) const
     {
-        return GetMetaData(handle).FilePath;
+        return GetMetaData(handle)->FilePath;
     }
 
     void EditorAssetManager::SerializeAssetRegistry()
@@ -141,9 +142,18 @@ namespace CatEngine
         {
             out << YAML::BeginMap; // Asset
             out << YAML::Key << "Handle" << YAML::Value << handle;
-            std::string filePathStr = metaData.FilePath.generic_string();
+            std::string filePathStr = metaData->FilePath.generic_string();
+            out << YAML::Key << "Name" << YAML::Value << metaData->AssetName;
             out << YAML::Key << "FilePath" << YAML::Value << filePathStr;
-            out << YAML::Key << "Type" << YAML::Value << AssetTypeToString(metaData.Type);
+            out << YAML::Key << "Type" << YAML::Value << AssetTypeToString(metaData->Type);
+            if (metaData->Type == AssetType::Texture2D)
+            {
+                const Ref<Asset::TextureMetaData>& textureMetaData = (Ref<Asset::TextureMetaData>&)metaData;
+                out << YAML::Key << "MinFilter" << YAML::Value << TextureParameterToString(textureMetaData->TextureMinFilter);
+                out << YAML::Key << "MagFilter" << YAML::Value << TextureParameterToString(textureMetaData->TextureMagFilter);
+                out << YAML::Key << "WrapOption" << YAML::Value << TextureWrapToString(textureMetaData->TextureWrap);
+                out << YAML::Key << "ImageFormat" << YAML::Value << TextureFormatToString(textureMetaData->TextureFormat);
+            }
             out << YAML::EndMap;
         }
         out <<  YAML::EndSeq;
@@ -165,9 +175,21 @@ namespace CatEngine
         for (const auto& node : registryNode)
         {
             AssetHandle handle = node["Handle"].as<AssetHandle>();
-            auto& metaData = m_AssetRegistry[handle];
-            metaData.FilePath = node["FilePath"].as<std::string>();
-            metaData.Type = StringToAssetType(node["Type"].as<std::string>());
+            Ref<Asset::MetaData> metaData = CreateRef<Asset::MetaData>();
+            metaData->AssetName = node["Name"].as<std::string>();
+            metaData->FilePath = node["FilePath"].as<std::string>();
+            metaData->Type = StringToAssetType(node["Type"].as<std::string>());
+            if (metaData->Type == AssetType::Texture2D)
+            {
+                Ref<Asset::TextureMetaData> textureMetaData = (Ref<Asset::TextureMetaData>&)metaData;
+                textureMetaData->TextureMinFilterIndex = node["MinFilter"].as<int>();
+                textureMetaData->TextureMagFilterIndex = node["MagFilter"].as<int>();
+                textureMetaData->TextureWrapIndex = node["WrapOption"].as<int>();
+                textureMetaData->TextureFormatIndex = node["ImageFormat"].as<int>();
+                metaData = (Ref<Asset::MetaData>&)textureMetaData;
+            }
+
+            m_AssetRegistry[handle] = metaData;
         }
 
         return true;

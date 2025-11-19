@@ -42,7 +42,6 @@ namespace CatEngine
         void OnUpdateSimulation(Time time, EditorCamera& camera);
         void OnUpdateRuntime(Time ts);
 
-
         void ShutdownRuntime();
 
         void OnViewportResize(uint32_t width, uint32_t height);
@@ -67,7 +66,7 @@ namespace CatEngine
 
 
         static AssetType GetStaticType() { return AssetType::Scene; }
-        virtual AssetType GetType() const { return GetStaticType(); }
+        virtual AssetType GetType() const override { return GetStaticType(); }
 
     private:
         template<typename T>

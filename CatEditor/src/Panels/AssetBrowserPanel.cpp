@@ -12,6 +12,8 @@
 #include "CatEngine/AssetManager/AssetManager.h"
 #include "CatEngine/AssetManager/TextureImporter.h"
 
+#include "ImGui/ImGuiDraw.h"
+
 const size_t MAX_FILE_PATH_LEN = 4096;
 
 #include "CatEngine/Project/Project.h"
@@ -22,10 +24,11 @@ namespace CatEngine
 	AssetBrowserPanel::AssetBrowserPanel()
         : m_CurrentDirectory(Project::GetAssetDirectory())
 	{
+        s_Instance = this;
         // TODO: Generate these as assets
         m_TreeNodes.push_back(TreeNode(".", 0));
-        m_DirectoryIcon = TextureImporter::ImportIconTexture("Resources/Icons/DirectoryIcon.png");
-		m_FileIcon = TextureImporter::ImportIconTexture("Resources/Icons/ScriptFileIcon.png");
+        m_DirectoryIcon = TextureImporter::ImportIconTexture({}, "Resources/Icons/DirectoryIcon.png");
+		m_FileIcon = TextureImporter::ImportIconTexture({}, "Resources/Icons/ScriptFileIcon.png");
 	}
 
 	void AssetBrowserPanel::OnImGuiRender()
@@ -130,13 +133,15 @@ namespace CatEngine
                 {
                     if (isDirectory)
                         m_CurrentDirectory /= item.filename();
-                    
+                    else
+                        m_SelectionContext = handle;
                     // TODO: Make this load the item from it's path instead, i.e textures will open the underlying image
                     // if (isRegularFile)
                     //     System::OpenFile(m_CurrentDirectory / item.filename());
 
                 }
             }
+
             std::string fileName = item.string();
             size_t extensionLen = item.extension().string().length();
             fileName.erase(fileName.length() - extensionLen);
@@ -147,7 +152,17 @@ namespace CatEngine
 
         }
 
-		ImGui::Columns(1);
+        ImGui::End();
+
+        
+        ImGui::Begin("AssetData");
+		if (m_SelectionContext != 0)
+		{
+			ImVec2 contentRegionAvailable = ImGui::GetContentRegionAvail();
+			const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap | ImGuiTreeNodeFlags_FramePadding;
+
+			DrawAsset(m_SelectionContext);
+		}
 
 		// TODO: status bar
 		ImGui::End();
@@ -163,7 +178,7 @@ namespace CatEngine
         for(const auto& [handle, metaData] : assetRegistry)
         {
             uint32_t currentNodeIndex = 0;
-            for (const auto& p : metaData.FilePath)
+            for (const auto& p : metaData->FilePath)
             {
                 auto it = m_TreeNodes[currentNodeIndex].Children.find(p.generic_string());
                 if (it != m_TreeNodes[currentNodeIndex].Children.end())
@@ -179,6 +194,73 @@ namespace CatEngine
                     m_TreeNodes[currentNodeIndex].Children[p] = m_TreeNodes.size() - 1;
                     currentNodeIndex = m_TreeNodes.size() - 1;
 
+                }
+            }
+        }
+    }
+
+    static std::vector<const char*> s_TextureFormats = {
+        "R8",
+        "RGB8",
+        "RGBA8",
+    };
+
+    static std::vector<const char*> s_TextureFilters = {
+        "Linear",
+        "Nearest"
+    };
+
+    static std::vector<const char*> s_TextureWrapFilters = {
+        "Repeat",
+        "Mirrored Repeat",
+        "Clamp To Edge",
+        "Clamp To Border",
+    };
+
+    void AssetBrowserPanel::DrawAsset(const AssetHandle& handle)
+    {
+        const auto& asset = Project::GetActive()->GetEditorAssetManager()->GetAsset(handle);
+
+        switch (asset->GetType())
+        {
+            case AssetType::Scene:
+            {
+                Ref<Scene> sceneAsset = (Ref<Scene>&)asset;
+
+
+                if (!ImGui::BeginTable("##SceneData", 2))
+                    break;
+
+                ImGui::TableSetupColumn("##INFOTAG", ImGuiTableColumnFlags_WidthStretch);
+                ImGui::TableSetupColumn("##INFODATA", ImGuiTableColumnFlags_WidthStretch);
+                break;
+            }
+
+            case AssetType::Texture2D:
+            {
+                Ref<Texture2D> textureAsset = (Ref<Texture2D>&)asset;
+
+                Ref<Asset::TextureMetaData> textureMetaData = (Ref<Asset::TextureMetaData>&)Project::GetActive()->GetEditorAssetManager()->GetMetaData(handle);
+
+                // Probably make this static at the top or before the function call
+                ImGuiDraw::StaticInt("Asset ID", (int&)handle);
+                ImGuiDraw::StaticString("Name", textureMetaData->AssetName);
+
+                ImGuiDraw::Combo("Min Filter", textureMetaData->TextureMinFilterIndex, s_TextureFilters);
+                ImGuiDraw::Combo("Mag Filter", textureMetaData->TextureMagFilterIndex, s_TextureFilters);
+                ImGuiDraw::Combo("Wrap Options", textureMetaData->TextureWrapIndex, s_TextureWrapFilters);
+                ImGuiDraw::Combo("Format", textureMetaData->TextureFormatIndex, s_TextureFormats);
+
+                if (ImGui::Button("Apply"))
+                {
+                    TextureSpecification spec;
+                    spec.MinFilter = (TextureParameter)textureMetaData->TextureMinFilterIndex;
+                    spec.MagFilter = (TextureParameter)textureMetaData->TextureMagFilterIndex;
+                    spec.WrapOption = (TextureWrap)textureMetaData->TextureWrapIndex;
+                    spec.Format = (ImageFormat)textureMetaData->TextureFormatIndex;
+
+                    Buffer data = TextureHelper::BufferTexture(textureMetaData->FilePath, (int&)spec.Width, (int&)spec.Height);
+                    textureAsset->RecreateTextureWithNewSpecification(spec, data);
                 }
             }
         }

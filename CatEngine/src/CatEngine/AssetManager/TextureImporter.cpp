@@ -1,3 +1,4 @@
+#include "CatEngine/Renderer/Texture.h"
 #include "cepch.h"
 #include "TextureImporter.h"
 
@@ -7,16 +8,25 @@
 
 namespace CatEngine
 {
-    Ref<Texture2D> TextureImporter::ImportTexture2D(AssetHandle handle, const Asset::MetaData& metaData)
+    Ref<Texture2D> TextureImporter::ImportTexture2D(AssetHandle handle, Ref<Asset::MetaData>& metaData)
     {
-
-        return ImportIconTexture(Project::GetAssetDirectory() / metaData.FilePath);
+        TextureSpecification spec;
+        return ImportIconTexture(spec, metaData);
     }
-    Ref<Texture2D> TextureImporter::ImportIconTexture(const std::filesystem::path& filePath)
+
+    Ref<Texture2D> TextureImporter::ConstImportTexture2D(AssetHandle handle, const Ref<Asset::MetaData>& metaData)
+    {
+        TextureSpecification spec;
+        Ref<Asset::MetaData> nonConstMetaData = metaData;
+        return ImportIconTexture(spec, nonConstMetaData);
+    }
+
+    Ref<Texture2D> TextureImporter::ImportIconTexture(const TextureSpecification& spec, Ref<Asset::MetaData>& metaData)
     {
         CE_PROFILE_FUNCTION();
         int width, height, channels;
         stbi_set_flip_vertically_on_load(1);
+        std::filesystem::path filePath = Project::GetAssetDirectory() / metaData->FilePath;
         Buffer data;
         {
             CE_PROFILE_SCOPE("stbi_load - TextureImporter::ImportTexture2D");
@@ -31,21 +41,35 @@ namespace CatEngine
         // TODO: Rework this when HDR gets supported!
         data.Size = width * height * channels;
 
-        TextureSpecification spec;
-        spec.Width = width;
-        spec.Height = height;
+        TextureSpecification newSpec;
+        newSpec.Width = width;
+        newSpec.Height = height;
+        newSpec.FilePath = filePath;
+        newSpec.MinFilter = spec.MinFilter;
+        newSpec.MagFilter = spec.MagFilter;
+        newSpec.WrapOption = spec.WrapOption;
 
-        switch (channels) 
+        if (spec.Format == ImageFormat::NONE)
         {
-            case 3:
-                spec.Format = ImageFormat::RGB8;
-                break;
-            case 4:
-                spec.Format = ImageFormat::RGBA8;
-                break;
+            if (channels == 3)
+                newSpec.Format = ImageFormat::RGB8;
+            else if (channels == 4)
+                newSpec.Format = ImageFormat::RGBA8;
         }
+        else
+        {
+            newSpec.Format = spec.Format;
+        }
+
+        std::filesystem::path fileName = filePath.filename();
+        fileName.replace_extension("");
+
+        Ref<Asset::TextureMetaData> textureMetaData = CreateRef<Asset::TextureMetaData>();
+        textureMetaData->AssetName = fileName.generic_string();
+        textureMetaData->FilePath = metaData->FilePath;
+        textureMetaData->Type = metaData->Type;
         
-        Ref<Texture2D> texture = Texture2D::Create(spec, data);
+        Ref<Texture2D> texture = Texture2D::Create(newSpec, data);
         
         data.Release();
         return texture;

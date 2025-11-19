@@ -326,7 +326,7 @@ namespace CatEngine
 
 	}
 
-    bool ImGuiDraw::Combo(const std::string& label, int& selection, const std::vector<const char*> list)
+    bool ImGuiDraw::Combo(const std::string& label, int& selection, const std::vector<const char*>& list)
     {
         bool triggered = false;
 		ImGui::PushID(label.c_str());
@@ -408,4 +408,60 @@ namespace CatEngine
 
 		ImGui::PopID();
 	}
+
+    void ImGuiDraw::StaticString(const std::string& label, const std::string& str)
+    {
+        ImGui::PushID(label.c_str());
+
+		if (ImGui::BeginTable("##", 2))
+        {
+
+            for (int i = 0; i < 2; i++)
+            {
+                ImGui::TableSetupColumn(names[i].c_str(), ImGuiTableColumnFlags_WidthStretch);
+            }
+
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0);
+            ImGui::Text("%s",label.c_str());
+            ImGui::TableSetColumnIndex(1);
+
+            ImGui::PushItemWidth(-1.0f);
+            ImGui::Text("%s", str.c_str());
+            ImGui::PopItemWidth();
+        }
+        
+        ImGui::EndTable();
+
+		ImGui::PopID();
+
+    }
+
+    void ImGuiDraw::StaticInt(const std::string& label, const int& i)
+    {
+        ImGui::PushID(label.c_str());
+
+		if (ImGui::BeginTable("##", 2))
+        {
+
+            for (int i = 0; i < 2; i++)
+            {
+                ImGui::TableSetupColumn(names[i].c_str(), ImGuiTableColumnFlags_WidthStretch);
+            }
+
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0);
+            ImGui::Text("%s",label.c_str());
+            ImGui::TableSetColumnIndex(1);
+
+            ImGui::PushItemWidth(-1.0f);
+            ImGui::Text("%i", i);
+            ImGui::PopItemWidth();
+        }
+        
+        ImGui::EndTable();
+
+		ImGui::PopID();
+
+    }
 }
