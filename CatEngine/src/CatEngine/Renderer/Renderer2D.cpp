@@ -180,7 +180,12 @@ namespace CatEngine
             samplers[i] = i;
         s_Data.Shaders.Get("QuadShader")->SetIntArray("u_Textures", samplers, s_Data.MaxTextureSlots);
 
-        s_Data.DefaultTexture = Texture2D::Create();
+        TextureSpecification spec;
+        spec.Format = ImageFormat::RGBA8;
+        spec.MinFilter = TextureParameter::Linear;
+        spec.MagFilter = TextureParameter::Linear;
+        spec.WrapOption = TextureWrapParameter::Repeat;
+        s_Data.DefaultTexture = Texture2D::Create(spec);
         uint32_t data = 0xffffffff;
         s_Data.DefaultTexture->SetData(Buffer(&data, sizeof(uint32_t)));
         

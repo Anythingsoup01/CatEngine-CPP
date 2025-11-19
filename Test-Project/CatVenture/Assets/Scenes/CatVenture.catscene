@@ -28,8 +28,8 @@ Entities:
       Scale: [1, 1, 1]
     SpriteRendererComponent:
       Color: [0.0332651138, 1, 0.0265282393, 1]
-      Texture: 800972892075515834
-      Tiling: 1
+      Texture: 9903971983362438089
+      Tiling: 3.9000001
     CameraComponent:
       Camera:
         ProjectionType: 1

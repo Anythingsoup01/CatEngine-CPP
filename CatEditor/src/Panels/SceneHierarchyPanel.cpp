@@ -287,8 +287,8 @@ namespace CatEngine
                 if (AssetManager::IsAssetHandleValid(handle) && AssetManager::GetAssetType(handle) == AssetType::Texture2D)
                 {
                     const auto& metaData = Project::GetActive()->GetEditorAssetManager()->GetMetaData(handle);
-                    std::string fileName = metaData->FilePath.filename().string();
-                    size_t extensionLen = metaData->FilePath.extension().string().length();
+                    std::string fileName = metaData.FilePath.filename().string();
+                    size_t extensionLen = metaData.FilePath.extension().string().length();
                     fileName.erase(fileName.length() - extensionLen);
                     label = fileName;
                 }

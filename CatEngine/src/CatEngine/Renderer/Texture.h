@@ -16,9 +16,9 @@ namespace CatEngine
 		uint32_t Width = 1;
 		uint32_t Height = 1;
 		ImageFormat Format = ImageFormat::NONE;
-        TextureParameter MinFilter = TextureParameter::Linear;
-        TextureParameter MagFilter = TextureParameter::Linear;
-        TextureWrap WrapOption = TextureWrap::Repeat;
+        TextureParameter MinFilter = TextureParameter::NONE;
+        TextureParameter MagFilter = TextureParameter::NONE;
+        TextureWrapParameter WrapOption = TextureWrapParameter::NONE;
 		bool GenerateMips = true;
 	};
 

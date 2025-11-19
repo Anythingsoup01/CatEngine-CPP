@@ -17,7 +17,7 @@ namespace CatEngine
         NONE,
     };
 
-    enum class TextureWrap
+    enum class TextureWrapParameter
     {
         Repeat,
         MirroredRepeat,

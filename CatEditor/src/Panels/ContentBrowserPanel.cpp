@@ -32,8 +32,8 @@ namespace CatEngine
 		: m_CurrentDirectory(Project::GetAssetDirectory())
 	{
         // TODO: Generate these as assets
-        m_DirectoryIcon = TextureImporter::ImportIconTexture({}, "Resources/Icons/DirectoryIcon.png");
-		m_FileIcon = TextureImporter::ImportIconTexture({}, "Resources/Icons/ScriptFileIcon.png");
+        m_DirectoryIcon = TextureImporter::ImportIconTexture("Resources/Icons/DirectoryIcon.png");
+		m_FileIcon = TextureImporter::ImportIconTexture("Resources/Icons/ScriptFileIcon.png");
 	}
 
 	void ContentBrowserPanel::OnImGuiRender()

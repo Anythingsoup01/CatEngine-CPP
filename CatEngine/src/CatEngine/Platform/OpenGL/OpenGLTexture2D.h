@@ -35,6 +35,5 @@ namespace CatEngine
         TextureSpecification m_Specification;
         RendererID m_RendererID;
 
-        Ref<TextureMetaData> m_MetaData;
     };
 }

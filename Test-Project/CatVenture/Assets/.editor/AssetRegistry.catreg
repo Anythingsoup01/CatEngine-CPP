@@ -3,3 +3,11 @@ AssetRegistry:
     Name: CatScene
     FilePath: Scenes/CatVenture.catscene
     Type: Scene
+  - Handle: 9903971983362438089
+    Name: car
+    FilePath: Textures/car.png
+    Type: Texture2D
+    MinFilter: Linear
+    MagFilter: Linear
+    WrapOption: Repeat
+    ImageFormat: RGB8

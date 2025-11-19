@@ -55,14 +55,14 @@ namespace CatEngine
             return 0;
         }
 
-        static GLenum TextureWrapToOpenGLTextureParameter(const TextureWrap& param)
+        static GLenum TextureWrapToOpenGLTextureParameter(const TextureWrapParameter& param)
         {
             switch (param) 
             {
-                case TextureWrap::Repeat: return GL_REPEAT;
-                case TextureWrap::MirroredRepeat: return GL_MIRRORED_REPEAT;
-                case TextureWrap::ClampToEdge: return GL_CLAMP_TO_EDGE;
-                case TextureWrap::ClampToBorders: return GL_CLAMP_TO_BORDER;
+                case TextureWrapParameter::Repeat: return GL_REPEAT;
+                case TextureWrapParameter::MirroredRepeat: return GL_MIRRORED_REPEAT;
+                case TextureWrapParameter::ClampToEdge: return GL_CLAMP_TO_EDGE;
+                case TextureWrapParameter::ClampToBorders: return GL_CLAMP_TO_BORDER;
                 default: break;
             }
 
@@ -76,17 +76,7 @@ namespace CatEngine
     {
         CE_PROFILE_FUNCTION();
         
-        m_MetaData = CreateRef<TextureMetaData>();
-
-        m_MetaData->TextureMinFilterIndex = (int)specification.MinFilter;
-        m_MetaData->TextureMagFilterIndex = (int)specification.MagFilter;
-        m_MetaData->TextureWrapIndex = (int)specification.WrapOption;
-        std::filesystem::path fileName = specification.FilePath.filename();
-        fileName.replace_extension("");
-        m_MetaData->AssetName = fileName.generic_string();
-        m_MetaData->Type = AssetType::Texture2D;
-        m_MetaData->FilePath = specification.FilePath;
-
+        
         m_IsLoaded = true;
 
         m_InternalFormat = OpenGLTextureUtils::ImageFormatToGLInternalFormat(m_Specification.Format);

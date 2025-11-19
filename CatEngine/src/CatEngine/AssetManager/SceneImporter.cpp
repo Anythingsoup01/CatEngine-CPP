@@ -6,16 +6,16 @@
 
 namespace CatEngine
 {
-    Ref<Scene> SceneImporter::ImportScene(AssetHandle handle, Ref<Asset::MetaData>& metaData)
+    Ref<Scene> SceneImporter::ImportScene(AssetHandle handle, Asset::MetaData& metaData)
     {
         CE_PROFILE_FUNCTION();
-        return LoadScene(Project::GetAssetDirectory() / metaData->FilePath);
+        return LoadScene(Project::GetAssetDirectory() / metaData.FilePath);
     }
 
-    Ref<Scene> SceneImporter::ImportScene(AssetHandle handle, const Ref<Asset::MetaData>& metaData)
+    Ref<Scene> SceneImporter::ConstImportScene(AssetHandle handle, const Asset::MetaData& metaData)
     {
         CE_PROFILE_FUNCTION();
-        return LoadScene(Project::GetAssetDirectory() / metaData->FilePath);
+        return LoadScene(Project::GetAssetDirectory() / metaData.FilePath);
     }
     
     Ref<Scene> SceneImporter::LoadScene(const std::filesystem::path &filePath)
