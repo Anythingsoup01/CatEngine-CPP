@@ -35,6 +35,7 @@ namespace CatEngine
 	private:
 		Ref<Scene> m_Context;
 		Entity m_SelectionContext;
+		Entity m_PreviousSelection;
 	};
 
 }

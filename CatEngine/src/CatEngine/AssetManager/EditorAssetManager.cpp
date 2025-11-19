@@ -105,13 +105,18 @@ namespace CatEngine
     }
     void EditorAssetManager::DeleteAsset(AssetHandle handle)
     {
-        if (!m_AssetRegistry.contains(handle))
-            CE_API_ASSERT(false, "Failed to find asset!");
+        {
+        auto it = m_AssetRegistry.find(handle);
+        if (it != m_AssetRegistry.end())
+            m_AssetRegistry.erase(it);
+        }
+        {
+        auto it = m_LoadedAssets.find(handle);
+        if (it != m_LoadedAssets.end())
+            m_LoadedAssets.erase(it);
+        }
 
-        m_AssetRegistry.erase(handle);
-
-        if (m_LoadedAssets.contains(handle))
-            m_LoadedAssets.erase(handle);
+        SerializeAssetRegistry();
     }
 
     const Asset::MetaData& EditorAssetManager::GetMetaData(AssetHandle handle) const

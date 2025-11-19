@@ -230,13 +230,9 @@ namespace CatEngine
                 }
             }
 
-            std::vector<std::string> coreLib = capy_get_core_libraries_from_domain("CatAppDomain");
-
-
             ScriptGlue::RegisterFunctions();
             ScriptGlue::RegisterComponents();
 
-            CE_API_WARN("{}", capy_dump_domain("CatAppDomain"));
         });
 
         s_ScriptData->SourceFileReloadPending = false;

@@ -45,6 +45,7 @@ namespace CatEngine
 		Ref<Texture2D> m_FileIcon;
 
         AssetHandle m_SelectionContext = 0;
+        AssetHandle m_PreviousSelection = 0;
 
         friend class ContentBrowserPanel;
 	};

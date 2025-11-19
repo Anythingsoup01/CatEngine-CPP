@@ -12,6 +12,8 @@
 #include "CatEngine/AssetManager/AssetManager.h"
 #include "CatEngine/AssetManager/TextureImporter.h"
 
+#include "CatEngine/Core/Application.h"
+
 #include "ImGui/ImGuiDraw.h"
 
 const size_t MAX_FILE_PATH_LEN = 4096;
@@ -115,12 +117,12 @@ namespace CatEngine
             {
                 if (ImGui::MenuItem("Delete"))
                 {
-                    CE_API_ERROR("Feature still under development!");
-#                   if 0
                     AssetHandle handle = m_TreeNodes[treeNodeIndex].Handle;
-                    Project::GetActive()->GetEditorAssetManager()->DeleteAsset(handle);
-                    RefreshAssetTree();
-#                   endif
+                    Application::Get().SubmitToMainThread([handle, this]()
+                    {
+                        Project::GetActive()->GetEditorAssetManager()->DeleteAsset(handle);
+                        RefreshAssetTree();
+                    });
                 }
 
 
@@ -154,7 +156,6 @@ namespace CatEngine
 
         ImGui::End();
 
-        
         ImGui::Begin("AssetData");
 		if (m_SelectionContext != 0)
 		{

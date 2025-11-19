@@ -213,9 +213,9 @@ namespace CatEngine
             ImGui::TableSetColumnIndex(0);
             ImGui::Text("%s",label.c_str());
 		    if (ImGuiDragFloat<glm::vec4>(values, step, min, max)) triggered = true;
+            ImGui::EndTable();
         }
         
-        ImGui::EndTable();
 
 		ImGui::PopID();
         return triggered;
@@ -238,9 +238,9 @@ namespace CatEngine
             ImGui::TableSetColumnIndex(0);
             ImGui::Text("%s",label.c_str());
 		    if (ImGuiDragFloat<glm::vec3>(values, step, min, max)) triggered = true;
+            ImGui::EndTable();
         }
         
-        ImGui::EndTable();
 
 		ImGui::PopID();
 
@@ -264,9 +264,9 @@ namespace CatEngine
             ImGui::TableSetColumnIndex(0);
             ImGui::Text("%s",label.c_str());
 		    if (ImGuiDragFloat<glm::vec2>(values, step, min, max)) triggered = true;
+            ImGui::EndTable();
         }
         
-        ImGui::EndTable();
 
 		ImGui::PopID();
         return triggered;
@@ -289,9 +289,9 @@ namespace CatEngine
             ImGui::TableSetColumnIndex(0);
             ImGui::Text("%s",label.c_str());
 		    if (ImGuiDragFloat<float>(value, step, min, max)) triggered = true;
+            ImGui::EndTable();
         }
         
-        ImGui::EndTable();
 
 		ImGui::PopID();
 
@@ -316,9 +316,9 @@ namespace CatEngine
             ImGui::TableSetColumnIndex(0);
             ImGui::Text("%s",label.c_str());
 		    if (ImGuiDragInt<int>(value, step, min, max)) triggered = true;
+            ImGui::EndTable();
         }
         
-        ImGui::EndTable();
 
 		ImGui::PopID();
 
@@ -346,9 +346,9 @@ namespace CatEngine
             ImGui::PushItemWidth(-1.0f);
 		    if (ImGui::Combo("##", &selection, list.data(), list.size())) triggered = true;
             ImGui::PopItemWidth();
+            ImGui::EndTable();
         }
         
-        ImGui::EndTable();
 
 		ImGui::PopID();
 
@@ -374,9 +374,8 @@ namespace CatEngine
             ImGui::Text("%s",label.c_str());
             ImGui::TableSetColumnIndex(1);
             if (ImGui::Checkbox("##", &active)) triggered = true;
+            ImGui::EndTable();
         }
-        
-        ImGui::EndTable();
 
 		ImGui::PopID();
         return triggered;
@@ -402,9 +401,9 @@ namespace CatEngine
             ImGui::PushItemWidth(-1.0f);
             ImGui::Button(componentName.c_str());
             ImGui::PopItemWidth();
+            ImGui::EndTable();
         }
         
-        ImGui::EndTable();
 
 		ImGui::PopID();
 	}
@@ -429,9 +428,9 @@ namespace CatEngine
             ImGui::PushItemWidth(-1.0f);
             ImGui::Text("%s", str.c_str());
             ImGui::PopItemWidth();
+            ImGui::EndTable();
         }
         
-        ImGui::EndTable();
 
 		ImGui::PopID();
 
@@ -457,9 +456,9 @@ namespace CatEngine
             ImGui::PushItemWidth(-1.0f);
             ImGui::Text("%i", i);
             ImGui::PopItemWidth();
+            ImGui::EndTable();
         }
         
-        ImGui::EndTable();
 
 		ImGui::PopID();
 

@@ -148,7 +148,7 @@ namespace CatEngine
                 ImGui::Begin("Create Folder");
                 {
                     ImGui::InputText("File Name: ", folderBuffer, sizeof(folderBuffer));
-                    if (ImGui::Button("Confirm", {25, 15}))
+                    if (ImGui::Button("Confirm"))
                     {
                         std::filesystem::create_directories(m_CurrentDirectory / folderBuffer);
                         type = CreateType::None;
@@ -163,7 +163,7 @@ namespace CatEngine
                 ImGui::Begin("Create New Class");
                 {
                     ImGui::InputText("File Name: ", buffer, sizeof(buffer));
-                    if (ImGui::Button("Confirm", {25, 15}))
+                    if (ImGui::Button("Confirm"))
                     {
                         std::string filePath = m_CurrentDirectory.string().append("/");
                         filePath.append(buffer).append(".h");

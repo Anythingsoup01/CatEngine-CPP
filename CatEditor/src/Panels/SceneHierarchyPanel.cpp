@@ -14,7 +14,6 @@
 
 #include "CatEngine/AssetManager/AssetManager.h"
 
-#include "Panels/AssetBrowserPanel.h"
 
 namespace CatEngine
 {
@@ -66,6 +65,7 @@ namespace CatEngine
 		}
 
 		ImGui::End();
+
 		ImGui::Begin("Inspector");
 		if (m_SelectionContext)
 		{
