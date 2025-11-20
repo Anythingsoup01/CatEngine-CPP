@@ -12,6 +12,7 @@
 #include "CatEngine/Physics/Physics2D.h"
 
 #include "CatEngine/Scene/Components/Components.h"
+#include <cstdint>
 #include <cstring>
 
 namespace CatEngine
@@ -192,6 +193,18 @@ namespace CatEngine
 		entity.GetComponent<SpriteRendererComponent>().Color = *color;
 	}
 
+    static void Sprite_GetTextureID(UUID entityID, uint64_t* outTextureID)
+	{
+		const Entity& entity = GetEntity(entityID);
+		*outTextureID = entity.GetComponent<SpriteRendererComponent>().Texture.uuid();
+	}
+
+	static void Sprite_SetTextureID(UUID entityID, uint64_t* textureID)
+	{
+		const Entity& entity = GetEntity(entityID);
+		entity.GetComponent<SpriteRendererComponent>().Texture = *textureID;
+	}
+
 #pragma endregion
 
 
@@ -264,6 +277,8 @@ namespace CatEngine
 
         CE_ADD_INTERNAL_CALL(Sprite_GetColor);
 	    CE_ADD_INTERNAL_CALL(Sprite_SetColor);
+        CE_ADD_INTERNAL_CALL(Sprite_GetTextureID);
+	    CE_ADD_INTERNAL_CALL(Sprite_SetTextureID);
 
 #pragma endregion
 	}

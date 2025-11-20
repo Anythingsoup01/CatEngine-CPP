@@ -381,7 +381,7 @@ namespace CatEngine
         return triggered;
 	}
 
-	void ImGuiDraw::Component(const std::string& label, const std::string& componentName)
+	void ImGuiDraw::DataField(const std::string& label, const std::string& componentName)
 	{
 		ImGui::PushID(label.c_str());
 

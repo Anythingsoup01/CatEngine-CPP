@@ -1,5 +1,6 @@
 #pragma once
 
+#include "CatScriptCore/Types/Texture.h"
 #include <CatScriptCore/ScriptInclude.h>
 
 namespace CatRuntime
@@ -24,8 +25,9 @@ namespace CatRuntime
 
         Rigidbody2D m_RB2D;
 
-
         Transform m_RedTransform;
+
+        Texture2D m_CatTexture;
 
         bool m_CanJump = false;
         bool m_Grounded = false;

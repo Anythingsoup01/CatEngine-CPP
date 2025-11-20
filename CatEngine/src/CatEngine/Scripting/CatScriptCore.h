@@ -1,7 +1,6 @@
 #pragma once
 
-#include "CatEngine/Scene/Components/3D/TransformComponent.h"
-#include "CatEngine/Scene/Components/Physics/Rigidbody2D.h"
+#include "CatEngine/Scene/Components/Components.h"
 #include "glm/fwd.hpp"
 #include <cstdint>
 
@@ -17,8 +16,8 @@ namespace CatEngine
 		SByte, Char, Int16, Int32, Int64, Boolean,
 		UInt16, UInt32, UInt64,
 		String,
-		Vector2, Vector3, Vector4,
-		TransformComponent, Rigidbody2DComponent,
+		Vector2, Vector3, Vector4, Texture2D,
+		TransformComponent, Rigidbody2DComponent, SpriteRenderer,
 	};
 
     static std::unordered_map<std::string, ScriptFieldType> s_ScriptFieldTypeMap =
@@ -40,8 +39,12 @@ namespace CatEngine
 		{"Vector2", ScriptFieldType::Vector2},
 		{"Vector3", ScriptFieldType::Vector3},
 		{"Vector4", ScriptFieldType::Vector4},
+        {"Texture2D", ScriptFieldType::Texture2D},
 		{"Transform", ScriptFieldType::TransformComponent},
 		{"Rigidbody2D", ScriptFieldType::Rigidbody2DComponent},
+        {"SpriteRenderer", ScriptFieldType::SpriteRenderer},
+        {"Layer", ScriptFieldType::None},
+        {"Tag", ScriptFieldType::None},
 
 	};
 

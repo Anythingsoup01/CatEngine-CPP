@@ -43,4 +43,6 @@ namespace CatRuntime
 
     CE_ADD_INTERNAL_CALL(Sprite_GetColor, void, uint64_t, Vector4*);
     CE_ADD_INTERNAL_CALL(Sprite_SetColor, void, uint64_t, Vector4*);
+    CE_ADD_INTERNAL_CALL(Sprite_GetTextureID, void, uint64_t, uint64_t*);
+    CE_ADD_INTERNAL_CALL(Sprite_SetTextureID, void, uint64_t, uint64_t*);
 }

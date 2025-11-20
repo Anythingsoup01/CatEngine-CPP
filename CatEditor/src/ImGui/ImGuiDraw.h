@@ -24,7 +24,7 @@ namespace CatEngine
         static bool Combo(const std::string& label, int& selection, const std::vector<const char*>& list);
 		static bool CheckBox(const std::string& label, bool& active);
 
-        static void Component(const std::string& label, const std::string& componentName);
+        static void DataField(const std::string& label, const std::string& componentName);
 
         static void StaticString(const std::string& label, const std::string& str);
         static void StaticInt(const std::string& label, const int& i);
