@@ -48,16 +48,12 @@ namespace CatEngine
 
 	static ScriptEngineData* s_ScriptData = nullptr;   
 
-	///////////////////////////////////////////////////////
-	// SCRIPT ENGINE //////////////////////////////////////
-	///////////////////////////////////////////////////////
-
-
     static void InternalComponentDataSet(void* ptr, void* value)
     {
         uint64_t* idPtr = reinterpret_cast<uint64_t*>(ptr);
         *idPtr = *reinterpret_cast<uint64_t*>(value);
     }
+
 
     void ScriptEngine::Init()
 	{
@@ -72,8 +68,11 @@ namespace CatEngine
 
         capy_domain_library_open(s_ScriptData->AppDomain, s_ScriptData->CoreLibraryPath.c_str(), true);
 
-        capy_add_type_setter("Transform", InternalComponentDataSet);
-        capy_add_type_setter("Rigidbody2D", InternalComponentDataSet);
+        std::vector<std::string> customTypes = {"Transform", "Rigidbody2D", "SpriteRenderer", "Texture2D"};
+
+        for (auto& type : customTypes)
+            capy_add_type_setter(type, InternalComponentDataSet);
+
 
 	}
 
@@ -220,11 +219,12 @@ namespace CatEngine
 
                     s_ScriptData->EntityClasses[klass->ClassName] = CreateRef<ScriptClass>(image, klass->NameSpace, klass->ClassName);
 
+                    auto& scriptClass = s_ScriptData->EntityClasses[klass->ClassName];
 
                     CapyClass* klassPtr = klass.get();
                     for (auto& [name, field] : klassPtr->VTable->Fields)
                     {
-                        s_ScriptData->EntityClasses[klass->ClassName]->m_Fields[name] = ScriptField{CapyTypeStringToScriptFieldType(field->FieldTypeString), name};
+                        scriptClass->m_Fields[name] = ScriptField{name, CapyTypeStringToScriptFieldType(field->FieldTypeString)};
                     }
 
                 }
@@ -255,7 +255,7 @@ namespace CatEngine
 			Ref<ScriptInstance> instance = CreateRef<ScriptInstance>(s_ScriptData->EntityClasses[sc.ClassName], e);
 			s_ScriptData->EntityInstances[entityID] = instance;
 
-			// Copy field value
+			// Copy field value if we set it
 			if (s_ScriptData->EntityScriptFields.find(entityID) != s_ScriptData->EntityScriptFields.end())
 			{
 				const ScriptFieldMap& scriptFieldMap = s_ScriptData->EntityScriptFields.at(entityID);

@@ -421,31 +421,6 @@ namespace CatEngine
             {
                 if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSET_MANAGER_ITEM"))
                 {
-                    /*
-                    const wchar_t* path = (const wchar_t*)payload->Data;
-                    std::filesystem::path filePath = Project::GetAssetFileSystemPath(path);
-    
-                    if (filePath.extension().string() == ".catscene")
-                    {
-                        OpenScene(filePath);
-                        SaveProject();
-                    }
-                    else if (filePath.extension().string() == ".png" || filePath.extension().string() == ".jpeg")
-                    {
-                        std::filesystem::path texturePath = Project::GetAssetFileSystemPath(path);
-                        Ref<Texture2D> texture = Texture2D::Create(texturePath.string());
-                        if (texture->IsLoaded())
-                        {
-                            if (m_HoveredEntity && m_HoveredEntity.HasComponent<SpriteRendererComponent>())
-                                m_HoveredEntity.GetComponent<SpriteRendererComponent>().Texture = texture;
-                        }
-                        else
-                        {
-                            CE_CLI_WARN("Could not load texture {0}", texturePath.filename().string());
-                        }
-                    }
-                    */
-
                     AssetHandle handle = *(AssetHandle*)payload->Data;
                     const AssetType type = AssetManager::GetAssetType(handle);
 

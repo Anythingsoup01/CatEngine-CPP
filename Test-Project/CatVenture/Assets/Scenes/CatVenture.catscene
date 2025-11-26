@@ -54,7 +54,12 @@ Entities:
       Restitution: 0
       RestitutionThreshold: 0.5
     ScriptComponent:
+      ScriptID: 16282808085270717335
       ClassName: PlayerController
+      Fields:
+        FieldID: 15046157888623789870
+        FieldType: Texture2D
+        Value: 8763345818349488746
   - Entity: 14096084207158609928
     TagComponent:
       Tag: None

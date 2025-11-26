@@ -22,18 +22,14 @@ namespace CatRuntime
 #   define PUBLIC
         float m_PlayerTerminalVelocity = 25.0f;
         float m_PlayerSpeed = 5;
-
-        Rigidbody2D m_RB2D;
-
-        Transform m_RedTransform;
-
         Texture2D m_CatTexture;
-
         bool m_CanJump = false;
         bool m_Grounded = false;
 
         float m_JumpForce = 25.0f;
 
 #   define PRIVATE
+        Rigidbody2D m_RB2D;
+        SpriteRenderer m_SpriteRenderer;
     };
 }

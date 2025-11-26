@@ -1,7 +1,7 @@
 AssetRegistry:
-  - Handle: 7155916114788326522
-    Name: car
-    FilePath: Textures/car.png
+  - Handle: 8763345818349488746
+    Name: car2
+    FilePath: Textures/car2.jpeg
     Type: Texture2D
     MinFilter: Linear
     MagFilter: Linear
@@ -11,3 +11,11 @@ AssetRegistry:
     Name: CatScene
     FilePath: Scenes/CatVenture.catscene
     Type: Scene
+  - Handle: 7155916114788326522
+    Name: car
+    FilePath: Textures/car.png
+    Type: Texture2D
+    MinFilter: Linear
+    MagFilter: Linear
+    WrapOption: Repeat
+    ImageFormat: RGB8

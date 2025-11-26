@@ -96,11 +96,14 @@ namespace CatEngine
 
 	void ScriptInstance::SetFieldDataInternal(const std::string& name, void* value)
     {
+        int size = 0;
         {
         const auto& fields = m_ScriptClass->GetFields();
         auto it = fields.find(name);
         if (it == fields.end())
             return;
+
+        size = TypeToSize(it->second.Type);
         }
         
         auto& fields = m_ScriptClass->m_CapyClass->VTable->Fields;
@@ -109,8 +112,7 @@ namespace CatEngine
 
         CapyField* cf = it->second.get();
 
-
-        capy_field_data_set(m_Instance, cf, value, sizeof(value));
+        capy_field_data_set(m_Instance, cf, value, size);
     }
 }
 

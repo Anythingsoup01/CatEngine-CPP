@@ -497,11 +497,11 @@ namespace CatEngine
 
             sc.Loaded = true;
 
+
 			bool scriptClassExists = ScriptEngine::ScriptClassExists(sc.ClassName);
 			bool sceneRunning = m_Context->IsRunning();
 			if (sceneRunning)
 			{
-                CE_API_WARN("SCENE RUNNING");
 				Ref<ScriptInstance> scriptInstance = ScriptEngine::GetEntityScriptInstance(selection.GetUUID());
 				if (scriptInstance)
 				{
@@ -639,7 +639,7 @@ namespace CatEngine
 					}
 
 				}
-			}
+                }
             }
             else // Scene isn't running
 			{
@@ -666,6 +666,7 @@ namespace CatEngine
                                     if (ImGuiDraw::Vec1(name, data))
                                     {
                                         scriptFieldInstance.SetValue(data);
+                                        component.ScriptFields[field.ID].SetValue(data);
                                     }
                                     break;
                                 }
@@ -677,6 +678,7 @@ namespace CatEngine
                                     if (ImGuiDraw::Vec1(name, (float&)data))
                                     {
                                         scriptFieldInstance.SetValue(data);
+                                        component.ScriptFields[field.ID].SetValue(data);
                                     }
                                     break;
                                 }
@@ -695,6 +697,7 @@ namespace CatEngine
                                     if (ImGuiDraw::Int1(name, (int&)data))
                                     {
                                         scriptFieldInstance.SetValue(data);
+                                        component.ScriptFields[field.ID].SetValue(data);
                                     }
                                     break;
                                 }
@@ -705,6 +708,7 @@ namespace CatEngine
                                     if (ImGuiDraw::Int1(name, (int&)data))
                                     {
                                         scriptFieldInstance.SetValue(data);
+                                        component.ScriptFields[field.ID].SetValue(data);
                                     }
                                     break;
                                 }
@@ -715,6 +719,7 @@ namespace CatEngine
                                     if (ImGuiDraw::Int1(name, (int&)data))
                                     {
                                         scriptFieldInstance.SetValue(data);
+                                        component.ScriptFields[field.ID].SetValue(data);
                                     }
                                     break;
                                 }
@@ -725,6 +730,7 @@ namespace CatEngine
                                     if (ImGuiDraw::CheckBox(name, data))
                                     {
                                         scriptFieldInstance.SetValue(&data);
+                                        component.ScriptFields[field.ID].SetValue(data);
                                     }
                                     break;
                                 }
@@ -735,6 +741,7 @@ namespace CatEngine
                                     if (ImGuiDraw::Int1(name, (int&)data))
                                     {
                                         scriptFieldInstance.SetValue(data);
+                                        component.ScriptFields[field.ID].SetValue(data);
                                     }
                                     break;
                                 }
@@ -745,6 +752,7 @@ namespace CatEngine
                                     if (ImGuiDraw::Int1(name, (int&)data))
                                     {
                                         scriptFieldInstance.SetValue(data);
+                                        component.ScriptFields[field.ID].SetValue(data);
                                     }
                                     break;
                                 }
@@ -755,6 +763,7 @@ namespace CatEngine
                                     if (ImGuiDraw::Int1(name, (int&)data))
                                     {
                                         scriptFieldInstance.SetValue(data);
+                                        component.ScriptFields[field.ID].SetValue(data);
                                     }
                                     break;
                                 }
@@ -769,6 +778,7 @@ namespace CatEngine
                                     if (ImGuiDraw::Vec2(name, data))
                                     {
                                         scriptFieldInstance.SetValue(data);
+                                        component.ScriptFields[field.ID].SetValue(data);
                                     }
                                     break;
                                 }
@@ -779,6 +789,7 @@ namespace CatEngine
                                     if (ImGuiDraw::Vec3(name, data))
                                     {
                                         scriptFieldInstance.SetValue(data);
+                                        component.ScriptFields[field.ID].SetValue(data);
                                     }
                                     break;
                                 }
@@ -789,6 +800,7 @@ namespace CatEngine
                                     if (ImGuiDraw::Vec4(name, data))
                                     {
                                         scriptFieldInstance.SetValue(data);
+                                        component.ScriptFields[field.ID].SetValue(data);
                                     }
                                     break;
                                 }
@@ -809,7 +821,8 @@ namespace CatEngine
                                             {
                                                 const auto& metaData = Project::GetActive()->GetEditorAssetManager()->GetMetaData(assetHandle);
                                                 field.ComponentName = metaData.AssetName;
-                                                scriptFieldInstance.SetValue(asset->m_Handle.uuid());
+                                                scriptFieldInstance.SetValue(assetHandle);
+                                                component.ScriptFields[field.ID].SetValue(assetHandle.uuid());
                                             }
                                         }
                                     }
@@ -834,6 +847,7 @@ namespace CatEngine
                                                 uint64_t id = entityID.uuid();
                                                 field.ComponentName = entity.GetName();
                                                 scriptFieldInstance.SetValue(id);
+                                                component.ScriptFields[field.ID].SetValue(id);
                                             }
                                         }
                                         ImGui::EndDragDropTarget();
@@ -859,6 +873,7 @@ namespace CatEngine
                                                 uint64_t id = entityID.uuid();
                                                 field.ComponentName = entity.GetName();
                                                 scriptFieldInstance.SetValue(id);
+                                                component.ScriptFields[field.ID].SetValue(id);
                                             }
                                         }
                                         ImGui::EndDragDropTarget();
@@ -883,6 +898,7 @@ namespace CatEngine
                                                 uint64_t id = entityID.uuid();
                                                 field.ComponentName = entity.GetName();
                                                 scriptFieldInstance.SetValue(id);
+                                                component.ScriptFields[field.ID].SetValue(id);
                                             }
                                         }
                                         ImGui::EndDragDropTarget();
@@ -902,8 +918,10 @@ namespace CatEngine
                                     if (ImGuiDraw::Vec1(name, data))
                                     {
                                         ScriptFieldInstance& sfi = scriptFields[name];
+                                        field.ID = UUID();
                                         sfi.Field = field;
                                         sfi.SetValue(data);
+                                        component.ScriptFields[field.ID] = ScriptFieldSerializedValue(name, field.Type, data);
                                     }
                                     break;
                                 }
@@ -913,8 +931,10 @@ namespace CatEngine
                                     if (ImGuiDraw::Vec1(name, (float&)data))
                                     {
                                         ScriptFieldInstance& sfi = scriptFields[name];
+                                        field.ID = UUID();
                                         sfi.Field = field;
                                         sfi.SetValue(data);
+                                        component.ScriptFields[field.ID] = ScriptFieldSerializedValue(name, field.Type, data);
                                     }
                                     break;
                                 }
@@ -932,8 +952,10 @@ namespace CatEngine
                                     if (ImGuiDraw::Int1(name, (int&)data))
                                     {
                                         ScriptFieldInstance& sfi = scriptFields[name];
+                                        field.ID = UUID();
                                         sfi.Field = field;
                                         sfi.SetValue(data);
+                                        component.ScriptFields[field.ID] = ScriptFieldSerializedValue(name, field.Type, data);
                                     }
                                     break;
                                 }
@@ -943,8 +965,10 @@ namespace CatEngine
                                     if (ImGuiDraw::Int1(name, (int&)data))
                                     {
                                         ScriptFieldInstance& sfi = scriptFields[name];
+                                        field.ID = UUID();
                                         sfi.Field = field;
                                         sfi.SetValue(data);
+                                        component.ScriptFields[field.ID] = ScriptFieldSerializedValue(name, field.Type, data);
                                     }
                                     break;
                                 }
@@ -954,8 +978,10 @@ namespace CatEngine
                                     if (ImGuiDraw::Int1(name, (int&)data))
                                     {
                                         ScriptFieldInstance& sfi = scriptFields[name];
+                                        field.ID = UUID();
                                         sfi.Field = field;
                                         sfi.SetValue(data);
+                                        component.ScriptFields[field.ID] = ScriptFieldSerializedValue(name, field.Type, data);
                                     }
                                     break;
                                 }
@@ -965,8 +991,10 @@ namespace CatEngine
                                     if (ImGuiDraw::CheckBox(name, data))
                                     {
                                         ScriptFieldInstance& sfi = scriptFields[name];
+                                        field.ID = UUID();
                                         sfi.Field = field;
                                         sfi.SetValue(data);
+                                        component.ScriptFields[field.ID] = ScriptFieldSerializedValue(name, field.Type, data);
                                     }
                                     break;
                                 }
@@ -976,8 +1004,10 @@ namespace CatEngine
                                     if (ImGuiDraw::Int1(name, (int&)data))
                                     {
                                         ScriptFieldInstance& sfi = scriptFields[name];
+                                        field.ID = UUID();
                                         sfi.Field = field;
                                         sfi.SetValue(data);
+                                        component.ScriptFields[field.ID] = ScriptFieldSerializedValue(name, field.Type, data);
                                     }
                                     break;
                             }
@@ -987,8 +1017,10 @@ namespace CatEngine
                                     if (ImGuiDraw::Int1(name, (int&)data))
                                     {
                                         ScriptFieldInstance& sfi = scriptFields[name];
+                                        field.ID = UUID();
                                         sfi.Field = field;
                                         sfi.SetValue(data);
+                                        component.ScriptFields[field.ID] = ScriptFieldSerializedValue(name, field.Type, data);
                                     }
                                     break;
                                 }
@@ -998,8 +1030,10 @@ namespace CatEngine
                                     if (ImGuiDraw::Int1(name, (int&)data))
                                     {
                                         ScriptFieldInstance& sfi = scriptFields[name];
+                                        field.ID = UUID();
                                         sfi.Field = field;
                                         sfi.SetValue(data);
+                                        component.ScriptFields[field.ID] = ScriptFieldSerializedValue(name, field.Type, data);
                                     }
                                     break;
                                 }
@@ -1013,8 +1047,10 @@ namespace CatEngine
                                     if (ImGuiDraw::Vec2(name, data))
                                     {
                                         ScriptFieldInstance& sfi = scriptFields[name];
+                                        field.ID = UUID();
                                         sfi.Field = field;
                                         sfi.SetValue(data);
+                                        component.ScriptFields[field.ID] = ScriptFieldSerializedValue(name, field.Type, data);
                                     }
                                     break;
                                 }
@@ -1024,8 +1060,10 @@ namespace CatEngine
                                     if (ImGuiDraw::Vec3(name, data))
                                     {
                                         ScriptFieldInstance& sfi = scriptFields[name];
+                                        field.ID = UUID();
                                         sfi.Field = field;
                                         sfi.SetValue(data);
+                                        component.ScriptFields[field.ID] = ScriptFieldSerializedValue(name, field.Type, data);
                                     }
                                     break;
                                 }
@@ -1035,8 +1073,10 @@ namespace CatEngine
                                     if (ImGuiDraw::Vec4(name, data))
                                     {
                                         ScriptFieldInstance& sfi = scriptFields[name];
+                                        field.ID = UUID();
                                         sfi.Field = field;
                                         sfi.SetValue(data);
+                                        component.ScriptFields[field.ID] = ScriptFieldSerializedValue(name, field.Type, data);
                                     }
                                     break;
                                 }
@@ -1054,9 +1094,11 @@ namespace CatEngine
                                             {
                                                 const auto& metaData = Project::GetActive()->GetEditorAssetManager()->GetMetaData(assetHandle);
                                                 ScriptFieldInstance& sfi = scriptFields[name];
+                                                field.ID = UUID();
                                                 sfi.SetValue(asset->m_Handle.uuid());
                                                 field.ComponentName = metaData.AssetName;
                                                 sfi.Field = field;
+                                                component.ScriptFields[field.ID] = ScriptFieldSerializedValue(name, field.Type, assetHandle);
                                             }
                                         }
                                         ImGui::EndDragDropTarget();
@@ -1076,10 +1118,12 @@ namespace CatEngine
                                             if (entity.HasComponent<TransformComponent>())
                                             {
                                                 ScriptFieldInstance& sfi = scriptFields[name];
+                                                field.ID = UUID();
                                                 uint64_t id = entityID.uuid();
                                                 sfi.SetValue(id);
                                                 field.ComponentName = entity.GetName();
                                                 sfi.Field = field;
+                                                component.ScriptFields[field.ID] = ScriptFieldSerializedValue(name, field.Type, entityID);
                                             }
                                         }
                                         ImGui::EndDragDropTarget();
@@ -1100,10 +1144,12 @@ namespace CatEngine
                                             if (entity.HasComponent<Rigidbody2DComponent>())
                                             {
                                                 ScriptFieldInstance& sfi = scriptFields[name];
+                                                field.ID = UUID();
                                                 uint64_t id = entityID.uuid();
                                                 sfi.SetValue(id);
                                                 field.ComponentName = entity.GetName();
                                                 sfi.Field = field;
+                                                component.ScriptFields[field.ID] = ScriptFieldSerializedValue(name, field.Type, entityID);
                                             }
                                         }
                                         ImGui::EndDragDropTarget();
@@ -1124,10 +1170,12 @@ namespace CatEngine
                                             if (entity.HasComponent<SpriteRendererComponent>())
                                             {
                                                 ScriptFieldInstance& sfi = scriptFields[name];
+                                                field.ID = UUID();
                                                 uint64_t id = entityID.uuid();
                                                 sfi.SetValue(id);
                                                 field.ComponentName = entity.GetName();
                                                 sfi.Field = field;
+                                                component.ScriptFields[field.ID] = ScriptFieldSerializedValue(name, field.Type, entityID);
                                             }
                                         }
                                         ImGui::EndDragDropTarget();

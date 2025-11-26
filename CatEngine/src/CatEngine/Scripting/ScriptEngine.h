@@ -28,6 +28,8 @@ namespace CatEngine
 		static void Init();
 		static void Shutdown();
 
+        static void EmplaceFieldID(const std::string& name, const UUID& uuid);
+
 		static bool LoadFileWatcher(const std::filesystem::path& filePath);
         static void InitializeFileSystems();
 

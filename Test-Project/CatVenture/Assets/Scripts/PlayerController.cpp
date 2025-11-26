@@ -6,6 +6,8 @@ namespace CatRuntime
     void PlayerController::Start()
     {
         m_RB2D = GetComponent<Rigidbody2D>();
+        m_SpriteRenderer = GetComponent<SpriteRenderer>();
+        m_SpriteRenderer.texture() = m_CatTexture;
     }
 
     void PlayerController::Update(float ts)

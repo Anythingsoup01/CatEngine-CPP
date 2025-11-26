@@ -1,10 +1,10 @@
 #pragma once
 
-#include "CatEngine/Scene/Components/Components.h"
-#include "glm/fwd.hpp"
-#include <cstdint>
 
 #include <Capybara/Capybara.h>
+#include <glm/glm.hpp>
+
+#include "CatEngine/Core/UUID.h"
 
 namespace CatEngine
 {
@@ -45,7 +45,32 @@ namespace CatEngine
         {"SpriteRenderer", ScriptFieldType::SpriteRenderer},
         {"Layer", ScriptFieldType::None},
         {"Tag", ScriptFieldType::None},
+	};
 
+    static std::string ScriptFieldTypeToString(const ScriptFieldType& type)
+	{
+        switch (type)
+        {
+            case ScriptFieldType::Float: return "Float";
+            case ScriptFieldType::Double: return "Double";
+            case ScriptFieldType::Char: return "Char";
+            case ScriptFieldType::Int16: return "Int16";
+            case ScriptFieldType::Int32: return "Int32";
+            case ScriptFieldType::Int64: return "Int64";
+            case ScriptFieldType::Boolean: return "Boolean";
+            case ScriptFieldType::UInt16: return "UInt16";
+            case ScriptFieldType::UInt32: return "UInt32";
+            case ScriptFieldType::UInt64: return "UInt64";
+            case ScriptFieldType::String: return "String";
+            case ScriptFieldType::Vector2: return "Vector2";
+            case ScriptFieldType::Vector3: return "Vector3";
+            case ScriptFieldType::Vector4: return "Vector4";
+            case ScriptFieldType::Texture2D: return "Texture2D";
+            case ScriptFieldType::TransformComponent: return "Transform";
+            case ScriptFieldType::Rigidbody2DComponent: return "Rigidbody2D";
+            case ScriptFieldType::SpriteRenderer: return "SpriteRenderer";
+            default: return "null";
+        }
 	};
 
     static ScriptFieldType CapyTypeStringToScriptFieldType(const std::string& capyTypeStr)
@@ -58,44 +83,6 @@ namespace CatEngine
         CE_API_ERROR("Not supported type {}", capyTypeStr);
         return ScriptFieldType::None;
     }
-
-    struct ScriptField
-	{
-		ScriptFieldType Type;
-		std::string Name;
-        mutable std::string ComponentName;
-	};
-
-	struct ScriptFieldInstance
-	{
-		ScriptField Field;
-		
-		ScriptFieldInstance()
-		{
-			memset(m_Data, 0, sizeof(m_Data));
-		}
-
-		template<typename T>
-		T GetValue()
-		{
-			static_assert(sizeof(T) <= 128, "Type to large!");
-		    return *(T*)m_Data;
-        }
-
-		template<typename T>
-		void SetValue(T value)
-		{
-			static_assert(sizeof(T) <= 128, "Type to large!");
-			memcpy(m_Data, &value, sizeof(T));
-		}
-
-	private:
-
-		char m_Data[128];
-
-		friend class ScriptEngine;
-		friend class ScriptInstance;
-	};
 
     static size_t TypeToSize(const ScriptFieldType& type)
     {
@@ -116,9 +103,129 @@ namespace CatEngine
             case ScriptFieldType::Vector2: return sizeof(glm::vec2);
             case ScriptFieldType::Vector3: return sizeof(glm::vec3);
             case ScriptFieldType::Vector4: return sizeof(glm::vec4);
-            case ScriptFieldType::TransformComponent: return sizeof(TransformComponent);
-            case ScriptFieldType::Rigidbody2DComponent: return sizeof(Rigidbody2DComponent);
+            case ScriptFieldType::Texture2D: return sizeof(UUID);
+            case ScriptFieldType::TransformComponent: return sizeof(UUID);
+            case ScriptFieldType::Rigidbody2DComponent: return sizeof(UUID);
+            case ScriptFieldType::SpriteRenderer: return sizeof(UUID);
             default : return 0;
         }
     }
+    
+    struct ScriptField
+	{
+		std::string Name;
+		ScriptFieldType Type;
+        mutable std::string ComponentName;
+        mutable UUID ID;
+	};
+
+	struct ScriptFieldInstance
+	{
+        std::string Name;
+		ScriptField Field;
+		
+		ScriptFieldInstance()
+		{
+			memset(m_Data, 0, sizeof(m_Data));
+		}
+
+		template<typename T>
+		T GetValue()
+		{
+			static_assert(sizeof(T) <= 128, "Type to large!");
+		    return *(T*)m_Data;
+        }
+
+		template<typename T>
+		void SetValue(T value)
+		{
+			static_assert(sizeof(T) <= 128, "Type to large!");
+			memcpy(m_Data, &value, TypeToSize(Field.Type));
+		}
+
+	private:
+
+		char m_Data[128];
+
+		friend class ScriptEngine;
+		friend class ScriptInstance;
+	};
+
+    struct ScriptFieldSerializedValue
+    {
+        std::string FieldName;
+        ScriptFieldType FieldType;
+
+        union
+        {
+            float       f;
+            double      d;
+            char        c;
+            bool        b;
+            int8_t      i8;
+            int16_t     i16;
+            int32_t     i32;
+            int64_t     i64;
+            uint8_t     ui8;
+            uint16_t    ui16;
+            uint32_t    ui32;
+            uint64_t    ui64;
+        };
+
+        std::string s;
+        glm::vec2 v2;
+        glm::vec3 v3;
+        glm::vec4 v4;
+
+        UUID id;
+
+        template<typename T>
+        void SetValue(const T& val)
+        {
+        }
+
+        template<float> void SetValue(const float& val)          { f = val; }
+        template<double> void SetValue(const double& val)         { d = val; }
+        template<char> void SetValue(const char& val)           { c = val; }
+        template<bool> void SetValue(const bool& val)           { b = val; }
+        template<int8_t> void SetValue(const int8_t& val)         { i8 = val; }
+        template<int16_t> void SetValue(const int16_t& val)        { i16 = val; }
+        template<int32_t> void SetValue(const int32_t& val)        { i32 = val; }
+        template<int64_t> void SetValue(const int64_t& val)        { i64 = val; }
+        template<uint8_t> void SetValue(const uint8_t& val)        { ui8 = val; }
+        template<uint16_t> void SetValue(const uint16_t& val)       { ui16 = val; }
+        template<uint32_t> void SetValue(const uint32_t& val)       { ui32 = val; }
+        template<glm::vec2> void SetValue(const glm::vec2& val)      { v2 = val; }
+        template<glm::vec3> void SetValue(const glm::vec3& val)      { v3 = val; }
+        template<glm::vec4> void SetValue(const glm::vec4& val)      { v4 = val; }
+
+        // THIS IS USED IN PLACE OF UUID, TEMPLATES DON'T LIKE IT FOR SOME REASON
+        // TODO: FIX THIS
+        template<uint64_t> void SetValue(const uint64_t& val)           { id = val; }
+
+        ScriptFieldSerializedValue() = default;
+        ScriptFieldSerializedValue(const std::string& name, const ScriptFieldType& type, const float& val) :         FieldName(name), FieldType(type), f(val) {}
+        ScriptFieldSerializedValue(const std::string& name, const ScriptFieldType& type, const double& val) :        FieldName(name), FieldType(type), d(val) {}
+        ScriptFieldSerializedValue(const std::string& name, const ScriptFieldType& type, const char& val) :          FieldName(name), FieldType(type), c(val) {}
+        ScriptFieldSerializedValue(const std::string& name, const ScriptFieldType& type, const bool& val) :          FieldName(name), FieldType(type), b(val) {}
+        ScriptFieldSerializedValue(const std::string& name, const ScriptFieldType& type, const int8_t& val) :        FieldName(name), FieldType(type), i8(val) {}
+        ScriptFieldSerializedValue(const std::string& name, const ScriptFieldType& type, const int16_t& val) :       FieldName(name), FieldType(type), i16(val) {}
+        ScriptFieldSerializedValue(const std::string& name, const ScriptFieldType& type, const int32_t& val) :       FieldName(name), FieldType(type), i32(val) {}
+        ScriptFieldSerializedValue(const std::string& name, const ScriptFieldType& type, const int64_t& val) :       FieldName(name), FieldType(type), i64(val) {}
+        ScriptFieldSerializedValue(const std::string& name, const ScriptFieldType& type, const uint8_t& val) :       FieldName(name), FieldType(type), ui8(val) {}
+        ScriptFieldSerializedValue(const std::string& name, const ScriptFieldType& type, const uint16_t& val) :      FieldName(name), FieldType(type), ui16(val) {}
+        ScriptFieldSerializedValue(const std::string& name, const ScriptFieldType& type, const uint32_t& val) :      FieldName(name), FieldType(type), ui32(val) {}
+        ScriptFieldSerializedValue(const std::string& name, const ScriptFieldType& type, const uint64_t& val) :      FieldName(name), FieldType(type), ui64(val) {}
+        ScriptFieldSerializedValue(const std::string& name, const ScriptFieldType& type, const std::string& val) :   FieldName(name), FieldType(type), s(val) {}
+        ScriptFieldSerializedValue(const std::string& name, const ScriptFieldType& type, const glm::vec2& val) :     FieldName(name), FieldType(type), v2(val) {}
+        ScriptFieldSerializedValue(const std::string& name, const ScriptFieldType& type, const glm::vec3& val) :     FieldName(name), FieldType(type), v3(val) {}
+        ScriptFieldSerializedValue(const std::string& name, const ScriptFieldType& type, const glm::vec4& val) :     FieldName(name), FieldType(type), v4(val) {}
+        ScriptFieldSerializedValue(const std::string& name, const ScriptFieldType& type, const UUID& val) :          FieldName(name), FieldType(type), id(val) {}
+    };
+
+    struct ScriptFieldMetaData
+    {
+        ScriptFieldSerializedValue FieldStorage;
+    };
+
 }
