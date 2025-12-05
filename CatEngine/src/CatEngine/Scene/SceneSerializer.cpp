@@ -10,6 +10,8 @@
 
 #include "CatEngine/Core/Formatter.h"
 
+#include "CatEngine/Scripting/ScriptEngine.h"
+
 
 namespace CatEngine
 {
@@ -178,9 +180,10 @@ namespace CatEngine
             out << YAML::Key << "ScriptID" << YAML::Value << sc.ScriptID;
 			out << YAML::Key << "ClassName" << YAML::Value << sc.ClassName;
             out << YAML::Key << "Fields" << YAML::Value;
-            out << YAML::BeginMap; // Edited fields
+            out << YAML::BeginSeq; // Edited fields
             for (auto& [uuid, field] : sc.ScriptFields)
             {
+                out << YAML::BeginMap; // Field
                 out << YAML::Key << "FieldID" << YAML::Value << uuid;
                 out << YAML::Key << "FieldType" << YAML::Value << ScriptFieldTypeToString(field.FieldType);
                 out << YAML::Key << "Value";
@@ -204,8 +207,9 @@ namespace CatEngine
                     case ScriptFieldType::Rigidbody2DComponent:
                     case ScriptFieldType::SpriteRenderer: out << YAML::Value << field.id.uuid(); break;
                 }
+                out << YAML::EndMap; // Field
             }
-            out << YAML::EndMap; // Editied fields
+            out << YAML::EndSeq; // Editied fields
 			out << YAML::EndMap; // ScriptComponent
 
 		}
@@ -373,10 +377,44 @@ namespace CatEngine
 				auto scriptComponent = entity["ScriptComponent"];
 				if (scriptComponent)
 				{
-					auto& sc = deserializedEntity.AddComponent<ScriptComponent>();
+                    auto scriptEngine = ScriptEngine::GetMutable();
 
-					sc.ClassName = scriptComponent["ClassName"].as<std::string>();
+                    auto& sc = deserializedEntity.AddComponent<ScriptComponent>();
+                    sc.ScriptID = scriptComponent["ScriptID"].as<uint64_t>(0);
+                    sc.ClassName = scriptComponent["ClassName"].as<std::string>();
 
+
+                    auto fields = scriptComponent["Fields"];
+                    for (auto field : fields)
+                    {
+                        ScriptFieldInstance sfi;
+                        sfi.Field.ID = field["FieldID"].as<UUID>();
+                        sfi.Field.Type = StringToScriptFieldType(field["FieldType"].as<std::string>());
+
+                        switch (sfi.Field.Type)
+                        {
+                            case ScriptFieldType::Float: sfi.SetValue(field["Value"].as<float>()); break;
+                            case ScriptFieldType::Double: sfi.SetValue(field["Value"].as<double>()); break;
+                            case ScriptFieldType::Char: sfi.SetValue(field["Value"].as<char>()); break;
+                            case ScriptFieldType::Boolean: sfi.SetValue(field["Value"].as<bool>()); break;
+                            case ScriptFieldType::Int16: sfi.SetValue(field["Value"].as<int16_t>()); break;
+                            case ScriptFieldType::Int32: sfi.SetValue(field["Value"].as<int32_t>()); break;
+                            case ScriptFieldType::Int64: sfi.SetValue(field["Value"].as<int64_t>()); break;
+                            case ScriptFieldType::UInt16: sfi.SetValue(field["Value"].as<uint16_t>()); break;
+                            case ScriptFieldType::UInt32: sfi.SetValue(field["Value"].as<uint32_t>()); break;
+                            case ScriptFieldType::UInt64: sfi.SetValue(field["Value"].as<uint64_t>()); break;
+                            case ScriptFieldType::Vector2: sfi.SetValue(field["Value"].as<glm::vec2>()); break;
+                            case ScriptFieldType::Vector3: sfi.SetValue(field["Value"].as<glm::vec3>()); break;
+                            case ScriptFieldType::Vector4: sfi.SetValue(field["Value"].as<glm::vec4>()); break;
+                            case ScriptFieldType::Texture2D:
+                            case ScriptFieldType::TransformComponent:
+                            case ScriptFieldType::Rigidbody2DComponent:
+                            case ScriptFieldType::SpriteRenderer: sfi.SetValue(field["Value"].as<UUID>()); break;
+                            default: sfi.SetValue(0); break;
+                        }
+
+                    }
+            
 				}
 			}
 		}

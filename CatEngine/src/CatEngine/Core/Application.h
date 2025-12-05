@@ -72,7 +72,10 @@ namespace CatEngine
         static inline Application* s_Instance = nullptr;
 
         std::filesystem::path m_CatEngineFilesPath;
+    private:
+        friend class ScriptEngine;
     };
 
     Application* CreateApplication(const ApplicationCommandLineArgs& args);
+
 }

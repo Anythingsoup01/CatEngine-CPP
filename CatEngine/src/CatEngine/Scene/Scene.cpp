@@ -207,7 +207,7 @@ namespace CatEngine
 				for (auto e : view)
 				{
 					Entity entity = { e, this };
-					ScriptEngine::OnUpdateEntity(entity, time.deltaTime());
+					ScriptEngine::GetMutable().OnUpdateEntity(entity, time.deltaTime());
 				}
 			}
 			// Physics 2D
@@ -283,7 +283,7 @@ namespace CatEngine
         if (!m_IsRunning)
             return;
         m_IsRunning = false;
-        ScriptEngine::OnRuntimeStop();
+        ScriptEngine::GetMutable().OnRuntimeStop();
 
         // Destroy physics world safely
         if (m_PhysicsWorld)
@@ -305,7 +305,7 @@ namespace CatEngine
 	{
 		m_IsRunning = false;
         OnPhysics2DStop();
-        ScriptEngine::OnRuntimeStop();
+        ScriptEngine::GetMutable().OnRuntimeStop();
 	}
 
 	void Scene::OnSimulationStart()
@@ -471,7 +471,7 @@ namespace CatEngine
         for (auto& e : view)
         {
             Entity entity = { e, this };
-			ScriptEngine::OnStartEntity(entity);
+			ScriptEngine::GetMutable().OnStartEntity(entity);
         }
     }
 
@@ -612,7 +612,7 @@ namespace CatEngine
     template<>
     void Scene::OnComponentAdded<ScriptComponent>(Entity entity, ScriptComponent& component)
     {
-
+        component.ScriptID = UUID();
     }
     template<>
     void Scene::OnComponentAdded<IDComponent>(Entity entity, IDComponent& component)

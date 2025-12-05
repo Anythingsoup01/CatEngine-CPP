@@ -73,7 +73,6 @@ namespace CatEngine
         for (auto& type : customTypes)
             capy_add_type_setter(type, InternalComponentDataSet);
 
-
 	}
 
 	void ScriptEngine::Shutdown()
@@ -86,7 +85,7 @@ namespace CatEngine
         capy_shutdown();
 	}
 
-	static void OnSourceFileSystemEvent(const std::string& path, const filewatch::Event change_type)
+	void OnSourceFileSystemEvent(const std::string& path, const filewatch::Event change_type)
 	{
 		
 		if (change_type == filewatch::Event::modified)
@@ -97,6 +96,7 @@ namespace CatEngine
 
 			if (isRunning)
 			{
+                auto& instance = ScriptEngine::GetMutable();
 				if (!s_ScriptData->SourceFileReloadPending)
 				{
 					s_ScriptData->SourceFileReloadPending = true;
@@ -104,7 +104,7 @@ namespace CatEngine
 					{
                         for (auto& fileWatcher : s_ScriptData->SourceFileWatchers)
                             fileWatcher.reset();
-						ScriptEngine::ReloadBinaries();
+						ScriptEngine::GetMutable().ReloadBinaries();
 					});
 				}
 				else if (s_ScriptData->SourceFileReloadPending)
@@ -114,7 +114,7 @@ namespace CatEngine
 					{
                         for (auto& fileWatcher : s_ScriptData->SourceFileWatchers)
                             fileWatcher.reset();
-						ScriptEngine::ReloadBinaries();
+						ScriptEngine::GetMutable().ReloadBinaries();
 					});
 				}
 
@@ -132,7 +132,7 @@ namespace CatEngine
                             fileWatcher.reset();
                         s_ReloadFileWatcher = true;
                         SourceFileCompiler::AddFile(path);
-						ScriptEngine::ReloadBinaries();
+                        ScriptEngine::GetMutable().ReloadBinaries();
 					});
 				}
 
@@ -339,12 +339,16 @@ namespace CatEngine
 
 	ScriptFieldMap& ScriptEngine::GetScriptFieldMap(Entity entity)
 	{
-	
         CE_API_ASSERT(entity, "Invalid Entity!");
-		
 		
         UUID entityID = entity.GetUUID();
         return s_ScriptData->EntityScriptFields[entityID];
 		
+	}
+    
+    ScriptEngine& ScriptEngine::GetMutable()
+	{
+		static ScriptEngine s_Instance;
+		return s_Instance;
 	}
 }

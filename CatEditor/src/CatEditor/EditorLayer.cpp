@@ -44,7 +44,7 @@ namespace CatEngine
         m_SceneHierarchyPanel.SetContext(m_EditorScene);
         m_SceneViewportPanel.SetContext(m_EditorScene);
         m_SceneCameraPanel.SetContext(m_EditorScene);
-        ScriptEngine::SetSceneContext(m_EditorScene);
+        ScriptEngine::GetMutable().SetSceneContext(m_EditorScene);
         m_CurrentScene = m_EditorScene;
 
         auto commandLineArgs = Application::Get().GetSpecification().CommandlineArgs;
@@ -632,7 +632,7 @@ namespace CatEngine
         m_SceneHierarchyPanel.SetContext(m_EditorScene);
         m_SceneViewportPanel.SetContext(m_EditorScene);
         m_SceneCameraPanel.SetContext(m_EditorScene);
-        ScriptEngine::SetSceneContext(m_EditorScene);
+        ScriptEngine::GetMutable().SetSceneContext(m_EditorScene);
 
         m_CurrentScene = m_EditorScene;
 
@@ -654,7 +654,7 @@ namespace CatEngine
         m_SceneHierarchyPanel.SetContext(m_EditorScene);
         m_SceneViewportPanel.SetContext(m_EditorScene);
         m_SceneCameraPanel.SetContext(m_EditorScene);
-        ScriptEngine::SetSceneContext(m_EditorScene);
+        ScriptEngine::GetMutable().SetSceneContext(m_EditorScene);
 
         m_CurrentScene = m_EditorScene;
     }
@@ -687,7 +687,7 @@ namespace CatEngine
             auto startScenePath = Project::GetConfig().StartScene;
             if (AssetManager::IsAssetHandleValid(startScenePath))
                 OpenScene(startScenePath);
-            ScriptEngine::InitializeFileSystems();
+            ScriptEngine::GetMutable().InitializeFileSystems();
             m_ContentBrowserPanel.ResetAssetDirectory();
             m_AssetBrowserPanel.ResetAssetDirectory();
         }
@@ -714,7 +714,7 @@ namespace CatEngine
         m_SceneHierarchyPanel.SetContext(m_RuntimeScene);
         m_SceneViewportPanel.SetContext(m_RuntimeScene);
         m_SceneCameraPanel.SetContext(m_RuntimeScene);
-        ScriptEngine::SetSceneContext(m_RuntimeScene);
+        ScriptEngine::GetMutable().SetSceneContext(m_RuntimeScene);
         m_RuntimeScene->OnRuntimeStart();
         m_CurrentScene = m_RuntimeScene;
 
@@ -747,7 +747,7 @@ namespace CatEngine
         m_SceneHierarchyPanel.SetContext(m_EditorScene);
         m_SceneViewportPanel.SetContext(m_EditorScene);
         m_SceneCameraPanel.SetContext(m_EditorScene);
-        ScriptEngine::SetSceneContext(m_EditorScene);
+        ScriptEngine::GetMutable().SetSceneContext(m_EditorScene);
         m_CurrentScene = m_EditorScene;
     }
 
@@ -763,7 +763,7 @@ namespace CatEngine
         m_SceneHierarchyPanel.SetContext(m_SimulationScene);
         m_SceneViewportPanel.SetContext(m_SimulationScene);
         m_SceneCameraPanel.SetContext(m_SimulationScene);
-        ScriptEngine::SetSceneContext(m_SimulationScene);
+        ScriptEngine::GetMutable().SetSceneContext(m_SimulationScene);
         m_SimulationScene->OnSimulationStart();
         m_CurrentScene = m_SimulationScene;
     }
@@ -781,7 +781,7 @@ namespace CatEngine
         m_SceneHierarchyPanel.SetContext(m_EditorScene);
         m_SceneViewportPanel.SetContext(m_EditorScene);
         m_SceneCameraPanel.SetContext(m_EditorScene);
-        ScriptEngine::SetSceneContext(m_EditorScene);
+        ScriptEngine::GetMutable().SetSceneContext(m_EditorScene);
         m_CurrentScene = m_EditorScene;
     }
 

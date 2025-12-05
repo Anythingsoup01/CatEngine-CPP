@@ -25,36 +25,37 @@ namespace CatEngine
     class ScriptEngine
     {
 	public:
-		static void Init();
-		static void Shutdown();
+	    void Init();
+		void Shutdown();
 
-        static void EmplaceFieldID(const std::string& name, const UUID& uuid);
+		bool LoadFileWatcher(const std::filesystem::path& filePath);
+        void InitializeFileSystems();
 
-		static bool LoadFileWatcher(const std::filesystem::path& filePath);
-        static void InitializeFileSystems();
+		void SetSceneContext(Ref<Scene> scene);
+		void OnRuntimeStop();
 
-		static void SetSceneContext(Ref<Scene> scene);
-		static void OnRuntimeStop();
+		void ReloadBinaries();
 
-		static void ReloadBinaries();
+		bool ScriptClassExists(const std::string& fullClassName);
+		void OnStartEntity(Entity e);
+		void OnUpdateEntity(Entity e, float ts);
 
-		static bool ScriptClassExists(const std::string& fullClassName);
-		static void OnStartEntity(Entity e);
-		static void OnUpdateEntity(Entity e, float ts);
+        void DispatchCollisionEvent(UUID entityA, UUID entityB, CollisionType type);
 
-        static void DispatchCollisionEvent(UUID entityA, UUID entityB, CollisionType type);
+		Ref<Scene> GetSceneContext();
+		Ref<ScriptInstance> GetEntityScriptInstance(UUID entityID);
 
-		static Ref<Scene> GetSceneContext();
-		static Ref<ScriptInstance> GetEntityScriptInstance(UUID entityID);
-
-
-		static void* GetManagedInstance(UUID uuid);
-
-		static std::unordered_map<std::string, Ref<ScriptClass>>& GetScriptClasses();
-		static Ref<ScriptClass> GetScriptClass(const std::string& name);
-		static ScriptFieldMap& GetScriptFieldMap(Entity entity);
+		std::unordered_map<std::string, Ref<ScriptClass>>& GetScriptClasses();
+		Ref<ScriptClass> GetScriptClass(const std::string& name);
+		ScriptFieldMap& GetScriptFieldMap(Entity entity);
+        static ScriptEngine& GetMutable();
+    private:
 
 	private:
-		friend class ScriptClass;
+        friend class ScriptGlue;
+        friend class Application;
+        friend class Scene;
+        friend class SceneSerializer;
+        friend class SceneHierarchyPanel;
 	};
 }

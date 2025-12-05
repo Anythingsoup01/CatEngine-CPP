@@ -8,7 +8,6 @@
 
 #include "Input.h"
 #include "TimeStep.h"
-#include <filesystem>
 
 extern bool g_ApplicationRunning;
 
@@ -31,7 +30,7 @@ namespace CatEngine
         m_Window.SetEventCallback(BIND_EVENT_FN(Application::OnEvent));
 
         Renderer::Init();
-        ScriptEngine::Init();
+        ScriptEngine::GetMutable().Init();
 
         m_ImGuiLayer = new ImGuiLayer();
         PushOverlay(m_ImGuiLayer);

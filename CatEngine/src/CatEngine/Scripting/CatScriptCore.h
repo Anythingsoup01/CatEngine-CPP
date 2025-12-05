@@ -71,7 +71,30 @@ namespace CatEngine
             case ScriptFieldType::SpriteRenderer: return "SpriteRenderer";
             default: return "null";
         }
-	};
+	}
+
+    static ScriptFieldType StringToScriptFieldType(const std::string& typeStr)
+	{
+            if (typeStr == "Float")             return ScriptFieldType::Float;
+            if (typeStr == "Double")            return ScriptFieldType::Double;
+            if (typeStr == "Char")              return ScriptFieldType::Char;
+            if (typeStr == "Boolean")           return ScriptFieldType::Boolean;
+            if (typeStr == "Int16")             return ScriptFieldType::Int16;
+            if (typeStr == "Int32")             return ScriptFieldType::Int32;
+            if (typeStr == "Int64")             return ScriptFieldType::Int64;
+            if (typeStr == "UInt16")            return ScriptFieldType::UInt16;
+            if (typeStr == "UInt32")            return ScriptFieldType::UInt32;
+            if (typeStr == "UInt64")            return ScriptFieldType::UInt64;
+            if (typeStr == "String")            return ScriptFieldType::String;
+            if (typeStr == "Vector2")           return ScriptFieldType::Vector2;
+            if (typeStr == "Vector3")           return ScriptFieldType::Vector3;
+            if (typeStr == "Vector4")           return ScriptFieldType::Vector4;
+            if (typeStr == "Texture2D")         return ScriptFieldType::Texture2D;
+            if (typeStr == "Transform")         return ScriptFieldType::TransformComponent;
+            if (typeStr == "Rigidbody2D")       return ScriptFieldType::Rigidbody2DComponent;
+            if (typeStr == "SpriteRenderer")    return ScriptFieldType::SpriteRenderer;
+            return ScriptFieldType::None;
+	}
 
     static ScriptFieldType CapyTypeStringToScriptFieldType(const std::string& capyTypeStr)
     {

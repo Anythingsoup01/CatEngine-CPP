@@ -468,7 +468,8 @@ namespace CatEngine
 		DrawComponent<ScriptComponent>("Script", selection, [selection, this](auto& component) mutable
         {
             auto& sc = component;
-			const auto& entityClasses = ScriptEngine::GetScriptClasses();
+            auto scriptEngine = ScriptEngine::GetMutable();
+			const auto& entityClasses = scriptEngine.GetScriptClasses();
 
             std::vector<const char*> classes = {""};
             for (auto& [className, scriptClass] : entityClasses)
@@ -498,11 +499,11 @@ namespace CatEngine
             sc.Loaded = true;
 
 
-			bool scriptClassExists = ScriptEngine::ScriptClassExists(sc.ClassName);
+			bool scriptClassExists = scriptEngine.ScriptClassExists(sc.ClassName);
 			bool sceneRunning = m_Context->IsRunning();
 			if (sceneRunning)
 			{
-				Ref<ScriptInstance> scriptInstance = ScriptEngine::GetEntityScriptInstance(selection.GetUUID());
+				Ref<ScriptInstance> scriptInstance = scriptEngine.GetEntityScriptInstance(selection.GetUUID());
 				if (scriptInstance)
 				{
 					const auto& fields = scriptInstance->GetScriptClass()->GetFields();
@@ -645,10 +646,10 @@ namespace CatEngine
 			{
                 if(scriptClassExists)
                 {
-					Ref<ScriptClass> scriptClass = ScriptEngine::GetScriptClass(component.ClassName);
+					Ref<ScriptClass> scriptClass = scriptEngine.GetScriptClass(component.ClassName);
 					const auto& fields = scriptClass->GetFields();
 
-					auto& scriptFields = ScriptEngine::GetScriptFieldMap(selection);
+					auto& scriptFields = scriptEngine.GetScriptFieldMap(selection);
 
 					for (const auto& [name, field] : fields)
 					{
