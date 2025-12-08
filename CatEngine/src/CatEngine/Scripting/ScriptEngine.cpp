@@ -20,7 +20,34 @@
 #include "CatEngine/Project/Project.h"
 #include "CatEngine/Scripting/ScriptGlue.h"
 
+
+#include "ScriptInstance.h"
+
 static bool s_ReloadFileWatcher = false;
+
+uint64_t PortableHash(const std::string& str)
+{
+    uint64_t h = 0x123456789abcdef0ULL;  // custom seed
+    for (unsigned char c : str)
+    {
+        h += c;                          // additive component
+        h ^= (h << 7) | (h >> 57);       // xor + rotate
+        h *= 0x165667919E3779F9ULL;      // mixing constant
+    }
+
+    // Final avalanche (makes small differences large)
+    h ^= h >> 33;
+    h *= 0xff51afd7ed558ccdULL;
+    h ^= h >> 29;
+    h *= 0xc4ceb9fe1a85ec53ULL;
+    h ^= h >> 32;
+
+    return h;
+}
+
+
+
+
 
 namespace CatEngine
 {
@@ -33,6 +60,8 @@ namespace CatEngine
 		std::unordered_map<UUID, Ref<ScriptInstance>> EntityInstances;
 
 		std::unordered_map<UUID, ScriptFieldMap> EntityScriptFields;
+        std::unordered_map<std::string, UUID> StoredFieldIDs;
+
 
         std::vector<Scope<filewatch::FileWatch<std::string>>> SourceFileWatchers;
         Scope<filewatch::FileWatch<std::string>> CompiledScriptsFileWatcher;
@@ -43,11 +72,10 @@ namespace CatEngine
         bool BinaryReloadPending = false;
 
 		Ref<Scene> SceneContext = nullptr;
-
+        
 	};
 
 	static ScriptEngineData* s_ScriptData = nullptr;   
-
     static void InternalComponentDataSet(void* ptr, void* value)
     {
         uint64_t* idPtr = reinterpret_cast<uint64_t*>(ptr);
@@ -224,7 +252,8 @@ namespace CatEngine
                     CapyClass* klassPtr = klass.get();
                     for (auto& [name, field] : klassPtr->VTable->Fields)
                     {
-                        scriptClass->m_Fields[name] = ScriptField{name, CapyTypeStringToScriptFieldType(field->FieldTypeString)};
+                        UUID fieldID(ScriptEngine::GetMutable().GetUUIDFromStringHash(klass->NameSpace, klass->ClassName, name));
+                        scriptClass->m_Fields[fieldID] = ScriptField{name, CapyTypeStringToScriptFieldType(field->FieldTypeString)};
                     }
 
                 }
@@ -260,9 +289,9 @@ namespace CatEngine
 			{
 				const ScriptFieldMap& scriptFieldMap = s_ScriptData->EntityScriptFields.at(entityID);
 
-				for (const auto& [name, fieldInstance] : scriptFieldMap)
+				for (const auto& [uuid, fieldInstance] : scriptFieldMap)
 				{
-					instance->SetFieldDataInternal(name, (void*)fieldInstance.m_Data);
+					instance->SetFieldDataInternal(fieldInstance.Name, (void*)fieldInstance.m_Data.Data);
 				}
 			}
 
@@ -288,6 +317,7 @@ namespace CatEngine
 
     void ScriptEngine::DispatchCollisionEvent(UUID uuidA, UUID uuidB, CollisionType type)
     {
+      Fields:
         Ref<ScriptInstance> scriptA, scriptB;
         if (s_ScriptData->EntityInstances.find(uuidA) != s_ScriptData->EntityInstances.end())
             scriptA = s_ScriptData->EntityInstances[uuidA];
@@ -323,6 +353,15 @@ namespace CatEngine
 
 		return it->second;
 	}
+
+    const ScriptFieldMap& ScriptEngine::GetInitializedFields(const UUID& entityID) const
+    {
+        static ScriptFieldMap s_EmptyFieldMap = {};
+        if (!s_ScriptData->EntityScriptFields.contains(entityID))
+            return s_EmptyFieldMap;
+
+        return s_ScriptData->EntityScriptFields.at(entityID);
+    }
     
 	std::unordered_map<std::string, Ref<ScriptClass>>& ScriptEngine::GetScriptClasses()
 	{
@@ -340,11 +379,27 @@ namespace CatEngine
 	ScriptFieldMap& ScriptEngine::GetScriptFieldMap(Entity entity)
 	{
         CE_API_ASSERT(entity, "Invalid Entity!");
-		
-        UUID entityID = entity.GetUUID();
-        return s_ScriptData->EntityScriptFields[entityID];
-		
+        return GetScriptFieldMap(entity.GetUUID());
+    }
+
+    ScriptFieldMap& ScriptEngine::GetScriptFieldMap(UUID uuid)
+	{
+        CE_API_ASSERT(uuid, "Invalid Entity!");
+        return s_ScriptData->EntityScriptFields[uuid];
 	}
+
+
+    UUID ScriptEngine::GetUUIDFromStringHash(const std::string& nameSpace, const std::string& className, const std::string& fieldName)
+    {
+        std::string combined = nameSpace + "::" + className + "::" + fieldName;
+
+        if (s_ScriptData->StoredFieldIDs.contains(combined))
+            return s_ScriptData->StoredFieldIDs[combined];
+
+        UUID newID(PortableHash(combined));
+        s_ScriptData->StoredFieldIDs[combined] = newID;
+        return newID;
+    }
     
     ScriptEngine& ScriptEngine::GetMutable()
 	{

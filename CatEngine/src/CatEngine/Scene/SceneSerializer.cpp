@@ -175,37 +175,41 @@ namespace CatEngine
 		if (entity.HasComponent<ScriptComponent>())
 		{
 			auto& sc = entity.GetComponent<ScriptComponent>();
+            auto& scriptEngine = ScriptEngine::GetMutable();
 			out << YAML::Key << "ScriptComponent" << YAML::Value;
 			out << YAML::BeginMap; // ScriptComponent
             out << YAML::Key << "ScriptID" << YAML::Value << sc.ScriptID;
 			out << YAML::Key << "ClassName" << YAML::Value << sc.ClassName;
             out << YAML::Key << "Fields" << YAML::Value;
             out << YAML::BeginSeq; // Edited fields
-            for (auto& [uuid, field] : sc.ScriptFields)
+            const ScriptFieldMap& fieldMap = scriptEngine.GetInitializedFields(entity.GetUUID());
+            for (auto& [uuid, field] : fieldMap)
             {
                 out << YAML::BeginMap; // Field
                 out << YAML::Key << "FieldID" << YAML::Value << uuid;
-                out << YAML::Key << "FieldType" << YAML::Value << ScriptFieldTypeToString(field.FieldType);
+                out << YAML::Key << "FieldName" << YAML::Value << field.Field.Name;
+                out << YAML::Key << "FieldType" << YAML::Value << ScriptFieldTypeToString(field.Field.Type);
                 out << YAML::Key << "Value";
-                switch (field.FieldType)
+
+                switch (field.Field.Type)
                 {
-                    case ScriptFieldType::Float: out << YAML::Value << field.f; break;
-                    case ScriptFieldType::Double: out << YAML::Value << field.d; break;
-                    case ScriptFieldType::Char: out << YAML::Value << field.c; break;
-                    case ScriptFieldType::Boolean: out << YAML::Value << field.b; break;
-                    case ScriptFieldType::Int16: out << YAML::Value << field.i16; break;
-                    case ScriptFieldType::Int32: out << YAML::Value << field.i32; break;
-                    case ScriptFieldType::Int64: out << YAML::Value << field.i64; break;
-                    case ScriptFieldType::UInt16: out << YAML::Value << field.ui16; break;
-                    case ScriptFieldType::UInt32: out << YAML::Value << field.ui32; break;
-                    case ScriptFieldType::UInt64: out << YAML::Value << field.ui64; break;
-                    case ScriptFieldType::Vector2: out << YAML::Value << field.v2; break;
-                    case ScriptFieldType::Vector3: out << YAML::Value << field.v3; break;
-                    case ScriptFieldType::Vector4: out << YAML::Value << field.v4; break;
+                    case ScriptFieldType::Float: out << YAML::Value << field.GetValue<float>(); break;
+                    case ScriptFieldType::Double: out << YAML::Value << field.GetValue<double>(); break;
+                    case ScriptFieldType::Char: out << YAML::Value << field.GetValue<char>(); break;
+                    case ScriptFieldType::Boolean: out << YAML::Value << field.GetValue<bool>(); break;
+                    case ScriptFieldType::Int16: out << YAML::Value << field.GetValue<int16_t>(); break;
+                    case ScriptFieldType::Int32: out << YAML::Value << field.GetValue<int32_t>(); break;
+                    case ScriptFieldType::Int64: out << YAML::Value << field.GetValue<int64_t>(); break;
+                    case ScriptFieldType::UInt16: out << YAML::Value << field.GetValue<uint16_t>(); break;
+                    case ScriptFieldType::UInt32: out << YAML::Value << field.GetValue<uint32_t>(); break;
+                    case ScriptFieldType::UInt64: out << YAML::Value << field.GetValue<uint64_t>(); break;
+                    case ScriptFieldType::Vector2: out << YAML::Value << field.GetValue<glm::vec2>(); break;
+                    case ScriptFieldType::Vector3: out << YAML::Value << field.GetValue<glm::vec3>(); break;
+                    case ScriptFieldType::Vector4: out << YAML::Value << field.GetValue<glm::vec4>(); break;
                     case ScriptFieldType::Texture2D:
                     case ScriptFieldType::TransformComponent:
                     case ScriptFieldType::Rigidbody2DComponent:
-                    case ScriptFieldType::SpriteRenderer: out << YAML::Value << field.id.uuid(); break;
+                    case ScriptFieldType::SpriteRenderer: out << YAML::Value << field.GetValue<uint64_t>(); break;
                 }
                 out << YAML::EndMap; // Field
             }
@@ -387,8 +391,9 @@ namespace CatEngine
                     auto fields = scriptComponent["Fields"];
                     for (auto field : fields)
                     {
-                        ScriptFieldInstance sfi;
-                        sfi.Field.ID = field["FieldID"].as<UUID>();
+                        UUID fieldID = field["FieldID"].as<UUID>();
+                        ScriptFieldInstance& sfi = scriptEngine.GetScriptFieldMap(uuid)[fieldID];
+                        sfi.Field.Name = field["FieldName"].as<std::string>();
                         sfi.Field.Type = StringToScriptFieldType(field["FieldType"].as<std::string>());
 
                         switch (sfi.Field.Type)

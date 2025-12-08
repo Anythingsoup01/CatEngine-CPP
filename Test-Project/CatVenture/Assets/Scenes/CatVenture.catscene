@@ -57,6 +57,22 @@ Entities:
       ScriptID: 3085271625825228553
       ClassName: PlayerController
       Fields:
+        - FieldID: 15335079374494116212
+          FieldName: m_CatTexture
+          FieldType: Texture2D
+          Value: 93802142023680
+        - FieldID: 12318362385453556626
+          FieldName: ""
+          FieldType: Float
+          Value: 161
+        - FieldID: 17821153791899655493
+          FieldName: ""
+          FieldType: Float
+          Value: -222
+        - FieldID: 1292117389861721635
+          FieldName: ""
+          FieldType: Float
+          Value: 141
   - Entity: 14096084207158609928
     TagComponent:
       Tag: None

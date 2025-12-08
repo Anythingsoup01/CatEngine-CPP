@@ -5,12 +5,11 @@
 
 #include "SourceFileCompiler.h"
 
-#include "ScriptClass.h"
 #include "ScriptInstance.h"
+#include "ScriptClass.h"
 
 namespace CatEngine
 {
-
     enum class CollisionType
     {
         None = 0,
@@ -20,7 +19,7 @@ namespace CatEngine
     class Scene;
     class Entity;
 
-    using ScriptFieldMap = std::unordered_map<std::string, ScriptFieldInstance>;
+    using ScriptFieldMap = std::unordered_map<UUID, ScriptFieldInstance>;
 
     class ScriptEngine
     {
@@ -45,9 +44,15 @@ namespace CatEngine
 		Ref<Scene> GetSceneContext();
 		Ref<ScriptInstance> GetEntityScriptInstance(UUID entityID);
 
+        const ScriptFieldMap& GetInitializedFields(const UUID& entityID) const;
+
 		std::unordered_map<std::string, Ref<ScriptClass>>& GetScriptClasses();
 		Ref<ScriptClass> GetScriptClass(const std::string& name);
 		ScriptFieldMap& GetScriptFieldMap(Entity entity);
+		ScriptFieldMap& GetScriptFieldMap(UUID entity);
+
+        UUID GetUUIDFromStringHash(const std::string& nameSpace, const std::string& className, const std::string& fieldName);
+
         static ScriptEngine& GetMutable();
     private:
 

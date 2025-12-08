@@ -12,7 +12,6 @@ namespace CatEngine
 	{
         UUID ScriptID;
 		std::string ClassName;
-        std::unordered_map<UUID, ScriptFieldSerializedValue> ScriptFields;
         int SelectedScript = 0;
         bool Loaded = false;
 

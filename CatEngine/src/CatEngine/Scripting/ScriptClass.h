@@ -17,9 +17,10 @@ namespace CatEngine
 
         void* InvokeMethod(CapyMethod* method, void* instance, const std::vector<RuntimeValue>& values);
 
-        const std::unordered_map<std::string, ScriptField>& GetFields() const { return m_Fields; }
-        std::unordered_map<std::string, ScriptField> m_Fields;
+        const std::unordered_map<UUID, ScriptField>& GetFields() const { return m_Fields; }
+        std::unordered_map<UUID, ScriptField> m_Fields;
 
+        void GetNames(std::string& nameSpace, std::string& className) { nameSpace = m_CapyClass->NameSpace; className = m_CapyClass->ClassName; }
     private:
         std::filesystem::path m_Path;
         CapyClass* m_CapyClass;

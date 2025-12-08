@@ -509,137 +509,136 @@ namespace CatEngine
 					const auto& fields = scriptInstance->GetScriptClass()->GetFields();
 
 
-					for (const auto& [name, field] : fields)
-					{
-                        CE_API_WARN((int)field.Type);
-						switch (field.Type)
-						{
-						case ScriptFieldType::Float:
-						{
-                            float data = scriptInstance->GetFieldData<float>(name);
-							if (ImGuiDraw::Vec1(name, data))
-								scriptInstance->SetFieldData(name, data);
-							break;
-						}
-						case ScriptFieldType::Double:
-						{
-                            double data = scriptInstance->GetFieldData<double>(name);
-							if (ImGuiDraw::Vec1(name, (float&)data))
-								scriptInstance->SetFieldData(name, data);
-							break;
-						}
-						case ScriptFieldType::SByte:
-						{
-							break;
-						}
-						case ScriptFieldType::Char:
-							break;
-						case ScriptFieldType::Int16:
-						{
-                            int16_t data = scriptInstance->GetFieldData<int16_t>(name);
-							if (ImGuiDraw::Int1(name, (int&)data))
-								scriptInstance->SetFieldData(name, data);
-							break;
-						}
-						case ScriptFieldType::Int32:
-						{
-                            int32_t data = scriptInstance->GetFieldData<int32_t>(name);
-							if (ImGuiDraw::Int1(name, data))
-								scriptInstance->SetFieldData(name, data);
-							break;
-						}
-						case ScriptFieldType::Int64:
-						{
-                            int64_t data = scriptInstance->GetFieldData<int64_t>(name);
-							if (ImGuiDraw::Int1(name, (int&)data))
-								scriptInstance->SetFieldData(name, data);
-							break;
-						}
-						case ScriptFieldType::Boolean:
-						{
-                            bool data = scriptInstance->GetFieldData<bool>(name);
-							if (ImGuiDraw::CheckBox(name, data))
-								scriptInstance->SetFieldData(name, data);
-							break;
-						}
-						case ScriptFieldType::UInt16:
-						{
-                            uint16_t data = scriptInstance->GetFieldData<uint16_t>(name);
-							if (ImGuiDraw::Int1(name, (int&)data))
-								scriptInstance->SetFieldData(name, data);
-							break;
-						}
-						case ScriptFieldType::UInt32:
-						{
-                            uint32_t data = scriptInstance->GetFieldData<uint32_t>(name);
-							if (ImGuiDraw::Int1(name, (int&)data))
-								scriptInstance->SetFieldData(name, data);
-							break;
-						}
-						case ScriptFieldType::UInt64:
-						{
-                            uint64_t data = scriptInstance->GetFieldData<uint64_t>(name);
-							if (ImGuiDraw::Int1(name, (int&)data))
-								scriptInstance->SetFieldData(name, &data);
-							break;
-						}
-						case ScriptFieldType::String:
-						{
-							break;
-						}
-						case ScriptFieldType::Vector2:
-						{
-                            glm::vec2 data = scriptInstance->GetFieldData<glm::vec2>(name);
-							if (ImGuiDraw::Vec2(name, data))
-								scriptInstance->SetFieldData(name, data);
-							break;
-						}
-						case ScriptFieldType::Vector3:
-						{
-                            glm::vec3 data = scriptInstance->GetFieldData<glm::vec3>(name);
-							if (ImGuiDraw::Vec3(name, data))
-								scriptInstance->SetFieldData(name, data);
-							break;
-						}
-						case ScriptFieldType::Vector4:
-						{
-                            glm::vec4 data = scriptInstance->GetFieldData<glm::vec4>(name);
-							if (ImGuiDraw::Vec4(name, data))
-								scriptInstance->SetFieldData(name, data);
-							break;
-						}
-                        case ScriptFieldType::Texture2D:
+					for (const auto& [uuid, field] : fields)
+                    {
+                        switch (field.Type)
                         {
-                            std::string labelName = field.ComponentName.empty() ? "(empty)" : field.ComponentName;
-                            labelName.append(" (Texture2D)");
-                            ImGuiDraw::DataField(name, labelName);
+                            case ScriptFieldType::Float:
+                            {
+                                float data = scriptInstance->GetFieldData<float>(field.Name);
+                                if (ImGuiDraw::Vec1(field.Name, data))
+                                    scriptInstance->SetFieldData(field.Name, data);
+                                break;
+                            }
+                            case ScriptFieldType::Double:
+                            {
+                                double data = scriptInstance->GetFieldData<double>(field.Name);
+                                if (ImGuiDraw::Vec1(field.Name, (float&)data))
+                                    scriptInstance->SetFieldData(field.Name, data);
+                                break;
+                            }
+                            case ScriptFieldType::SByte:
+                            {
+                                break;
+                            }
+                            case ScriptFieldType::Char:
                             break;
-                        }
-                        case ScriptFieldType::TransformComponent:
-                        {
-                            std::string labelName = field.ComponentName.empty() ? "(empty)" : field.ComponentName;
-                            labelName.append(" (TransformComponent)");
-                            ImGuiDraw::DataField(name, labelName);
-                            break;
+                            case ScriptFieldType::Int16:
+                            {
+                                int16_t data = scriptInstance->GetFieldData<int16_t>(field.Name);
+                                if (ImGuiDraw::Int1(field.Name, (int&)data))
+                                    scriptInstance->SetFieldData(field.Name, data);
+                                break;
+                            }
+                            case ScriptFieldType::Int32:
+                            {
+                                int32_t data = scriptInstance->GetFieldData<int32_t>(field.Name);
+                                if (ImGuiDraw::Int1(field.Name, data))
+                                    scriptInstance->SetFieldData(field.Name, data);
+                                break;
+                            }
+                            case ScriptFieldType::Int64:
+                            {
+                                int64_t data = scriptInstance->GetFieldData<int64_t>(field.Name);
+                                if (ImGuiDraw::Int1(field.Name, (int&)data))
+                                    scriptInstance->SetFieldData(field.Name, data);
+                                break;
+                            }
+                            case ScriptFieldType::Boolean:
+                            {
+                                bool data = scriptInstance->GetFieldData<bool>(field.Name);
+                                if (ImGuiDraw::CheckBox(field.Name, data))
+                                    scriptInstance->SetFieldData(field.Name, data);
+                                break;
+                            }
+                            case ScriptFieldType::UInt16:
+                            {
+                                uint16_t data = scriptInstance->GetFieldData<uint16_t>(field.Name);
+                                if (ImGuiDraw::Int1(field.Name, (int&)data))
+                                    scriptInstance->SetFieldData(field.Name, data);
+                                break;
+                            }
+                            case ScriptFieldType::UInt32:
+                            {
+                                uint32_t data = scriptInstance->GetFieldData<uint32_t>(field.Name);
+                                if (ImGuiDraw::Int1(field.Name, (int&)data))
+                                    scriptInstance->SetFieldData(field.Name, data);
+                                break;
+                            }
+                            case ScriptFieldType::UInt64:
+                            {
+                                uint64_t data = scriptInstance->GetFieldData<uint64_t>(field.Name);
+                                if (ImGuiDraw::Int1(field.Name, (int&)data))
+                                    scriptInstance->SetFieldData(field.Name, &data);
+                                break;
+                            }
+                            case ScriptFieldType::String:
+                            {
+                                break;
+                            }
+                            case ScriptFieldType::Vector2:
+                            {
+                                glm::vec2 data = scriptInstance->GetFieldData<glm::vec2>(field.Name);
+                                if (ImGuiDraw::Vec2(field.Name, data))
+                                    scriptInstance->SetFieldData(field.Name, data);
+                                break;
+                            }
+                            case ScriptFieldType::Vector3:
+                            {
+                                glm::vec3 data = scriptInstance->GetFieldData<glm::vec3>(field.Name);
+                                if (ImGuiDraw::Vec3(field.Name, data))
+                                    scriptInstance->SetFieldData(field.Name, data);
+                                break;
+                            }
+                            case ScriptFieldType::Vector4:
+                            {
+                                glm::vec4 data = scriptInstance->GetFieldData<glm::vec4>(field.Name);
+                                if (ImGuiDraw::Vec4(field.Name, data))
+                                    scriptInstance->SetFieldData(field.Name, data);
+                                break;
+                            }
+                            case ScriptFieldType::Texture2D:
+                            {
+                                std::string labelName = field.ComponentName.empty() ? "(empty)" : field.ComponentName;
+                                labelName.append(" (Texture2D)");
+                                ImGuiDraw::DataField(field.Name, labelName);
+                                break;
+                            }
+                            case ScriptFieldType::TransformComponent:
+                            {
+                                std::string labelName = field.ComponentName.empty() ? "(empty)" : field.ComponentName;
+                                labelName.append(" (TransformComponent)");
+                                ImGuiDraw::DataField(field.Name, labelName);
+                                break;
 
+                            }
+                            case ScriptFieldType::Rigidbody2DComponent:
+                            {
+                                std::string labelName = field.ComponentName.empty() ? "(empty)" : field.ComponentName;
+                                labelName.append(" (Rigidbody2DComponent)");
+                                ImGuiDraw::DataField(field.Name, labelName);
+                                break;
+                            }
+                            case ScriptFieldType::SpriteRenderer:
+                            {
+                                std::string labelName = field.ComponentName.empty() ? "(empty)" : field.ComponentName;
+                                labelName.append(" (SpriteRenderer)");
+                                ImGuiDraw::DataField(field.Name, labelName);
+                                break;
+                            }
                         }
-						case ScriptFieldType::Rigidbody2DComponent:
-                        {
-                            std::string labelName = field.ComponentName.empty() ? "(empty)" : field.ComponentName;
-                            labelName.append(" (Rigidbody2DComponent)");
-                            ImGuiDraw::DataField(name, labelName);
-                            break;
-						}
-                        case ScriptFieldType::SpriteRenderer:
-                        {
-                            std::string labelName = field.ComponentName.empty() ? "(empty)" : field.ComponentName;
-                            labelName.append(" (SpriteRenderer)");
-                            ImGuiDraw::DataField(name, labelName);
-                            break;
-						}
-					}
 
-				}
+                    }
                 }
             }
             else // Scene isn't running
@@ -651,9 +650,9 @@ namespace CatEngine
 
 					auto& scriptFields = scriptEngine.GetScriptFieldMap(selection);
 
-					for (const auto& [name, field] : fields)
+					for (const auto& [uuid, field] : fields)
 					{
-						if (scriptFields.find(name) != scriptFields.end())
+						if (scriptFields.find(uuid) != scriptFields.end())
 						{
 							// Display control to set it
 							
@@ -661,30 +660,24 @@ namespace CatEngine
 							{
                                 case ScriptFieldType::Float:
                                 {
-                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
+                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(uuid);
                                     float data = scriptFieldInstance.GetValue<float>();
 
-                                    if (ImGuiDraw::Vec1(name, data))
+                                    if (ImGuiDraw::Vec1(field.Name, data))
                                     {
                                         scriptFieldInstance.SetValue(data);
-                                        component.ScriptFields[field.ID].SetValue(data);
                                     }
                                     break;
                                 }
                                 case ScriptFieldType::Double:
                                 {
-                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
+                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(uuid);
                                     double data = scriptFieldInstance.GetValue<double>();
 
-                                    if (ImGuiDraw::Vec1(name, (float&)data))
+                                    if (ImGuiDraw::Vec1(field.Name, (float&)data))
                                     {
                                         scriptFieldInstance.SetValue(data);
-                                        component.ScriptFields[field.ID].SetValue(data);
                                     }
-                                    break;
-                                }
-                                case ScriptFieldType::SByte:
-                                {
                                     break;
                                 }
                                 case ScriptFieldType::Char:
@@ -693,78 +686,71 @@ namespace CatEngine
                                 }
                                 case ScriptFieldType::Int16:
                                 {
-                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
+                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(uuid);
                                     int16_t data = scriptFieldInstance.GetValue<int16_t>();
-                                    if (ImGuiDraw::Int1(name, (int&)data))
+                                    if (ImGuiDraw::Int1(field.Name, (int&)data))
                                     {
                                         scriptFieldInstance.SetValue(data);
-                                        component.ScriptFields[field.ID].SetValue(data);
                                     }
                                     break;
                                 }
                                 case ScriptFieldType::Int32:
                                 {
-                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
+                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(uuid);
                                     int32_t data = scriptFieldInstance.GetValue<int32_t>();
-                                    if (ImGuiDraw::Int1(name, (int&)data))
+                                    if (ImGuiDraw::Int1(field.Name, (int&)data))
                                     {
                                         scriptFieldInstance.SetValue(data);
-                                        component.ScriptFields[field.ID].SetValue(data);
                                     }
                                     break;
                                 }
                                 case ScriptFieldType::Int64:
                                 {
-                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
+                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(uuid);
                                     int64_t data = scriptFieldInstance.GetValue<int64_t>();
-                                    if (ImGuiDraw::Int1(name, (int&)data))
+                                    if (ImGuiDraw::Int1(field.Name, (int&)data))
                                     {
                                         scriptFieldInstance.SetValue(data);
-                                        component.ScriptFields[field.ID].SetValue(data);
                                     }
                                     break;
                                 }
                                 case ScriptFieldType::Boolean:
                                 {
-                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
+                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(uuid);
                                     bool data = scriptFieldInstance.GetValue<bool>();
-                                    if (ImGuiDraw::CheckBox(name, data))
+                                    if (ImGuiDraw::CheckBox(field.Name, data))
                                     {
                                         scriptFieldInstance.SetValue(&data);
-                                        component.ScriptFields[field.ID].SetValue(data);
                                     }
                                     break;
                                 }
                                 case ScriptFieldType::UInt16:
                                 {
-                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
+                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(uuid);
                                     uint16_t data = scriptFieldInstance.GetValue<uint16_t>();
-                                    if (ImGuiDraw::Int1(name, (int&)data))
+                                    if (ImGuiDraw::Int1(field.Name, (int&)data))
                                     {
                                         scriptFieldInstance.SetValue(data);
-                                        component.ScriptFields[field.ID].SetValue(data);
                                     }
                                     break;
                                 }
                                 case ScriptFieldType::UInt32:
                                 {
-                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
+                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(uuid);
                                     uint32_t data = scriptFieldInstance.GetValue<uint32_t>();
-                                    if (ImGuiDraw::Int1(name, (int&)data))
+                                    if (ImGuiDraw::Int1(field.Name, (int&)data))
                                     {
                                         scriptFieldInstance.SetValue(data);
-                                        component.ScriptFields[field.ID].SetValue(data);
                                     }
                                     break;
                                 }
                                 case ScriptFieldType::UInt64:
                                 {
-                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
+                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(uuid);
                                     uint64_t data = scriptFieldInstance.GetValue<uint64_t>();
-                                    if (ImGuiDraw::Int1(name, (int&)data))
+                                    if (ImGuiDraw::Int1(field.Name, (int&)data))
                                     {
                                         scriptFieldInstance.SetValue(data);
-                                        component.ScriptFields[field.ID].SetValue(data);
                                     }
                                     break;
                                 }
@@ -774,43 +760,40 @@ namespace CatEngine
                                 }
                                 case ScriptFieldType::Vector2:
                                 {
-                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
+                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(uuid);
                                     glm::vec2 data = scriptFieldInstance.GetValue<glm::vec2>();
-                                    if (ImGuiDraw::Vec2(name, data))
+                                    if (ImGuiDraw::Vec2(field.Name, data))
                                     {
                                         scriptFieldInstance.SetValue(data);
-                                        component.ScriptFields[field.ID].SetValue(data);
                                     }
                                     break;
                                 }
                                 case ScriptFieldType::Vector3:
                                 {
-                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
-                                    glm::vec3 data =scriptFieldInstance.GetValue<glm::vec3>();
-                                    if (ImGuiDraw::Vec3(name, data))
+                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(uuid);
+                                    glm::vec3 data = scriptFieldInstance.GetValue<glm::vec3>();
+                                    if (ImGuiDraw::Vec3(field.Name, data))
                                     {
                                         scriptFieldInstance.SetValue(data);
-                                        component.ScriptFields[field.ID].SetValue(data);
                                     }
                                     break;
                                 }
                                 case ScriptFieldType::Vector4:
                                 {
-                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
+                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(uuid);
                                     glm::vec4 data = scriptFieldInstance.GetValue<glm::vec4>();
-                                    if (ImGuiDraw::Vec4(name, data))
+                                    if (ImGuiDraw::Vec4(field.Name, data))
                                     {
                                         scriptFieldInstance.SetValue(data);
-                                        component.ScriptFields[field.ID].SetValue(data);
                                     }
                                     break;
                                 }
                                 case ScriptFieldType::Texture2D:
                                 {
-                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
+                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(uuid);
                                     std::string label = field.ComponentName;
                                     label.append(" (Texture2D)");
-                                    ImGuiDraw::DataField(name, label);
+                                    ImGuiDraw::DataField(field.Name, label);
                                     if (ImGui::BeginDragDropTarget())
                                     {
                                         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSET_MANAGER_ITEM"))
@@ -823,7 +806,6 @@ namespace CatEngine
                                                 const auto& metaData = Project::GetActive()->GetEditorAssetManager()->GetMetaData(assetHandle);
                                                 field.ComponentName = metaData.AssetName;
                                                 scriptFieldInstance.SetValue(assetHandle);
-                                                component.ScriptFields[field.ID].SetValue(assetHandle.uuid());
                                             }
                                         }
                                     }
@@ -832,10 +814,10 @@ namespace CatEngine
 
                                 case ScriptFieldType::TransformComponent:
                                 {
-                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
+                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(uuid);
                                     std::string labelName = field.ComponentName;
                                     labelName.append(" (TransformComponent)");
-                                    ImGuiDraw::DataField(name, labelName);
+                                    ImGuiDraw::DataField(field.Name, labelName);
                                     if (ImGui::BeginDragDropTarget())
                                     {
                                         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SCENE_HIERARCHY_ITEM"))
@@ -848,7 +830,6 @@ namespace CatEngine
                                                 uint64_t id = entityID.uuid();
                                                 field.ComponentName = entity.GetName();
                                                 scriptFieldInstance.SetValue(id);
-                                                component.ScriptFields[field.ID].SetValue(id);
                                             }
                                         }
                                         ImGui::EndDragDropTarget();
@@ -858,10 +839,10 @@ namespace CatEngine
 
                                 case ScriptFieldType::Rigidbody2DComponent:
                                 {
-                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
+                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(uuid);
                                     std::string labelName = field.ComponentName;
                                     labelName.append(" (Rigidbody2DComponent)");
-                                    ImGuiDraw::DataField(name, labelName);
+                                    ImGuiDraw::DataField(field.Name, labelName);
                                     if (ImGui::BeginDragDropTarget())
                                     {
                                         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SCENE_HIERARCHY_ITEM"))
@@ -874,19 +855,19 @@ namespace CatEngine
                                                 uint64_t id = entityID.uuid();
                                                 field.ComponentName = entity.GetName();
                                                 scriptFieldInstance.SetValue(id);
-                                                component.ScriptFields[field.ID].SetValue(id);
                                             }
                                         }
                                         ImGui::EndDragDropTarget();
                                     }
                                     break;
                                 }
+
                                 case ScriptFieldType::SpriteRenderer:
                                 {
-                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(name);
+                                    ScriptFieldInstance& scriptFieldInstance = scriptFields.at(uuid);
                                     std::string labelName = field.ComponentName;
                                     labelName.append(" (SpriteRenderer)");
-                                    ImGuiDraw::DataField(name, labelName);
+                                    ImGuiDraw::DataField(field.Name, labelName);
                                     if (ImGui::BeginDragDropTarget())
                                     {
                                         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SCENE_HIERARCHY_ITEM"))
@@ -899,13 +880,11 @@ namespace CatEngine
                                                 uint64_t id = entityID.uuid();
                                                 field.ComponentName = entity.GetName();
                                                 scriptFieldInstance.SetValue(id);
-                                                component.ScriptFields[field.ID].SetValue(id);
                                             }
                                         }
                                         ImGui::EndDragDropTarget();
                                     }
                                     break;
-
                                 }
                             }
                         }
@@ -916,174 +895,164 @@ namespace CatEngine
                                 case ScriptFieldType::Float:
                                 {
                                     float data = 0;
-                                    if (ImGuiDraw::Vec1(name, data))
+                                    if (ImGuiDraw::Vec1(field.Name, data))
                                     {
-                                        ScriptFieldInstance& sfi = scriptFields[name];
-                                        field.ID = UUID();
+                                        ScriptFieldInstance& sfi = scriptFields[uuid];
                                         sfi.Field = field;
                                         sfi.SetValue(data);
-                                        component.ScriptFields[field.ID] = ScriptFieldSerializedValue(name, field.Type, data);
                                     }
                                     break;
                                 }
                                 case ScriptFieldType::Double:
                                 {
                                     double data = 0;
-                                    if (ImGuiDraw::Vec1(name, (float&)data))
+                                    if (ImGuiDraw::Vec1(field.Name, (float&)data))
                                     {
-                                        ScriptFieldInstance& sfi = scriptFields[name];
-                                        field.ID = UUID();
+                                        ScriptFieldInstance& sfi = scriptFields[uuid];
                                         sfi.Field = field;
                                         sfi.SetValue(data);
-                                        component.ScriptFields[field.ID] = ScriptFieldSerializedValue(name, field.Type, data);
                                     }
                                     break;
                                 }
+
                                 case ScriptFieldType::SByte:
                                 {
                                     break;
                                 }
+
                                 case ScriptFieldType::Char:
                                 {
                                     break;
                                 }
+
                                 case ScriptFieldType::Int16:
                                 {
                                     int16_t data = 0;
-                                    if (ImGuiDraw::Int1(name, (int&)data))
+                                    if (ImGuiDraw::Int1(field.Name, (int&)data))
                                     {
-                                        ScriptFieldInstance& sfi = scriptFields[name];
-                                        field.ID = UUID();
+                                        ScriptFieldInstance& sfi = scriptFields[uuid];
                                         sfi.Field = field;
                                         sfi.SetValue(data);
-                                        component.ScriptFields[field.ID] = ScriptFieldSerializedValue(name, field.Type, data);
                                     }
                                     break;
                                 }
+
                                 case ScriptFieldType::Int32:
                                 {
                                     int32_t data = 0;
-                                    if (ImGuiDraw::Int1(name, (int&)data))
+                                    if (ImGuiDraw::Int1(field.Name, (int&)data))
                                     {
-                                        ScriptFieldInstance& sfi = scriptFields[name];
-                                        field.ID = UUID();
+                                        ScriptFieldInstance& sfi = scriptFields[uuid];
                                         sfi.Field = field;
                                         sfi.SetValue(data);
-                                        component.ScriptFields[field.ID] = ScriptFieldSerializedValue(name, field.Type, data);
                                     }
                                     break;
                                 }
+
                                 case ScriptFieldType::Int64:
                                 {
                                     int64_t data = 0;
-                                    if (ImGuiDraw::Int1(name, (int&)data))
+                                    if (ImGuiDraw::Int1(field.Name, (int&)data))
                                     {
-                                        ScriptFieldInstance& sfi = scriptFields[name];
-                                        field.ID = UUID();
+                                        ScriptFieldInstance& sfi = scriptFields[uuid];
                                         sfi.Field = field;
                                         sfi.SetValue(data);
-                                        component.ScriptFields[field.ID] = ScriptFieldSerializedValue(name, field.Type, data);
                                     }
                                     break;
                                 }
+
                                 case ScriptFieldType::Boolean:
                                 {
                                     bool data = false;
-                                    if (ImGuiDraw::CheckBox(name, data))
+                                    if (ImGuiDraw::CheckBox(field.Name, data))
                                     {
-                                        ScriptFieldInstance& sfi = scriptFields[name];
-                                        field.ID = UUID();
+                                        ScriptFieldInstance& sfi = scriptFields[uuid];
                                         sfi.Field = field;
                                         sfi.SetValue(data);
-                                        component.ScriptFields[field.ID] = ScriptFieldSerializedValue(name, field.Type, data);
                                     }
                                     break;
                                 }
+
                                 case ScriptFieldType::UInt16:
                                 {
                                     uint16_t data = 0;
-                                    if (ImGuiDraw::Int1(name, (int&)data))
+                                    if (ImGuiDraw::Int1(field.Name, (int&)data))
                                     {
-                                        ScriptFieldInstance& sfi = scriptFields[name];
-                                        field.ID = UUID();
+                                        ScriptFieldInstance& sfi = scriptFields[uuid];
                                         sfi.Field = field;
                                         sfi.SetValue(data);
-                                        component.ScriptFields[field.ID] = ScriptFieldSerializedValue(name, field.Type, data);
                                     }
                                     break;
-                            }
+                                }
+
                                 case ScriptFieldType::UInt32:
                                 {
                                     uint32_t data = 0;
-                                    if (ImGuiDraw::Int1(name, (int&)data))
+                                    if (ImGuiDraw::Int1(field.Name, (int&)data))
                                     {
-                                        ScriptFieldInstance& sfi = scriptFields[name];
-                                        field.ID = UUID();
+                                        ScriptFieldInstance& sfi = scriptFields[uuid];
                                         sfi.Field = field;
                                         sfi.SetValue(data);
-                                        component.ScriptFields[field.ID] = ScriptFieldSerializedValue(name, field.Type, data);
                                     }
                                     break;
                                 }
+
                                 case ScriptFieldType::UInt64:
                                 {
                                     uint64_t data = 0;
-                                    if (ImGuiDraw::Int1(name, (int&)data))
+                                    if (ImGuiDraw::Int1(field.Name, (int&)data))
                                     {
-                                        ScriptFieldInstance& sfi = scriptFields[name];
-                                        field.ID = UUID();
+                                        ScriptFieldInstance& sfi = scriptFields[uuid];
                                         sfi.Field = field;
                                         sfi.SetValue(data);
-                                        component.ScriptFields[field.ID] = ScriptFieldSerializedValue(name, field.Type, data);
                                     }
                                     break;
                                 }
+
                                 case ScriptFieldType::String:
                                 {
                                     break;
                                 }
+
                                 case ScriptFieldType::Vector2:
                                 {
                                     glm::vec2 data(0);
-                                    if (ImGuiDraw::Vec2(name, data))
+                                    if (ImGuiDraw::Vec2(field.Name, data))
                                     {
-                                        ScriptFieldInstance& sfi = scriptFields[name];
-                                        field.ID = UUID();
+                                        ScriptFieldInstance& sfi = scriptFields[uuid];
                                         sfi.Field = field;
                                         sfi.SetValue(data);
-                                        component.ScriptFields[field.ID] = ScriptFieldSerializedValue(name, field.Type, data);
                                     }
                                     break;
                                 }
+
                                 case ScriptFieldType::Vector3:
                                 {
                                     glm::vec3 data(0);
-                                    if (ImGuiDraw::Vec3(name, data))
+                                    if (ImGuiDraw::Vec3(field.Name, data))
                                     {
-                                        ScriptFieldInstance& sfi = scriptFields[name];
-                                        field.ID = UUID();
+                                        ScriptFieldInstance& sfi = scriptFields[uuid];
                                         sfi.Field = field;
                                         sfi.SetValue(data);
-                                        component.ScriptFields[field.ID] = ScriptFieldSerializedValue(name, field.Type, data);
                                     }
                                     break;
                                 }
+
                                 case ScriptFieldType::Vector4:
                                 {
                                     glm::vec4 data(0);
-                                    if (ImGuiDraw::Vec4(name, data))
+                                    if (ImGuiDraw::Vec4(field.Name, data))
                                     {
-                                        ScriptFieldInstance& sfi = scriptFields[name];
-                                        field.ID = UUID();
+                                        ScriptFieldInstance& sfi = scriptFields[uuid];
                                         sfi.Field = field;
                                         sfi.SetValue(data);
-                                        component.ScriptFields[field.ID] = ScriptFieldSerializedValue(name, field.Type, data);
                                     }
                                     break;
                                 }
+
                                 case ScriptFieldType::Texture2D:
                                 {
-                                    ImGuiDraw::DataField(name, "Texture2D (empty)");
+                                    ImGuiDraw::DataField(field.Name, "Texture2D (empty)");
                                     if (ImGui::BeginDragDropTarget())
                                     {
                                         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSET_MANAGER_ITEM"))
@@ -1094,21 +1063,20 @@ namespace CatEngine
                                             if (asset->GetType() == AssetType::Texture2D)
                                             {
                                                 const auto& metaData = Project::GetActive()->GetEditorAssetManager()->GetMetaData(assetHandle);
-                                                ScriptFieldInstance& sfi = scriptFields[name];
-                                                field.ID = UUID();
+                                                ScriptFieldInstance& sfi = scriptFields[uuid];
                                                 sfi.SetValue(asset->m_Handle.uuid());
                                                 field.ComponentName = metaData.AssetName;
                                                 sfi.Field = field;
-                                                component.ScriptFields[field.ID] = ScriptFieldSerializedValue(name, field.Type, assetHandle);
                                             }
                                         }
                                         ImGui::EndDragDropTarget();
                                     }
                                     break;
                                 }
+
                                 case ScriptFieldType::TransformComponent:
                                 {
-                                    ImGuiDraw::DataField(name, "TransformComponent (empty)");
+                                    ImGuiDraw::DataField(field.Name, "TransformComponent (empty)");
                                     if (ImGui::BeginDragDropTarget())
                                     {
                                         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SCENE_HIERARCHY_ITEM"))
@@ -1118,13 +1086,11 @@ namespace CatEngine
 
                                             if (entity.HasComponent<TransformComponent>())
                                             {
-                                                ScriptFieldInstance& sfi = scriptFields[name];
-                                                field.ID = UUID();
+                                                ScriptFieldInstance& sfi = scriptFields[uuid];
                                                 uint64_t id = entityID.uuid();
                                                 sfi.SetValue(id);
                                                 field.ComponentName = entity.GetName();
                                                 sfi.Field = field;
-                                                component.ScriptFields[field.ID] = ScriptFieldSerializedValue(name, field.Type, entityID);
                                             }
                                         }
                                         ImGui::EndDragDropTarget();
@@ -1132,9 +1098,10 @@ namespace CatEngine
                                     ImGui::PopItemWidth();
                                     break;
                                 }
+
                                 case ScriptFieldType::Rigidbody2DComponent:
                                 {
-                                    ImGuiDraw::DataField(name, "Rigidbody2DComponent (empty)");
+                                    ImGuiDraw::DataField(field.Name, "Rigidbody2DComponent (empty)");
                                     if (ImGui::BeginDragDropTarget())
                                     {
                                         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SCENE_HIERARCHY_ITEM"))
@@ -1144,13 +1111,11 @@ namespace CatEngine
 
                                             if (entity.HasComponent<Rigidbody2DComponent>())
                                             {
-                                                ScriptFieldInstance& sfi = scriptFields[name];
-                                                field.ID = UUID();
+                                                ScriptFieldInstance& sfi = scriptFields[uuid];
                                                 uint64_t id = entityID.uuid();
                                                 sfi.SetValue(id);
                                                 field.ComponentName = entity.GetName();
                                                 sfi.Field = field;
-                                                component.ScriptFields[field.ID] = ScriptFieldSerializedValue(name, field.Type, entityID);
                                             }
                                         }
                                         ImGui::EndDragDropTarget();
@@ -1158,9 +1123,10 @@ namespace CatEngine
                                     ImGui::PopItemWidth();
                                     break;
                                 }
+
                                 case ScriptFieldType::SpriteRenderer:
                                 {
-                                    ImGuiDraw::DataField(name, "SpriteRenderer (empty)");
+                                    ImGuiDraw::DataField(field.Name, "SpriteRenderer (empty)");
                                     if (ImGui::BeginDragDropTarget())
                                     {
                                         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SCENE_HIERARCHY_ITEM"))
@@ -1170,13 +1136,11 @@ namespace CatEngine
 
                                             if (entity.HasComponent<SpriteRendererComponent>())
                                             {
-                                                ScriptFieldInstance& sfi = scriptFields[name];
-                                                field.ID = UUID();
+                                                ScriptFieldInstance& sfi = scriptFields[uuid];
                                                 uint64_t id = entityID.uuid();
                                                 sfi.SetValue(id);
                                                 field.ComponentName = entity.GetName();
                                                 sfi.Field = field;
-                                                component.ScriptFields[field.ID] = ScriptFieldSerializedValue(name, field.Type, entityID);
                                             }
                                         }
                                         ImGui::EndDragDropTarget();
@@ -1184,7 +1148,6 @@ namespace CatEngine
                                     ImGui::PopItemWidth();
                                     break;
                                 }
-
                             }
                         }
 

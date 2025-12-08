@@ -1,10 +1,10 @@
-#include "CatEngine/Core/Core.h"
-#include "CatEngine/Scene/Entity.h"
 #include "cepch.h"
-#include "ScriptInstance.h"
 
+#include "ScriptInstance.h"
 #include "ScriptClass.h"
-#include <cstring>
+
+
+#include "ScriptEngine.h"
 
 
 template<>
@@ -26,12 +26,12 @@ namespace CatEngine
             size_t valueSize = TypeToSize(field.Type);
             std::vector<uint8_t> buffer(valueSize);
 
-            CapyField* cf = scriptClass->m_CapyClass->VTable->Fields[name].get();
+            CapyField* cf = scriptClass->m_CapyClass->VTable->Fields[field.Name].get();
 
             capy_field_data_get(m_Instance, cf, buffer.data());
                 
 
-            m_DefaultFieldDatas[name] = std::move(buffer);
+            m_DefaultFieldDatas[field.Name] = std::move(buffer);
         }
 
         m_StartMethod = scriptClass->GetMethod("Start");
@@ -77,9 +77,12 @@ namespace CatEngine
 	
     bool ScriptInstance::GetFieldDataInternal(const std::string& name, void* buffer)
     {
+        std::string nameSpace, className;
+        m_ScriptClass->GetNames(nameSpace, className);
         {
         const auto& fields = m_ScriptClass->GetFields();
-        auto it = fields.find(name);
+        UUID fieldHash = ScriptEngine::GetMutable().GetUUIDFromStringHash(nameSpace, className, name);
+        auto it = fields.find(fieldHash);
         if (it == fields.end())
             return false;
         }
@@ -97,9 +100,12 @@ namespace CatEngine
 	void ScriptInstance::SetFieldDataInternal(const std::string& name, void* value)
     {
         int size = 0;
+        std::string nameSpace, className;
+        m_ScriptClass->GetNames(nameSpace, className);
         {
         const auto& fields = m_ScriptClass->GetFields();
-        auto it = fields.find(name);
+        UUID fieldHash = ScriptEngine::GetMutable().GetUUIDFromStringHash(nameSpace, className, name);
+        auto it = fields.find(fieldHash);
         if (it == fields.end())
             return;
 
