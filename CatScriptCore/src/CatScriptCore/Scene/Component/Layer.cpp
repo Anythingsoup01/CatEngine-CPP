@@ -1,7 +1,7 @@
 #include "Layer.h"
 
 
-std::ostream& operator<<(std::ostream& os, const CatRuntime::Layer::LayerProxy& proxy)
+std::ostream& operator<<(std::ostream& os, const CatRuntime::Layer& proxy)
 {
     std::string layerStr(CatRuntime::Object_GetLayer(proxy.id));
     os << layerStr;

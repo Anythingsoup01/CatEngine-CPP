@@ -7,13 +7,6 @@
 #include "ScriptEngine.h"
 
 
-template<>
-entt::entity RuntimeValue::As<entt::entity>() const
-{
-    if (Type != ValueType::INT32) throw std::runtime_error("Type mismatch for int");
-    return (entt::entity)ui64;
-}
-
 
 namespace CatEngine
 {
@@ -21,18 +14,21 @@ namespace CatEngine
 		: m_ScriptClass(scriptClass)
 	{ 
         m_Instance = scriptClass->Instantiate(entity.GetUUID());
-        for (auto& [name, field] :scriptClass->GetFields())
+        for (auto& [fieldID, field] :scriptClass->GetFields())
         {
             size_t valueSize = TypeToSize(field.Type);
             std::vector<uint8_t> buffer(valueSize);
 
-            CapyField* cf = scriptClass->m_CapyClass->VTable->Fields[field.Name].get();
+            CapyField* cf = scriptClass->m_CapyClass->VTable->Fields[fieldID].get();
 
             capy_field_data_get(m_Instance, cf, buffer.data());
                 
 
             m_DefaultFieldDatas[field.Name] = std::move(buffer);
         }
+
+        uint64_t data = entity.GetUUID();
+        SetFieldData("m_EntityID", data);
 
         m_StartMethod = scriptClass->GetMethod("Start");
         m_UpdateMethod = scriptClass->GetMethod("Update");
@@ -58,37 +54,62 @@ namespace CatEngine
 
 	void ScriptInstance::InvokeUpdateMethod(float ts)
 	{
-        m_ScriptClass->InvokeMethod(m_UpdateMethod, m_Instance, {ts});
+        if (m_UpdateMethod)
+            m_ScriptClass->InvokeMethod(m_UpdateMethod, m_Instance, {ts});
 	}
 
 	void ScriptInstance::InvokeStartMethod()
 	{
-        m_ScriptClass->InvokeMethod(m_StartMethod, m_Instance, {});
+        if (m_StartMethod)
+            m_ScriptClass->InvokeMethod(m_StartMethod, m_Instance, {});
     }
     void ScriptInstance::InvokeOnCollisionEnter(const UUID& other)
     {
-        m_ScriptClass->InvokeMethod(m_CollisionEnterMethod, m_Instance, { other.uuid() });
+        if (m_CollisionEnterMethod)
+            m_ScriptClass->InvokeMethod(m_CollisionEnterMethod, m_Instance, { other.uuid() });
     }
 
     void ScriptInstance::InvokeOnCollisionExit(const UUID& other)
     {
-        m_ScriptClass->InvokeMethod(m_CollisionExitMethod, m_Instance, { other.uuid() });
+        if (m_CollisionExitMethod)
+            m_ScriptClass->InvokeMethod(m_CollisionExitMethod, m_Instance, { other.uuid() });
     }
 	
     bool ScriptInstance::GetFieldDataInternal(const std::string& name, void* buffer)
     {
         std::string nameSpace, className;
-        m_ScriptClass->GetNames(nameSpace, className);
-        {
-        const auto& fields = m_ScriptClass->GetFields();
-        UUID fieldHash = ScriptEngine::GetMutable().GetUUIDFromStringHash(nameSpace, className, name);
-        auto it = fields.find(fieldHash);
-        if (it == fields.end())
-            return false;
-        }
         
+        const auto& classFields = m_ScriptClass->GetFields();
+
+        bool found = false;
+        for (auto& [uuid, scriptField] : classFields)
+        {
+            if (name == scriptField.Name)
+            {
+                nameSpace = scriptField.NameSpace;
+                className = scriptField.ClassName;
+                found = true;
+                break;
+            }
+        }
+
+        if (!found)
+            return false;
+ 
+        std::string fullName;
+        if (!nameSpace.empty() && !className.empty())
+            fullName = nameSpace + "::" + className;
+        else if (!nameSpace.empty())
+            fullName = nameSpace;
+        else if (!className.empty())
+            fullName = className;
+
+        fullName += "::" + name;
+
+
+        uint32_t fieldID = generate_hash(fullName);
         auto& fields = m_ScriptClass->m_CapyClass->VTable->Fields;
-        auto it = fields.find(name);
+        auto it = fields.find(fieldID);
         if (it == fields.end()) return false;
 
         CapyField* cf = it->second.get();
@@ -101,25 +122,42 @@ namespace CatEngine
     {
         int size = 0;
         std::string nameSpace, className;
-        m_ScriptClass->GetNames(nameSpace, className);
+        
+        const auto& classFields = m_ScriptClass->GetFields();
+
+        bool found = false;
+        for (auto& [uuid, scriptField] : classFields)
         {
-        const auto& fields = m_ScriptClass->GetFields();
-        UUID fieldHash = ScriptEngine::GetMutable().GetUUIDFromStringHash(nameSpace, className, name);
-        auto it = fields.find(fieldHash);
+            if (name == scriptField.Name)
+            {
+                nameSpace = scriptField.NameSpace;
+                className = scriptField.ClassName;
+                found = true;
+                break;
+            }
+        }
+
+        if (!found)
+            return;
+ 
+        std::string fullName;
+        if (!nameSpace.empty() && !className.empty())
+            fullName = nameSpace + "::" + className;
+        else if (!nameSpace.empty())
+            fullName = nameSpace;
+        else if (!className.empty())
+            fullName = className;
+
+        fullName += "::" + name;
+
+
+        uint32_t fieldID = generate_hash(fullName);
+        auto& fields = m_ScriptClass->m_CapyClass->VTable->Fields;
+        auto it = fields.find(fieldID);
         if (it == fields.end())
             return;
 
-        size = TypeToSize(it->second.Type);
-        }
-        
-        auto& fields = m_ScriptClass->m_CapyClass->VTable->Fields;
-        auto it = fields.find(name);
-        if (it == fields.end()) return;
-
         CapyField* cf = it->second.get();
-
-        capy_field_data_set(m_Instance, cf, value, size);
+        capy_field_data_set(m_Instance, cf, value);
     }
 }
-
-

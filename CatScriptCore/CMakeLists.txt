@@ -1,7 +1,6 @@
 set(SRCS
     "src/CatScriptCore/InternalCalls/InternalCalls.cpp"
     "src/CatScriptCore/Input/Input.cpp"
-    "src/CatScriptCore/BaseClasses/ScriptObject.cpp"
     "src/CatScriptCore/Scene/Component/Rigidbody2D.cpp"
     "src/CatScriptCore/Scene/Component/SpriteRenderer.cpp"
     "src/CatScriptCore/Scene/Component/Tag.cpp"
@@ -15,7 +14,6 @@ set(SRCS
     "src/CatScriptCore/Types/Types.h"
     "src/CatScriptCore/Types/Vector.h"
     "src/CatScriptCore/Types/Texture.h"
-    "src/CatScriptCore/BaseClasses/ScriptObject.h"
     "src/CatScriptCore/ScriptInclude.h"
     "src/CatScriptCore/Scene/Component/Object.h"
     "src/CatScriptCore/Scene/Component/InternalObjectData.h"

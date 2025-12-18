@@ -5,8 +5,6 @@
 #include <iostream>
 #include <string>
 
-#include "CatEngine/Scripting/SourceFileCompiler.h"
-
 #include "CatEngine/Core/System.h" 
 
 #include "CatEngine/AssetManager/AssetManager.h"

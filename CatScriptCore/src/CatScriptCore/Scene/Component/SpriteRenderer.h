@@ -6,13 +6,13 @@
 
 namespace CatRuntime
 {
-    class SpriteRenderer : InternalObjectData
+    struct SpriteRenderer
     {
     public:
         SpriteRenderer() = default;
-        SpriteRenderer(uint64_t entityID) { m_InstanceID = entityID; }
+        SpriteRenderer(uint64_t entityID) : m_EntityID(entityID) {}
 
-        class TextureProxy
+        struct Texture
         {
         public:
             uint64_t id;
@@ -24,7 +24,7 @@ namespace CatRuntime
                 return textureID;
             }
 
-            TextureProxy& operator=(const Texture2D& t)
+            Texture& operator=(const Texture2D& t)
             {
                 Texture2D tT = t;
                 Sprite_SetTextureID(id, &tT.ID);
@@ -32,9 +32,9 @@ namespace CatRuntime
             }
         };
 
-        TextureProxy texture() { return TextureProxy{m_InstanceID}; }
+        Texture texture() { return Texture{m_EntityID}; }
 
-        class ColorProxy
+        struct Color
         {
         public:
             uint64_t id;
@@ -45,13 +45,15 @@ namespace CatRuntime
                 return v;
             }
 
-            ColorProxy& operator=(const Vector4& v) {
+            Color& operator=(const Vector4& v) {
                 Vector4 vT = v;
                 Sprite_SetColor(id, &vT);
                 return *this;
             }
         };
 
-        ColorProxy color() { return ColorProxy{m_InstanceID}; }
+        Color color() { return Color{m_EntityID}; }
+    protected:
+        uint64_t m_EntityID = 0;
     };
 }

@@ -2,18 +2,16 @@
 
 #include "CatScriptCore/Types/Types.h"
 #include "CatScriptCore/InternalCalls/InternalCalls.h"
-#include "InternalObjectData.h"
 
 namespace CatRuntime
 {
-	class Transform : InternalObjectData
+	struct Transform
     {
     public:
-        Transform() = default;
-        Transform(uint64_t entityID) : InternalObjectData(entityID) {}
+        uint64_t id;
 
-        // -------- FloatProxy (for .x/.y/.z) --------
-        class FloatProxy {
+        struct FloatProxy
+        {
             public:
                 uint64_t id;
                 int index; // 0 = x, 1 = y, 2 = z
@@ -37,8 +35,8 @@ namespace CatRuntime
                 }
         };
 
-        // -------- VectorProxy (for .position) --------
-        class Vector3Proxy {
+        struct Vector3Proxy
+        {
             public:
                 uint64_t id;
                 // Read whole vector
@@ -65,6 +63,7 @@ namespace CatRuntime
         };
 
         // -------- Getter returns VectorProxy --------
-        Vector3Proxy position() { return Vector3Proxy{m_InstanceID}; }
+        Vector3Proxy position() { return Vector3Proxy{id}; }
     };
+
 }

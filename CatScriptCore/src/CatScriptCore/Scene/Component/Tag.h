@@ -5,13 +5,12 @@
 
 namespace CatRuntime
 {
-	class Tag : InternalObjectData
+	struct Tag
 	{
     public:
-        Tag() = default;
-        Tag(uint64_t entityID) : InternalObjectData(entityID) {}
+        uint64_t id;
 
-        class TagProxy
+        struct TagProxy
         {
         public:
             uint64_t id;
@@ -30,6 +29,8 @@ namespace CatRuntime
             }
         };
 
-        TagProxy layer() { return TagProxy{m_InstanceID}; }
-	};
+        TagProxy layer() { return TagProxy{id}; }
+    };
 }
+
+std::ostream& operator<<(std::ostream& os, const CatRuntime::Tag& proxy);

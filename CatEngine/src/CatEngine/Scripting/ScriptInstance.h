@@ -1,6 +1,6 @@
 #pragma once
 
-#include "CatScriptCore.h"
+#include "ScriptEntityStorage.h"
 #include "CatEngine/Scene/Entity.h"
 #include <unordered_map>
 
@@ -52,7 +52,7 @@ namespace CatEngine
         CapyMethod* m_CollisionEnterMethod;
         CapyMethod* m_CollisionExitMethod;
 
-		void* m_Instance = nullptr;
+		CapyObject* m_Instance = nullptr;
 
         std::unordered_map<std::string, std::vector<uint8_t>> m_DefaultFieldDatas;
 

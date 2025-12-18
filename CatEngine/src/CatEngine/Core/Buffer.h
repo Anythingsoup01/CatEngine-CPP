@@ -73,6 +73,8 @@ namespace CatEngine
 
         void Write(const void* data, uint64_t size, uint64_t offset = 0)
         {
+            if (size == 0)
+                size = 8;
             CE_API_ASSERT(offset + size <= Size, "Buffer overflow");
             memcpy((uint8_t*)Data + offset, data, size);
         }

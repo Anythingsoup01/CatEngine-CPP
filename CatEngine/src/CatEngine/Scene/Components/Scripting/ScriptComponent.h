@@ -3,7 +3,6 @@
 #include <string>
 #include "CatEngine/Core/UUID.h"
 
-#include "CatEngine/Scripting/CatScriptCore.h"
 
 namespace CatEngine
 {

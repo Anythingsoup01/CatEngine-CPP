@@ -4,8 +4,6 @@
 #include <iostream>
 #include <string>
 
-#include "CatEngine/Scripting/SourceFileCompiler.h"
-
 #include "CatEngine/Core/System.h" 
 
 #include "CatEngine/AssetManager/AssetManager.h"
@@ -229,8 +227,6 @@ namespace CatEngine
                         out << content.rdbuf();
 
                         out.close();
-
-                        SourceFileCompiler::AddFile(filePath);
 
                         type = CreateType::None;
 

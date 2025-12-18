@@ -4,7 +4,7 @@
 
 namespace CatRuntime
 {
-    class Texture2D
+    struct Texture2D
     {
     public:
         uint64_t ID;

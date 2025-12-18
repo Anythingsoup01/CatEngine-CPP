@@ -1,9 +1,7 @@
 #include <filesystem>
 
 #include "CatEngine/Core/UUID.h"
-#include "CatScriptCore.h"
-
-#include "SourceFileCompiler.h"
+#include "ScriptEntityStorage.h"
 
 #include "ScriptInstance.h"
 #include "ScriptClass.h"

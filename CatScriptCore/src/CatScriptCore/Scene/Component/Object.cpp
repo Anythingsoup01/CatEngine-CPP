@@ -11,18 +11,14 @@
 
 namespace CatRuntime
 {
-
     #define HasComponentOverload(Type, Instance) \
     template <> bool Object::HasComponent<Type>() { return Internal_Object_HasComponent(Instance, Type); }
 
     template<typename T> bool Object::HasComponent() { return false; }
 
-    HasComponentOverload(Transform, m_InstanceID);
-    HasComponentOverload(Tag, m_InstanceID);
-    HasComponentOverload(Layer, m_InstanceID);
-    HasComponentOverload(CircleRenderer, m_InstanceID);
-    HasComponentOverload(SpriteRenderer, m_InstanceID);
-    HasComponentOverload(Rigidbody2D, m_InstanceID);
+    HasComponentOverload(CircleRenderer, m_EntityID);
+    HasComponentOverload(SpriteRenderer, m_EntityID);
+    HasComponentOverload(Rigidbody2D, m_EntityID);
 
     template<typename T> T Object::GetComponent() { return T(0); };
     
@@ -32,14 +28,11 @@ namespace CatRuntime
     {\
         if (!HasComponent<Type>()) \
             return Type(0); \
-        Type type = Type(m_InstanceID); \
+        Type type = Type(Instance); \
         return type; \
     } \
 
-    GetComponentOverload(Transform, m_InstanceID);
-    GetComponentOverload(Tag, m_InstanceID);
-    GetComponentOverload(Layer, m_InstanceID);
-    GetComponentOverload(CircleRenderer, m_InstanceID);
-    GetComponentOverload(SpriteRenderer, m_InstanceID);
-    GetComponentOverload(Rigidbody2D, m_InstanceID);
+    GetComponentOverload(CircleRenderer, m_EntityID);
+    GetComponentOverload(SpriteRenderer, m_EntityID);
+    GetComponentOverload(Rigidbody2D, m_EntityID);
 }
