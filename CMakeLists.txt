@@ -1,8 +1,9 @@
-cmake_minimum_required(VERSION 3.28.3)
+cmake_minimum_required(VERSION 4.2.1)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 project(CatEngine LANGUAGES C CXX)
 add_compile_options(
     -fPIC
+    -g
 )
 
 add_subdirectory(CatEngine)

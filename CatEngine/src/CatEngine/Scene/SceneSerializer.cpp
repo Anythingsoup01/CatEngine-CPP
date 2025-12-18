@@ -10,9 +10,51 @@
 
 #include "CatEngine/Core/Formatter.h"
 
+#include "CatEngine/Scripting/ScriptEngine.h"
+
 
 namespace CatEngine
 {
+    static std::string DataTypeToString(const DataType& type)
+	{
+        switch (type)
+        {
+            case DataType::Short: return "Short";
+            case DataType::UShort: return "UShort";
+            case DataType::Int: return "Int";
+            case DataType::UInt: return "UInt";
+            case DataType::Long: return "Long";
+            case DataType::ULong: return "ULong";
+            case DataType::Float: return "Float";
+            case DataType::Double: return "Double";
+            case DataType::Bool: return "Bool";
+            case DataType::Vector2: return "Vector2";
+            case DataType::Vector3: return "Vector3";
+            case DataType::Vector4: return "Vector4";
+            case DataType::Entity: return "Entity";
+            case DataType::Texture2D: return "Texture2D";
+            default: return "null";
+        }
+	}
+
+    static DataType StringToDataType(const std::string& typeStr)
+	{
+            if (typeStr == "Short")             return DataType::Short;
+            if (typeStr == "UShort")            return DataType::UShort;
+            if (typeStr == "Int")               return DataType::Int;
+            if (typeStr == "UInt")              return DataType::UInt;
+            if (typeStr == "Long")              return DataType::Long;
+            if (typeStr == "ULong")             return DataType::ULong;
+            if (typeStr == "Float")             return DataType::Float;
+            if (typeStr == "Double")            return DataType::Double;
+            if (typeStr == "Bool")              return DataType::Bool;
+            if (typeStr == "Vector2")           return DataType::Vector2;
+            if (typeStr == "Vector3")           return DataType::Vector3;
+            if (typeStr == "Vector4")           return DataType::Vector4;
+            if (typeStr == "Entity")            return DataType::Entity;
+            if (typeStr == "Texture2D")         return DataType::Texture2D;
+            return DataType::Bool;
+	}
 	static std::string GetNamedComponents(YAML::Node& node, std::string component, std::string targetItem)
 	{
 		std::string entityComponent;
@@ -173,9 +215,42 @@ namespace CatEngine
 		if (entity.HasComponent<ScriptComponent>())
 		{
 			auto& sc = entity.GetComponent<ScriptComponent>();
+            auto& scriptEngine = ScriptEngine::GetMutable();
 			out << YAML::Key << "ScriptComponent" << YAML::Value;
 			out << YAML::BeginMap; // ScriptComponent
+            out << YAML::Key << "ScriptID" << YAML::Value << sc.ScriptID;
 			out << YAML::Key << "ClassName" << YAML::Value << sc.ClassName;
+            out << YAML::Key << "Fields" << YAML::Value;
+            out << YAML::BeginSeq; // Edited fields
+            const ScriptFieldMap& fieldMap = scriptEngine.GetInitializedFields(entity.GetUUID());
+            for (auto& [uuid, field] : fieldMap)
+            {
+                out << YAML::BeginMap; // Field
+                out << YAML::Key << "FieldID" << YAML::Value << uuid;
+                out << YAML::Key << "FieldName" << YAML::Value << field.Field.Name;
+                out << YAML::Key << "FieldType" << YAML::Value << DataTypeToString(field.Field.Type);
+                out << YAML::Key << "Value";
+
+                switch (field.Field.Type)
+                {
+                    case DataType::Short: out << YAML::Value << field.GetValue<int16_t>(); break;
+                    case DataType::UShort: out << YAML::Value << field.GetValue<uint16_t>(); break;
+                    case DataType::Int: out << YAML::Value << field.GetValue<int32_t>(); break;
+                    case DataType::UInt: out << YAML::Value << field.GetValue<uint32_t>(); break;
+                    case DataType::Long: out << YAML::Value << field.GetValue<int64_t>(); break;
+                    case DataType::ULong: out << YAML::Value << field.GetValue<uint64_t>(); break;
+                    case DataType::Float: out << YAML::Value << field.GetValue<float>(); break;
+                    case DataType::Double: out << YAML::Value << field.GetValue<double>(); break;
+                    case DataType::Bool: out << YAML::Value << field.GetValue<bool>(); break;
+                    case DataType::Vector2: out << YAML::Value << field.GetValue<glm::vec2>(); break;
+                    case DataType::Vector3: out << YAML::Value << field.GetValue<glm::vec3>(); break;
+                    case DataType::Vector4: out << YAML::Value << field.GetValue<glm::vec4>(); break;
+                    case DataType::Entity: 
+                    case DataType::Texture2D: out << YAML::Value << field.GetValue<uint64_t>(); break;
+                }
+                out << YAML::EndMap; // Field
+            }
+            out << YAML::EndSeq; // Editied fields
 			out << YAML::EndMap; // ScriptComponent
 
 		}
@@ -343,10 +418,42 @@ namespace CatEngine
 				auto scriptComponent = entity["ScriptComponent"];
 				if (scriptComponent)
 				{
-					auto& sc = deserializedEntity.AddComponent<ScriptComponent>();
+                    auto scriptEngine = ScriptEngine::GetMutable();
 
-					sc.ClassName = scriptComponent["ClassName"].as<std::string>();
+                    auto& sc = deserializedEntity.AddComponent<ScriptComponent>();
+                    sc.ScriptID = scriptComponent["ScriptID"].as<uint64_t>(0);
+                    sc.ClassName = scriptComponent["ClassName"].as<std::string>();
 
+
+                    auto fields = scriptComponent["Fields"];
+                    for (auto field : fields)
+                    {
+                        UUID fieldID = field["FieldID"].as<UUID>();
+                        ScriptFieldInstance& sfi = scriptEngine.GetScriptFieldMap(uuid)[fieldID];
+                        sfi.Field.Name = field["FieldName"].as<std::string>();
+                        sfi.Field.Type = StringToDataType(field["FieldType"].as<std::string>());
+
+                        switch (sfi.Field.Type)
+                        {
+                            case DataType::Float: sfi.SetValue(field["Value"].as<float>()); break;
+                            case DataType::Double: sfi.SetValue(field["Value"].as<double>()); break;
+                            case DataType::Bool: sfi.SetValue(field["Value"].as<bool>()); break;
+                            case DataType::Short: sfi.SetValue(field["Value"].as<int16_t>()); break;
+                            case DataType::UShort: sfi.SetValue(field["Value"].as<uint16_t>()); break;
+                            case DataType::Int: sfi.SetValue(field["Value"].as<int32_t>()); break;
+                            case DataType::UInt: sfi.SetValue(field["Value"].as<uint32_t>()); break;
+                            case DataType::Long: sfi.SetValue(field["Value"].as<int64_t>()); break;
+                            case DataType::ULong: sfi.SetValue(field["Value"].as<uint64_t>()); break;
+                            case DataType::Vector2: sfi.SetValue(field["Value"].as<glm::vec2>()); break;
+                            case DataType::Vector3: sfi.SetValue(field["Value"].as<glm::vec3>()); break;
+                            case DataType::Vector4: sfi.SetValue(field["Value"].as<glm::vec4>()); break;
+                            case DataType::Texture2D:
+                            case DataType::Entity: sfi.SetValue(field["Value"].as<uint64_t>()); break;
+                            default: sfi.SetValue(0); break;
+                        }
+
+                    }
+            
 				}
 			}
 		}

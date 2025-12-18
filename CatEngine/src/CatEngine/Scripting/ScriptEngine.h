@@ -1,16 +1,13 @@
 #include <filesystem>
 
 #include "CatEngine/Core/UUID.h"
-#include "CatScriptCore.h"
+#include "ScriptEntityStorage.h"
 
-#include "SourceFileCompiler.h"
-
-#include "ScriptClass.h"
 #include "ScriptInstance.h"
+#include "ScriptClass.h"
 
 namespace CatEngine
 {
-
     enum class CollisionType
     {
         None = 0,
@@ -20,39 +17,48 @@ namespace CatEngine
     class Scene;
     class Entity;
 
-    using ScriptFieldMap = std::unordered_map<std::string, ScriptFieldInstance>;
+    using ScriptFieldMap = std::unordered_map<UUID, ScriptFieldInstance>;
 
     class ScriptEngine
     {
 	public:
-		static void Init();
-		static void Shutdown();
+	    void Init();
+		void Shutdown();
 
-		static bool LoadFileWatcher(const std::filesystem::path& filePath);
-        static void InitializeFileSystems();
+		bool LoadFileWatcher(const std::filesystem::path& filePath);
+        void InitializeFileSystems();
 
-		static void SetSceneContext(Ref<Scene> scene);
-		static void OnRuntimeStop();
+		void SetSceneContext(Ref<Scene> scene);
+		void OnRuntimeStop();
 
-		static void ReloadBinaries();
+		void ReloadBinaries();
 
-		static bool ScriptClassExists(const std::string& fullClassName);
-		static void OnStartEntity(Entity e);
-		static void OnUpdateEntity(Entity e, float ts);
+		bool ScriptClassExists(const std::string& fullClassName);
+		void OnStartEntity(Entity e);
+		void OnUpdateEntity(Entity e, float ts);
 
-        static void DispatchCollisionEvent(UUID entityA, UUID entityB, CollisionType type);
+        void DispatchCollisionEvent(UUID entityA, UUID entityB, CollisionType type);
 
-		static Ref<Scene> GetSceneContext();
-		static Ref<ScriptInstance> GetEntityScriptInstance(UUID entityID);
+		Ref<Scene> GetSceneContext();
+		Ref<ScriptInstance> GetEntityScriptInstance(UUID entityID);
 
+        const ScriptFieldMap& GetInitializedFields(const UUID& entityID) const;
 
-		static void* GetManagedInstance(UUID uuid);
+		std::unordered_map<std::string, Ref<ScriptClass>>& GetScriptClasses();
+		Ref<ScriptClass> GetScriptClass(const std::string& name);
+		ScriptFieldMap& GetScriptFieldMap(Entity entity);
+		ScriptFieldMap& GetScriptFieldMap(UUID entity);
 
-		static std::unordered_map<std::string, Ref<ScriptClass>>& GetScriptClasses();
-		static Ref<ScriptClass> GetScriptClass(const std::string& name);
-		static ScriptFieldMap& GetScriptFieldMap(Entity entity);
+        UUID GetUUIDFromStringHash(const std::string& nameSpace, const std::string& className, const std::string& fieldName);
+
+        static ScriptEngine& GetMutable();
+    private:
 
 	private:
-		friend class ScriptClass;
+        friend class ScriptGlue;
+        friend class Application;
+        friend class Scene;
+        friend class SceneSerializer;
+        friend class SceneHierarchyPanel;
 	};
 }

@@ -15,7 +15,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include "CatScriptCore/BaseClasses/ScriptObject.h"
+#include "CatScriptCore/Scene/Component/Object.h"
 
 #include "CatScriptCore/Scene/Component/Rigidbody2D.h"
 #include "CatScriptCore/Scene/Component/SpriteRenderer.h"

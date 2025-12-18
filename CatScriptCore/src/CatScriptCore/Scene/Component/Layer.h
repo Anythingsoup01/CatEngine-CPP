@@ -5,59 +5,48 @@
 
 namespace CatRuntime
 {
-	class Layer : InternalObjectData
-	{
+    struct Layer
+    {
     public:
-        Layer() = default;
-        Layer(uint64_t entityID) : InternalObjectData(entityID) {}
+        uint64_t id;
 
-        class LayerProxy
+        operator std::string() const 
         {
-        public:
-            uint64_t id;
+            if (id <= 0) return std::string();
+            return Object_GetLayer(id);
+        }
 
-            operator std::string() const 
-            {
-                if (id <= 0) return std::string();
-                return Object_GetLayer(id);
-            }
+        bool operator==(const std::string& other) const 
+        {
+            if (id <= 0) return false;
+            std::string thisStr = Object_GetLayer(id);
 
-            bool operator==(const std::string& other) const 
-            {
-                if (id <= 0) return false;
-                std::string thisStr = Object_GetLayer(id);
+            if (thisStr == other)
+                return true;
 
-                if (thisStr == other)
-                    return true;
+            return false;
+        }
 
-                return false;
-            }
+        bool operator==(const char* other) const 
+        {
+            if (id <= 0) return false;
+            std::string thisStr = Object_GetLayer(id);
+            std::string otherStr(other);
+            if (thisStr == otherStr)
+                return true;
 
-            bool operator==(const char* other) const 
-            {
-                if (id <= 0) return false;
-                std::string thisStr = Object_GetLayer(id);
-                std::string otherStr(other);
-                if (thisStr == otherStr)
-                    return true;
+            return false;
+        }
 
-                return false;
-            }
-
-
-
-            LayerProxy& operator=(const std::string& other)
-            {
-                if (id <= 0) return *this;
-                Object_SetLayer(id, other.c_str());
-                return *this;
-            }
-        };
-
-        LayerProxy layer() { return LayerProxy{m_InstanceID}; }
-
-	};
+        Layer& operator=(const std::string& other)
+        {
+            if (id <= 0) return *this;
+            Object_SetLayer(id, other.c_str());
+            return *this;
+        }
+    };
 }
 
-std::ostream& operator<<(std::ostream& os, const CatRuntime::Layer::LayerProxy& proxy);
+std::ostream& operator<<(std::ostream& os, const CatRuntime::Layer& proxy);
+
 

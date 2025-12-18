@@ -15,15 +15,9 @@ namespace CatEngine
         m_CapyClass = capy_class_from_name(image, nameSpace, className);
     }
 
-    void* ScriptClass::Instantiate(UUID entityID)
+    CapyObject* ScriptClass::Instantiate(UUID entityID)
     {
-        CapyMethod* m = capy_method_from_class(m_CapyClass, "Create");
-        if (!m)
-        {
-            CE_API_CRITICAL("NO CREATE FUNCTION FOUND!");
-            return nullptr;
-        }
-        return capy_function_call_from_method(m, { entityID.uuid() });
+        return capy_instantiate_object(m_CapyClass);
     }
 
     CapyMethod* ScriptClass::GetMethod(const std::string& methodName)
@@ -31,11 +25,11 @@ namespace CatEngine
         return capy_method_from_class(m_CapyClass, methodName);
     }
 
-    void* ScriptClass::InvokeMethod(CapyMethod* m, void* instance, const std::vector<RuntimeValue>& values)
+    void* ScriptClass::InvokeMethod(CapyMethod* m, CapyObject* instance, const std::vector<RuntimeValue>& values)
     {
         std::vector<RuntimeValue> vals;
         vals = values;
-        vals.insert(vals.begin(), instance);
+        vals.insert(vals.begin(), instance->Memory);
         return capy_function_call_from_method(m, vals);
     }
 

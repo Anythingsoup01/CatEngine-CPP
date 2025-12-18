@@ -2,10 +2,11 @@
 
 namespace CatRuntime
 {
-
     void PlayerController::Start()
     {
-        m_RB2D = GetComponent<Rigidbody2D>();
+        auto spriteRenderer = GetComponent<SpriteRenderer>();
+        spriteRenderer.texture() = m_CatTexture;
+        m_Entity.transform().position() = { 0, 0, 0 };
     }
 
     void PlayerController::Update(float ts)
@@ -34,7 +35,8 @@ namespace CatRuntime
                 }
             }
         }
-        m_RB2D.ApplyLinearImpulse(playerVelocity, {0, 0});
+        auto rb2d = GetComponent<Rigidbody2D>();
+        rb2d.ApplyLinearImpulse(playerVelocity, {0, 0});
 
     }
 
@@ -42,9 +44,9 @@ namespace CatRuntime
     {
         Object oth(other);
 
-        std::cout << "OTHER LAYER: " << oth.layer.layer() << "\n";
+        std::cout << "OTHER LAYER: " << oth.layer() << "\n";
 
-        if (oth.layer.layer() == "Ground" && !m_CanJump)
+        if (oth.layer() == "Ground" && !m_CanJump)
         {
             m_Grounded = true;
             m_CanJump = true;
@@ -56,16 +58,9 @@ namespace CatRuntime
     void PlayerController::OnCollisionExit(uint64_t other)
     {
         Object oth(other);
-        if (oth.layer.layer() == "Ground" && !m_CanJump)
+        if (oth.layer() == "Ground" && !m_CanJump)
         {
             m_Grounded = false;
         }
-
     }
-
-    PlayerController* PlayerController::Create(uint64_t entityID)
-    {
-        return new PlayerController(entityID);
-    }
-
 }

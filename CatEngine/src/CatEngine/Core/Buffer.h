@@ -7,7 +7,7 @@ namespace CatEngine
 {
 	struct Buffer
 	{
-		uint8_t* Data = nullptr;
+		void* Data = nullptr;
 		uint64_t Size = 0;
 
 		Buffer() = default;
@@ -18,40 +18,72 @@ namespace CatEngine
 		}
 
 		Buffer(const void* data, uint64_t size)
-			: Data((uint8_t*)data), Size(size)
+			: Data((void*)data), Size(size)
 		{
 		}
 
 		Buffer(const Buffer&) = default;
 
-		static Buffer Copy(Buffer other)
+		static Buffer Copy(const Buffer& other)
 		{
-			Buffer result(other.Size);
-			memcpy(result.Data, other.Data, other.Size);
-			return result;
+			Buffer buffer;
+            buffer.Allocate(other.Size);
+			memcpy(buffer.Data, other.Data, other.Size);
+			return buffer;
+		}
+
+		static Buffer Copy(const void* data, uint64_t size)
+		{
+			Buffer buffer;
+            buffer.Allocate(size);
+			memcpy(buffer.Data, data, size);
+			return buffer;
 		}
 		
 		void Allocate(uint64_t size)
 		{
-			if (Data)
-				Release();
+            delete[] (uint8_t*)Data;
+            Data = nullptr;
+            Size = size;
 
-			Data = (uint8_t*)malloc(size);
-			Size = size;
+            if (size == 0)
+                return;
+
+			Data = new uint8_t[size];
 		}
 
 		void Release()
 		{
-			free(Data);
+	        delete[] (uint8_t*)Data;
 			Data = nullptr;
 			Size = 0;
 		}
 
-		template<typename T>
-		T* As()
-		{
-			return (T*)Data;
-		}
+        template<typename T>
+        T Read(uint64_t offset = 0)
+        {
+            return *(T*)((uint8_t*)Data + offset);
+        }
+
+        template<typename T>
+        T Read(uint64_t offset = 0) const
+        {
+            return *(T*)((uint8_t*)Data + offset);
+        }
+
+        void Write(const void* data, uint64_t size, uint64_t offset = 0)
+        {
+            if (size == 0)
+                size = 8;
+            CE_API_ASSERT(offset + size <= Size, "Buffer overflow");
+            memcpy((uint8_t*)Data + offset, data, size);
+        }
+
+        template<typename T>
+        T* As()
+        {
+            return (T*)Data;
+        }
 
 		operator bool() const
 		{
@@ -59,38 +91,22 @@ namespace CatEngine
 		}
 	};
 
-	struct ScopedBuffer
+	struct ScopedBuffer : public Buffer
 	{
-		ScopedBuffer(uint64_t size)
-			: m_Buffer(size)
+	    ~ScopedBuffer()
 		{
-
+			Release();
 		}
 
-		ScopedBuffer(Buffer buffer)
-			: m_Buffer(buffer) {}
-
-		~ScopedBuffer()
-		{
-			m_Buffer.Release();
-		}
-
-		uint8_t* Data() { return m_Buffer.Data; }
-		uint64_t Size() { return m_Buffer.Size; }
-
-		template<typename T>
-		T* As()
-		{
-			return m_Buffer.As<T>();
-		}
-
-		operator bool() const
-		{
-			return m_Buffer;
-		}
+        static ScopedBuffer Copy(const void* data, uint64_t size)
+        {
+            ScopedBuffer buffer;
+            buffer.Allocate(size);
+            memcpy(buffer.Data, data, size);
+            return buffer;
+        }
 
 	private:
-		Buffer m_Buffer;
 	};
 
 }

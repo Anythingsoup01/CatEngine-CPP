@@ -9,9 +9,17 @@ namespace CatEngine
 		UUID(uint64_t uuid);
 		UUID(const UUID&) = default;
 
+        uint64_t uuid() const { return m_UUID; }
+
 		operator uint64_t() const { return m_UUID; }
 
-        uint64_t uuid() const { return m_UUID; }
+        UUID& operator=(uint64_t rhs)
+        {
+            m_UUID = rhs;
+            return *this;
+        }
+
+        UUID& operator=(const UUID&) = default;
 
 	private:
 		uint64_t m_UUID;

@@ -5,8 +5,6 @@
 #include <iostream>
 #include <string>
 
-#include "CatEngine/Scripting/SourceFileCompiler.h"
-
 #include "CatEngine/Core/System.h" 
 
 #include "CatEngine/AssetManager/AssetManager.h"
@@ -243,10 +241,8 @@ namespace CatEngine
                 Ref<Texture2D> textureAsset = (Ref<Texture2D>&)asset;
 
                 const Asset::MetaData& metaData = Project::GetActive()->GetEditorAssetManager()->GetMetaData(handle);
-                // Probably make this static at the top or before the function call
-                ImGuiDraw::StaticInt("Asset ID", (int&)handle);
-                ImGuiDraw::StaticString("Name", metaData.AssetName);
 
+                ImGuiDraw::StaticString("Name", metaData.AssetName);
                 ImGuiDraw::Combo("Min Filter", (int&)metaData.TextureMinFilter, s_TextureFilters);
                 ImGuiDraw::Combo("Mag Filter", (int&)metaData.TextureMagFilter, s_TextureFilters);
                 ImGuiDraw::Combo("Wrap Options", (int&)metaData.TextureWrap, s_TextureWrapFilters);

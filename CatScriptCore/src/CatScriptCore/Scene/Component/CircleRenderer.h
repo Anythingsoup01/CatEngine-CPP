@@ -5,11 +5,12 @@
 
 namespace CatRuntime
 {
-	class CircleRenderer : public InternalObjectData
+	struct CircleRenderer
 	{
     public:
         CircleRenderer() = default;
-        CircleRenderer(uint64_t entityID) { m_InstanceID = entityID; }
+        CircleRenderer(uint64_t entityID) { m_EntityID = entityID; }
     protected:
+        uint64_t m_EntityID;
 	};
 }

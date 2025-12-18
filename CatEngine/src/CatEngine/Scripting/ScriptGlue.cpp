@@ -24,7 +24,7 @@ namespace CatEngine
 
 	static Entity GetEntity(UUID entityID)
 	{
-		Ref<Scene> scene = ScriptEngine::GetSceneContext();
+		Ref<Scene> scene = ScriptEngine::GetMutable().GetSceneContext();
 		CE_ASSERT(scene);
 		Entity entity = scene->GetEntityByUUID(entityID);
 		CE_ASSERT(entity);
@@ -52,7 +52,7 @@ namespace CatEngine
 
     static uint64_t Object_FindObjectByName(const std::string& name)
 	{
-		Ref<Scene> scene = ScriptEngine::GetSceneContext();
+		Ref<Scene> scene = ScriptEngine::GetMutable().GetSceneContext();
 		CE_ASSERT(scene);
 		Entity entity = scene->FindEntityByName(name.c_str());
 		CE_ASSERT(entity);

@@ -3,6 +3,7 @@ Workspace =
     name = "CatEngine",
     flags = {
         "-fPIC",
+        "-g"
     }
 }
 

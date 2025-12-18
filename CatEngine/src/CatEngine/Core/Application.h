@@ -40,6 +40,9 @@ namespace CatEngine
         void PushLayer(Layer* layer);
         void PushOverlay(Layer* overlay);
 
+        void PopLayer(Layer* layer);
+        void PopOverlay(Layer* overlay);
+
         static Application& Get() { return *s_Instance; }
         Window& GetWindow() { return m_Window; }
 		void SubmitToMainThread(const std::function<void()>& function);
@@ -72,7 +75,10 @@ namespace CatEngine
         static inline Application* s_Instance = nullptr;
 
         std::filesystem::path m_CatEngineFilesPath;
+    private:
+        friend class ScriptEngine;
     };
 
     Application* CreateApplication(const ApplicationCommandLineArgs& args);
+
 }

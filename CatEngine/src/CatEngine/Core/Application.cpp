@@ -8,7 +8,6 @@
 
 #include "Input.h"
 #include "TimeStep.h"
-#include <filesystem>
 
 extern bool g_ApplicationRunning;
 
@@ -31,7 +30,7 @@ namespace CatEngine
         m_Window.SetEventCallback(BIND_EVENT_FN(Application::OnEvent));
 
         Renderer::Init();
-        ScriptEngine::Init();
+        ScriptEngine::GetMutable().Init();
 
         m_ImGuiLayer = new ImGuiLayer();
         PushOverlay(m_ImGuiLayer);
@@ -42,7 +41,11 @@ namespace CatEngine
     {
         CE_PROFILE_FUNCTION();
 
+
+
         Renderer::Shutdown();
+
+        ScriptEngine::GetMutable().Shutdown();
 
         s_Instance = nullptr;
 
@@ -53,6 +56,7 @@ namespace CatEngine
     {
         CE_PROFILE_FUNCTION();
         m_Running = true;
+        auto& scriptEngine = ScriptEngine::GetMutable();
         while(m_Running)
         {
             float time = Time::GetTime();
@@ -107,6 +111,20 @@ namespace CatEngine
         layer->OnAttach();
     }
 
+    void Application::PopLayer(Layer* layer)
+    {
+        CE_PROFILE_FUNCTION();
+        layer->OnDetach();
+        m_LayerStack.PopLayer(layer);
+    }
+
+    void Application::PopOverlay(Layer* layer)
+    {
+        CE_PROFILE_FUNCTION();
+        layer->OnDetach();
+        m_LayerStack.PopLayer(layer);
+    }
+    
     void Application::SubmitToMainThread(const std::function<void()>& function)
 	{
 		

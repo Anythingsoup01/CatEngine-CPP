@@ -28,4 +28,6 @@ namespace CatRuntime
 
     CE_INITIALIZE_INTERNAL_CALL(Sprite_GetColor);
     CE_INITIALIZE_INTERNAL_CALL(Sprite_SetColor);
+    CE_INITIALIZE_INTERNAL_CALL(Sprite_GetTextureID);
+    CE_INITIALIZE_INTERNAL_CALL(Sprite_SetTextureID);
 }
