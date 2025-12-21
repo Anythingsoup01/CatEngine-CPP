@@ -1,7 +1,5 @@
 #pragma once
 
-#include "CatEngine/Renderer/Texture.h"
-
 #include "CatEngine/Editor/EditorPanel.h"
 
 namespace CatEngine
@@ -18,8 +16,5 @@ namespace CatEngine
 
 	private:
 		std::filesystem::path m_CurrentDirectory;
-
-		Ref<Texture2D> m_DirectoryIcon;
-		Ref<Texture2D> m_FileIcon;
 	};
 }

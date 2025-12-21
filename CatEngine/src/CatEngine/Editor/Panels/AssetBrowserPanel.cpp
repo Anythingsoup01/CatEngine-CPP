@@ -8,6 +8,8 @@
 
 #include "CatEngine/Core/Application.h"
 
+#include "CatEngine/Editor/IconManager.h"
+
 
 const size_t MAX_FILE_PATH_LEN = 4096;
 
@@ -21,8 +23,6 @@ namespace CatEngine
 	{
         // TODO: Generate these as assets
         m_TreeNodes.push_back(TreeNode(".", 0));
-        m_DirectoryIcon = TextureImporter::ImportIconTexture("Resources/Icons/DirectoryIcon.png");
-		m_FileIcon = TextureImporter::ImportIconTexture("Resources/Icons/ScriptFileIcon.png");
 	}
 
 	void AssetBrowserPanel::OnImGuiRender(bool& isOpen)
@@ -95,8 +95,8 @@ namespace CatEngine
                 }
             }
 
-            fileIcon = fileIcon == nullptr ? m_FileIcon : fileIcon;
-            Ref<Texture2D> icon = isDirectory ? m_DirectoryIcon : fileIcon;
+            fileIcon = !fileIcon ? IconManager::GetIcon("ScriptFileIcon") : fileIcon;
+            Ref<Texture2D> icon = isDirectory ? IconManager::GetIcon("DirectoryIcon") : fileIcon;
             ImGui::ImageButton("##ICON", (ImTextureID)(uint64_t)icon->GetRendererID(), { thumbnailSize, thumbnailSize }, { 0, 1 }, { 1, 0 });
             if (ImGui::BeginDragDropSource())
             {

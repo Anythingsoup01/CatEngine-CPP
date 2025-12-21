@@ -112,10 +112,6 @@ namespace CatEngine
 			Pause = 3
 		};
 		SceneState m_SceneState = SceneState::Edit;
-
-        Ref<Texture2D> m_IconStartRuntime, m_IconPauseRuntime, m_IconPauseRuntimeSelected, m_IconNextFrameRuntime, m_IconStopRuntime;
-		Ref<Texture2D> m_IconStartSimulation;
-
     private:
         static inline EditorLayer* s_Instance = nullptr;
     };

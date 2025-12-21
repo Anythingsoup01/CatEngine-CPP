@@ -40,9 +40,6 @@ namespace CatEngine
 
         std::filesystem::path m_CurrentDirectory;
 
-		Ref<Texture2D> m_DirectoryIcon;
-		Ref<Texture2D> m_FileIcon;
-
         AssetHandle m_SelectionContext = 0;
         AssetHandle m_PreviousSelection = 0;
 

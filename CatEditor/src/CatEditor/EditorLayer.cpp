@@ -19,22 +19,15 @@
 #include "CatEngine/Editor/Panels/AssetBrowserPanel.h"
 #include "CatEngine/Editor/Panels/ContentBrowserPanel.h"
 
+#include "CatEngine/Editor/IconManager.h"
+
 namespace CatEngine
 {
     void EditorLayer::OnAttach()
     {
         s_Instance = this;
 
-        m_IconStartRuntime = TextureImporter::ImportIconTexture("Resources/Icons/Editor/Start-Runtime.png");
-        m_IconPauseRuntime = TextureImporter::ImportIconTexture("Resources/Icons/Editor/Pause-Runtime.png");
-		m_IconPauseRuntimeSelected = TextureImporter::ImportIconTexture("Resources/Icons/Editor/Pause-Runtime-Selected.png");
-		m_IconNextFrameRuntime = TextureImporter::ImportIconTexture("Resources/Icons/Editor/NextFrame-Runtime.png");
-		m_IconStopRuntime = TextureImporter::ImportIconTexture("Resources/Icons/Editor/Stop-Runtime.png");
-
-		m_IconStartSimulation = TextureImporter::ImportIconTexture("Resources/Icons/Editor/Start-Simulation.png");
-
-
-
+        IconManager::Init();
 
         FramebufferSpecification fbSpec;
         fbSpec.Attachments = { FramebufferTextureFormat::RGBA8, FramebufferTextureFormat::RED_INTEGER, FramebufferTextureFormat::Depth };
@@ -201,7 +194,6 @@ namespace CatEngine
                 glm::vec3 position = tc.Position;
                 glm::mat4 rotation = glm::toMat4(glm::quat(tc.Rotation));
                 glm::vec3 scale = tc.Scale;
-
                 glm::mat4 transform = glm::translate(glm::mat4(1.f), position) * rotation * glm::scale(glm::mat4(1.f), scale);
                 Renderer2D::DrawRect(transform, glm::vec4(0.85f, 0.1f, 0.85f, 1.0f));
             }
@@ -507,17 +499,18 @@ namespace CatEngine
 		
         ImGui::Begin("##toolbar", nullptr, tabStyle);
         {
+
             float size = ImGui::GetWindowHeight() - 4.f;
-            Ref<Texture2D> runtimeIcon = m_SceneState == SceneState::Play ? m_IconStopRuntime : m_IconStartRuntime;
+            Ref<Texture2D> runtimeIcon = m_SceneState == SceneState::Play ? IconManager::GetIcon("Stop-Runtime") : IconManager::GetIcon("Start-Runtime");
 			Ref<Texture2D> pauseIcon;
 			if (m_SceneState == SceneState::Edit)
-				pauseIcon = m_IsScenePaused ? m_IconPauseRuntimeSelected : m_IconPauseRuntime;
+				pauseIcon = m_IsScenePaused ? IconManager::GetIcon("Pause-Runtime-Selected") : IconManager::GetIcon("Pause-Runtime");
 			else if (m_SceneState == SceneState::Play)
-				pauseIcon = m_IsScenePaused ? m_IconNextFrameRuntime : m_IconPauseRuntime;
+				pauseIcon = m_IsScenePaused ? IconManager::GetIcon("NextFrame-Runtime") : IconManager::GetIcon("Pause-Runtime");
 			else if (m_SceneState == SceneState::Simulate)
-				pauseIcon = m_IsScenePaused ? m_IconPauseRuntimeSelected : m_IconPauseRuntime; // TODO: Disable the play & pause buttons during simulation
+				pauseIcon = m_IsScenePaused ? IconManager::GetIcon("Pause-Runtime-Selected") : IconManager::GetIcon("Pause-Runtime"); // TODO: Disable the play & pause buttons during simulation
 
-			Ref<Texture2D> simulationIcon = m_SceneState == SceneState::Simulate ? m_IconStopRuntime : m_IconStartSimulation;
+			Ref<Texture2D> simulationIcon = m_SceneState == SceneState::Simulate ? IconManager::GetIcon("Stop-Runtime") : IconManager::GetIcon("Start-Simulation");
 
             ImGui::SetCursorPosX((ImGui::GetWindowContentRegionMax().x * 0.5f - (size * 0.5f)));
             if (ImGui::ImageButton("##PLAY", (ImTextureID)(uint64_t)runtimeIcon->GetRendererID(), ImVec2(size * 1.403f, size), {0, 0}, {1, 1}))

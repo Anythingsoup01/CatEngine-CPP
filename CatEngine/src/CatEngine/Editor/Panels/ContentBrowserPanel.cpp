@@ -9,6 +9,8 @@
 
 #include "AssetBrowserPanel.h"
 
+#include "CatEngine/Editor/IconManager.h"
+
 const size_t MAX_FILE_PATH_LEN = 4096;
 
 enum class CreateType
@@ -28,8 +30,6 @@ namespace CatEngine
 		: m_CurrentDirectory(Project::GetAssetDirectory())
 	{
         // TODO: Generate these as assets
-        m_DirectoryIcon = TextureImporter::ImportIconTexture("Resources/Icons/DirectoryIcon.png");
-		m_FileIcon = TextureImporter::ImportIconTexture("Resources/Icons/ScriptFileIcon.png");
 	}
 
 	void ContentBrowserPanel::OnImGuiRender(bool& isOpen)
@@ -64,7 +64,7 @@ namespace CatEngine
             if (strncmp(filenameString.c_str(), ".", 1) != 0)
             {
                 ImGui::PushID(filenameString.c_str());
-                Ref<Texture2D> icon = directoryEntry.is_directory() ? m_DirectoryIcon : m_FileIcon;
+                Ref<Texture2D> icon = directoryEntry.is_directory() ? IconManager::GetIcon("DirectoryIcon") : IconManager::GetIcon("ScriptFileIcon");
                 ImGui::ImageButton("##ICON", (ImTextureID)(uint64_t)icon->GetRendererID(), { thumbnailSize, thumbnailSize }, { 0, 1 }, { 1, 0 });
 
                 if (ImGui::BeginDragDropSource())
