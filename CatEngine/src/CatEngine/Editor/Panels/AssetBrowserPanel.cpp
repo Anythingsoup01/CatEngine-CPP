@@ -2,17 +2,12 @@
 #include "AssetBrowserPanel.h"
 #include <imgui.h>
 
-#include <iostream>
-#include <string>
-
-#include "CatEngine/Core/System.h" 
 
 #include "CatEngine/AssetManager/AssetManager.h"
 #include "CatEngine/AssetManager/TextureImporter.h"
 
 #include "CatEngine/Core/Application.h"
 
-#include "ImGui/ImGuiDraw.h"
 
 const size_t MAX_FILE_PATH_LEN = 4096;
 
@@ -24,16 +19,15 @@ namespace CatEngine
 	AssetBrowserPanel::AssetBrowserPanel()
         : m_CurrentDirectory(Project::GetAssetDirectory())
 	{
-        s_Instance = this;
         // TODO: Generate these as assets
         m_TreeNodes.push_back(TreeNode(".", 0));
         m_DirectoryIcon = TextureImporter::ImportIconTexture("Resources/Icons/DirectoryIcon.png");
 		m_FileIcon = TextureImporter::ImportIconTexture("Resources/Icons/ScriptFileIcon.png");
 	}
 
-	void AssetBrowserPanel::OnImGuiRender()
+	void AssetBrowserPanel::OnImGuiRender(bool& isOpen)
 	{
-		ImGui::Begin("Assets");
+		ImGui::Begin("Assets", &isOpen);
 		if (m_CurrentDirectory != Project::GetAssetDirectory())
 		{
 			if (ImGui::Button("<-"))
@@ -242,11 +236,14 @@ namespace CatEngine
 
                 const Asset::MetaData& metaData = Project::GetActive()->GetEditorAssetManager()->GetMetaData(handle);
 
+                /*
                 ImGuiDraw::StaticString("Name", metaData.AssetName);
                 ImGuiDraw::Combo("Min Filter", (int&)metaData.TextureMinFilter, s_TextureFilters);
                 ImGuiDraw::Combo("Mag Filter", (int&)metaData.TextureMagFilter, s_TextureFilters);
                 ImGuiDraw::Combo("Wrap Options", (int&)metaData.TextureWrap, s_TextureWrapFilters);
                 ImGuiDraw::StaticString("Format", ImageFormatToString(metaData.TextureFormat));
+
+                */
 
                 if (ImGui::Button("Apply"))
                 {

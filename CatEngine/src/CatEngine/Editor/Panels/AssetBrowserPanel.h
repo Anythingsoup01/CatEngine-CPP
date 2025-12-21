@@ -2,18 +2,17 @@
 
 #include "CatEngine/Renderer/Texture.h"
 
-#include "CatEngine/Scene/Scene.h"
-
-#include <filesystem>
+#include "CatEngine/Editor/EditorPanel.h"
 
 namespace CatEngine
 {
-	class AssetBrowserPanel
+	class AssetBrowserPanel : public EditorPanel
 	{
 	public:
 		AssetBrowserPanel();
 
-		void OnImGuiRender();
+		virtual void OnImGuiRender(bool& isOpen) override;
+        virtual void OnEvent(Event& e) override {};
 
         void ResetAssetDirectory();
 
