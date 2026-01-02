@@ -10,6 +10,8 @@
 
 #include "CatEngine/Editor/IconManager.h"
 
+#include "CatEngine/Editor/ImGui/CEImGui.h"
+
 
 const size_t MAX_FILE_PATH_LEN = 4096;
 
@@ -236,14 +238,12 @@ namespace CatEngine
 
                 const Asset::MetaData& metaData = Project::GetActive()->GetEditorAssetManager()->GetMetaData(handle);
 
-                /*
                 ImGuiDraw::StaticString("Name", metaData.AssetName);
                 ImGuiDraw::Combo("Min Filter", (int&)metaData.TextureMinFilter, s_TextureFilters);
                 ImGuiDraw::Combo("Mag Filter", (int&)metaData.TextureMagFilter, s_TextureFilters);
                 ImGuiDraw::Combo("Wrap Options", (int&)metaData.TextureWrap, s_TextureWrapFilters);
                 ImGuiDraw::StaticString("Format", ImageFormatToString(metaData.TextureFormat));
 
-                */
 
                 if (ImGui::Button("Apply"))
                 {

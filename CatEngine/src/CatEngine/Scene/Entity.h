@@ -137,8 +137,13 @@ namespace CatEngine
 
 		bool operator==(const Entity& other) const { return m_EntityHandle == other.m_EntityHandle && m_Scene == other.m_Scene; }
 		bool operator!=(const Entity& other) const { return !(*this == other); }
+
+        void SetIndex(uint32_t index) { m_HierarchyIndex = index; }
+        const uint32_t GetIndex() const { return m_HierarchyIndex; }
+
 	private:
 		entt::entity m_EntityHandle{ entt::null };
+        uint32_t m_HierarchyIndex = 0;
 		Scene* m_Scene = nullptr;
 	};
 }
