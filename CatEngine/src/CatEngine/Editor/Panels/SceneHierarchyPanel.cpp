@@ -1,42 +1,43 @@
+#include <cepch.h>
 #include "SceneHierarchyPanel.h"
-#include "CatEngine/Core/Log.h"
-#include "CatEngine/Scene/Components/Components.h"
-#include "CatEngine/Scene/Components/Physics/Rigidbody2D.h"
-#include "CatEngine/Scripting/ScriptEntityStorage.h"
-#include "ImGui/ImGuiDraw.h"
-
-#include <glm/gtc/type_ptr.hpp>
 
 #include <imgui.h>
 #include <imgui_internal.h>
 
-#include <filesystem>
+#include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+#include "CatEngine/Scene/Components/Components.h"
+
+#include "CatEngine/Editor/ImGui/CEImGui.h"
 
 #include "CatEngine/Scripting/ScriptEngine.h"
+#include "CatEngine/Scripting/ScriptEntityStorage.h"
 
 #include "CatEngine/AssetManager/AssetManager.h"
+
+#include "CatEngine/Project/Project.h"
+
 
 
 namespace CatEngine
 {
-	SceneHierarchyPanel::SceneHierarchyPanel(const Ref<Scene>& scene)
+    SceneHierarchyPanel::SceneHierarchyPanel(const Ref<Scene>& scene)
 	{
-		SetContext(scene);
+		SetSceneContext(scene);
 	}
-	void SceneHierarchyPanel::SetContext(const Ref<Scene>& scene)
+	void SceneHierarchyPanel::SetSceneContext(const Ref<Scene>& scene)
 	{
 		m_SelectionContext = {};
 		m_Context = scene;
 
 	}
-	void SceneHierarchyPanel::OnImGuiRender()
+	void SceneHierarchyPanel::OnImGuiRender(bool& isOpen)
 	{
 		ImGui::Begin("Hierarchy");
-
         {
             ImGuiTableFlags tableFlags = ImGuiTableFlags_NoPadInnerX
-                | ImGuiTableFlags_Resizable
-                | ImGuiTableFlags_Reorderable
+                | ImGuiTableFlags_BordersInnerV
                 | ImGuiTableFlags_ScrollY;
 
             // Name, Visibility, Lock
@@ -45,8 +46,8 @@ namespace CatEngine
             {
 
                 ImGui::TableSetupColumn("Label");
-                ImGui::TableSetupColumn("Visibility");
-                ImGui::TableSetupColumn("Lock");
+                ImGui::TableSetupColumn("Visibility", ImGuiTableColumnFlags_WidthFixed, 25.0f);
+                ImGui::TableSetupColumn("Lock", ImGuiTableColumnFlags_WidthFixed, 25.0f);
 
                 // Headers
                 {
@@ -92,9 +93,11 @@ namespace CatEngine
                             const auto& entity = m_Context->CreateEntity("Camera");
                             entity.AddComponent<CameraComponent>().Primary = false;
                             m_SelectionContext = entity;
-                            ImGui::EndPopup();
+                            ImGui::CloseCurrentPopup();
                         }
+                        ImGui::EndMenu();
                     }
+                    ImGui::EndPopup();
                 }
 
                 ImGui::EndTable();
@@ -143,6 +146,7 @@ namespace CatEngine
 	}
 	void SceneHierarchyPanel::DrawEntityNode(Entity entity)
 	{
+        ImGui::PushID(std::to_string(entity.GetUUID()).c_str());
 		const char* name = "Unnamed Entity";
 		if (entity.HasComponent<NameComponent>())
 			name = entity.GetComponent<NameComponent>().Name.c_str();
@@ -153,7 +157,7 @@ namespace CatEngine
         // ImGui item height tweaks
         auto* window = ImGui::GetCurrentWindow();
         window->DC.CurrLineSize.y = rowHeight;
-		//---------------------------------------------
+
 		ImGui::TableNextRow(0, rowHeight);
 
 		// Label column
@@ -205,6 +209,37 @@ namespace CatEngine
 				m_SelectionContext = {};
 			m_Context->DeleteEntity(entity);
 		}
+
+        // Visibility column
+
+        ImGui::TableSetColumnIndex(1);
+
+        bool visible = true;
+        {
+            float columnWidth = ImGui::GetColumnWidth();
+            float iconSize    = ImGui::GetFrameHeight();
+
+            float cursorX = ImGui::GetCursorPosX();
+            ImGui::SetCursorPosX(cursorX + (columnWidth - iconSize) * 0.5f);
+
+            ImGui::Checkbox("##Visible", &visible);
+        }
+
+        // Lock column
+
+        ImGui::TableSetColumnIndex(2);
+
+        bool lock = false;
+        {
+            float columnWidth = ImGui::GetColumnWidth();
+            float iconSize    = ImGui::GetFrameHeight(); // square icon
+
+            float cursorX = ImGui::GetCursorPosX();
+            ImGui::SetCursorPosX(cursorX + (columnWidth - iconSize) * 0.5f);
+
+            ImGui::Checkbox("##lock", &lock);
+        }
+        ImGui::PopID();
 	}
 
 	template<typename T, typename UIFunction>
@@ -1083,4 +1118,5 @@ namespace CatEngine
         }
 	}
 	
+
 }

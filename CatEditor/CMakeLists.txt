@@ -1,18 +1,10 @@
 set(SRCS
-    "src/ImGui/ImGuiDraw.cpp"
     "src/CatEditor/Entrypoint/CatEditorApp.cpp"
-    "src/CatEditor/Panels/SceneHierarchyPanel.cpp"
     "src/CatEditor/Panels/SceneViewportPanel.cpp"
-    "src/CatEditor/Panels/AssetBrowserPanel.cpp"
-    "src/CatEditor/Panels/ContentBrowserPanel.cpp"
     "src/CatEditor/EditorLayer.cpp"
-    "src/ImGui/ImGuiDraw.h"
     "src/CatEditor/UI/CatGui.h"
-    "src/CatEditor/Panels/ContentBrowserPanel.h"
     "src/CatEditor/Panels/Panel.h"
     "src/CatEditor/Panels/SceneViewportPanel.h"
-    "src/CatEditor/Panels/SceneHierarchyPanel.h"
-    "src/CatEditor/Panels/AssetBrowserPanel.h"
     "src/CatEditor/EditorLayer.h"
 )
 add_executable(CatEditor ${SRCS})

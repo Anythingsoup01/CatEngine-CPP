@@ -15,20 +15,19 @@
 #include "CatEngine/AssetManager/AssetManager.h"
 #include "CatEngine/AssetManager/TextureImporter.h"
 
+#include "CatEngine/Editor/Panels/SceneHierarchyPanel.h"
+#include "CatEngine/Editor/Panels/AssetBrowserPanel.h"
+#include "CatEngine/Editor/Panels/ContentBrowserPanel.h"
+
+#include "CatEngine/Editor/IconManager.h"
+
 namespace CatEngine
 {
     void EditorLayer::OnAttach()
     {
         s_Instance = this;
 
-        m_IconStartRuntime = TextureImporter::ImportIconTexture("Resources/Icons/Editor/Start-Runtime.png");
-        m_IconPauseRuntime = TextureImporter::ImportIconTexture("Resources/Icons/Editor/Pause-Runtime.png");
-		m_IconPauseRuntimeSelected = TextureImporter::ImportIconTexture("Resources/Icons/Editor/Pause-Runtime-Selected.png");
-		m_IconNextFrameRuntime = TextureImporter::ImportIconTexture("Resources/Icons/Editor/NextFrame-Runtime.png");
-		m_IconStopRuntime = TextureImporter::ImportIconTexture("Resources/Icons/Editor/Stop-Runtime.png");
-
-		m_IconStartSimulation = TextureImporter::ImportIconTexture("Resources/Icons/Editor/Start-Simulation.png");
-
+        IconManager::Init();
 
         FramebufferSpecification fbSpec;
         fbSpec.Attachments = { FramebufferTextureFormat::RGBA8, FramebufferTextureFormat::RED_INTEGER, FramebufferTextureFormat::Depth };
@@ -41,11 +40,17 @@ namespace CatEngine
 
         m_MouseInUse = false;
 
-        m_SceneHierarchyPanel.SetContext(m_EditorScene);
+
         m_SceneViewportPanel.SetContext(m_EditorScene);
         m_SceneCameraPanel.SetContext(m_EditorScene);
         ScriptEngine::GetMutable().SetSceneContext(m_EditorScene);
         m_CurrentScene = m_EditorScene;
+        m_PanelManager = CreateScope<PanelManager>();
+
+        m_PanelManager->AddPanel<SceneHierarchyPanel>(PanelCategory::View, "SceneHierarchyPanel", true);
+        m_PanelManager->AddPanel<AssetBrowserPanel>(PanelCategory::View, "AssetBrowserPanel", true);
+        m_PanelManager->AddPanel<ContentBrowserPanel>(PanelCategory::View, "ContentBrowserPanel", true);
+
 
         auto commandLineArgs = Application::Get().GetSpecification().CommandlineArgs;
         if (commandLineArgs.Count > 1)
@@ -163,9 +168,9 @@ namespace CatEngine
 
             UI_MenuBar();
             UI_Viewport();
-            m_SceneHierarchyPanel.OnImGuiRender();
-            m_ContentBrowserPanel.OnImGuiRender();
-            m_AssetBrowserPanel.OnImGuiRender();
+
+            m_PanelManager->OnImGuiRender();
+
             UI_Toolbar();
 
 
@@ -181,7 +186,7 @@ namespace CatEngine
     {
         Renderer2D::BeginScene(m_EditorCamera);
         {
-            Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
+            Entity selectedEntity = m_PanelManager->GetPanel<SceneHierarchyPanel>("SceneHierarchyPanel")->GetSelectedEntity();
 
             if (selectedEntity)
             {
@@ -189,7 +194,6 @@ namespace CatEngine
                 glm::vec3 position = tc.Position;
                 glm::mat4 rotation = glm::toMat4(glm::quat(tc.Rotation));
                 glm::vec3 scale = tc.Scale;
-
                 glm::mat4 transform = glm::translate(glm::mat4(1.f), position) * rotation * glm::scale(glm::mat4(1.f), scale);
                 Renderer2D::DrawRect(transform, glm::vec4(0.85f, 0.1f, 0.85f, 1.0f));
             }
@@ -458,7 +462,7 @@ namespace CatEngine
 	
     void EditorLayer::UI_Gizmos()
 	{
-		Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
+        Entity selectedEntity = m_PanelManager->GetPanel<SceneHierarchyPanel>("SceneHierarchyPanel")->GetSelectedEntity();
 		if (selectedEntity && m_GizmoType != -1)
 		{
 			ImGuizmo::SetOrthographic(false);
@@ -495,17 +499,18 @@ namespace CatEngine
 		
         ImGui::Begin("##toolbar", nullptr, tabStyle);
         {
+
             float size = ImGui::GetWindowHeight() - 4.f;
-            Ref<Texture2D> runtimeIcon = m_SceneState == SceneState::Play ? m_IconStopRuntime : m_IconStartRuntime;
+            Ref<Texture2D> runtimeIcon = m_SceneState == SceneState::Play ? IconManager::GetIcon("Stop-Runtime") : IconManager::GetIcon("Start-Runtime");
 			Ref<Texture2D> pauseIcon;
 			if (m_SceneState == SceneState::Edit)
-				pauseIcon = m_IsScenePaused ? m_IconPauseRuntimeSelected : m_IconPauseRuntime;
+				pauseIcon = m_IsScenePaused ? IconManager::GetIcon("Pause-Runtime-Selected") : IconManager::GetIcon("Pause-Runtime");
 			else if (m_SceneState == SceneState::Play)
-				pauseIcon = m_IsScenePaused ? m_IconNextFrameRuntime : m_IconPauseRuntime;
+				pauseIcon = m_IsScenePaused ? IconManager::GetIcon("NextFrame-Runtime") : IconManager::GetIcon("Pause-Runtime");
 			else if (m_SceneState == SceneState::Simulate)
-				pauseIcon = m_IsScenePaused ? m_IconPauseRuntimeSelected : m_IconPauseRuntime; // TODO: Disable the play & pause buttons during simulation
+				pauseIcon = m_IsScenePaused ? IconManager::GetIcon("Pause-Runtime-Selected") : IconManager::GetIcon("Pause-Runtime"); // TODO: Disable the play & pause buttons during simulation
 
-			Ref<Texture2D> simulationIcon = m_SceneState == SceneState::Simulate ? m_IconStopRuntime : m_IconStartSimulation;
+			Ref<Texture2D> simulationIcon = m_SceneState == SceneState::Simulate ? IconManager::GetIcon("Stop-Runtime") : IconManager::GetIcon("Start-Simulation");
 
             ImGui::SetCursorPosX((ImGui::GetWindowContentRegionMax().x * 0.5f - (size * 0.5f)));
             if (ImGui::ImageButton("##PLAY", (ImTextureID)(uint64_t)runtimeIcon->GetRendererID(), ImVec2(size * 1.403f, size), {0, 0}, {1, 1}))
@@ -591,7 +596,8 @@ namespace CatEngine
             std::filesystem::path relativePath = std::filesystem::relative(m_EditorScenePath, Project::GetAssetDirectory());
             AssetHandle handle = Project::GetActive()->GetEditorAssetManager()->ImportAsset(relativePath);
             m_CurrentSceneHandle = handle;
-            m_AssetBrowserPanel.ResetAssetDirectory();
+            m_PanelManager->GetPanel<ContentBrowserPanel>("ContentBrowserPanel")->ResetAssetDirectory();
+            m_PanelManager->GetPanel<AssetBrowserPanel>("AssetBrowserPanel")->ResetAssetDirectory();
         }
     }
 
@@ -629,7 +635,9 @@ namespace CatEngine
         
 
         m_EditorScene->OnViewportResize(m_SceneViewportPanel.GetWidth(), m_SceneViewportPanel.GetHeight());
-        m_SceneHierarchyPanel.SetContext(m_EditorScene);
+
+        m_PanelManager->SetSceneContext(m_EditorScene);
+
         m_SceneViewportPanel.SetContext(m_EditorScene);
         m_SceneCameraPanel.SetContext(m_EditorScene);
         ScriptEngine::GetMutable().SetSceneContext(m_EditorScene);
@@ -651,7 +659,9 @@ namespace CatEngine
 
         m_EditorScene = CreateRef<Scene>();
         m_EditorScene->OnViewportResize(m_SceneViewportPanel.GetWidth(), m_SceneViewportPanel.GetHeight());
-        m_SceneHierarchyPanel.SetContext(m_EditorScene);
+
+        m_PanelManager->SetSceneContext(m_EditorScene);
+        
         m_SceneViewportPanel.SetContext(m_EditorScene);
         m_SceneCameraPanel.SetContext(m_EditorScene);
         ScriptEngine::GetMutable().SetSceneContext(m_EditorScene);
@@ -688,8 +698,8 @@ namespace CatEngine
             if (AssetManager::IsAssetHandleValid(startScenePath))
                 OpenScene(startScenePath);
             ScriptEngine::GetMutable().InitializeFileSystems();
-            m_ContentBrowserPanel.ResetAssetDirectory();
-            m_AssetBrowserPanel.ResetAssetDirectory();
+            m_PanelManager->GetPanel<ContentBrowserPanel>("ContentBrowserPanel")->ResetAssetDirectory();
+            m_PanelManager->GetPanel<AssetBrowserPanel>("AssetBrowserPanel")->ResetAssetDirectory();
         }
     }
 
@@ -711,7 +721,8 @@ namespace CatEngine
 
         m_EditorScene->CopyTo(m_RuntimeScene);
 
-        m_SceneHierarchyPanel.SetContext(m_RuntimeScene);
+        m_PanelManager->SetSceneContext(m_RuntimeScene);
+
         m_SceneViewportPanel.SetContext(m_RuntimeScene);
         m_SceneCameraPanel.SetContext(m_RuntimeScene);
         ScriptEngine::GetMutable().SetSceneContext(m_RuntimeScene);
@@ -744,7 +755,9 @@ namespace CatEngine
 
         m_RuntimeScene = nullptr;
 
-        m_SceneHierarchyPanel.SetContext(m_EditorScene);
+
+        m_PanelManager->SetSceneContext(m_EditorScene);
+
         m_SceneViewportPanel.SetContext(m_EditorScene);
         m_SceneCameraPanel.SetContext(m_EditorScene);
         ScriptEngine::GetMutable().SetSceneContext(m_EditorScene);
@@ -760,7 +773,9 @@ namespace CatEngine
         m_SimulationScene = CreateRef<Scene>();
 
 		m_EditorScene->CopyTo(m_SimulationScene);
-        m_SceneHierarchyPanel.SetContext(m_SimulationScene);
+
+        m_PanelManager->SetSceneContext(m_SimulationScene);
+
         m_SceneViewportPanel.SetContext(m_SimulationScene);
         m_SceneCameraPanel.SetContext(m_SimulationScene);
         ScriptEngine::GetMutable().SetSceneContext(m_SimulationScene);
@@ -778,7 +793,8 @@ namespace CatEngine
 
         m_SimulationScene = nullptr;
 
-        m_SceneHierarchyPanel.SetContext(m_EditorScene);
+        m_PanelManager->SetSceneContext(m_EditorScene);
+
         m_SceneViewportPanel.SetContext(m_EditorScene);
         m_SceneCameraPanel.SetContext(m_EditorScene);
         ScriptEngine::GetMutable().SetSceneContext(m_EditorScene);
@@ -789,7 +805,8 @@ namespace CatEngine
     {
 		CE_PROFILE_FUNCTION();
 
-        Entity entity = m_SceneHierarchyPanel.GetSelectedEntity();
+        Entity entity = {};
+        Entity selectedEntity = m_PanelManager->GetPanel<SceneHierarchyPanel>("SceneHierarchyPanel")->GetSelectedEntity();
         if (entity)
         {
             m_CurrentScene->DuplicateEntity(entity);
@@ -799,18 +816,20 @@ namespace CatEngine
     {
 		CE_PROFILE_FUNCTION();
 
-        Entity entity = m_SceneHierarchyPanel.GetSelectedEntity();
+        Entity entity = {};
+        Entity selectedEntity = m_PanelManager->GetPanel<SceneHierarchyPanel>("SceneHierarchyPanel")->GetSelectedEntity();
         if (entity)
         {
             m_CurrentScene->DeleteEntity(entity);
-            m_SceneHierarchyPanel.SetSelectedEntity();
+            //m_SceneHierarchyPanel.SetSelectedEntity();
         }
     }
     void EditorLayer::CopyEntity()
     {
 		CE_PROFILE_FUNCTION();
 
-        Entity entity = m_SceneHierarchyPanel.GetSelectedEntity();
+        Entity entity = {};
+        Entity selectedEntity = m_PanelManager->GetPanel<SceneHierarchyPanel>("SceneHierarchyPanel")->GetSelectedEntity();
         if (entity)
         {
             m_CopiedEntity = entity;
@@ -824,7 +843,7 @@ namespace CatEngine
         {
             // TODO : Make it to where entity doesn't need to exist
             Entity pastedEntity = m_CurrentScene->PasteEntity(m_CopiedEntity);
-            m_SceneHierarchyPanel.SetSelectedEntity(pastedEntity);
+            //m_SceneHierarchyPanel.SetSelectedEntity(pastedEntity);
         }
     }
     
@@ -961,7 +980,7 @@ namespace CatEngine
 		if (Input::IsMouseButtonPressed(MouseCode::ButtonLeft))
 		{
 			if (m_SceneViewportPanel.IsHovered() && !ImGuizmo::IsOver() && !alt)
-				m_SceneHierarchyPanel.SetSelectedEntity(m_HoveredEntity);
+				m_PanelManager->GetPanel<SceneHierarchyPanel>("SceneHierarchyPanel")->SetSelectedEntity(m_HoveredEntity);
 		}
 
         return false;

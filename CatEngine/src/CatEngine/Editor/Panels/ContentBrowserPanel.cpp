@@ -1,8 +1,6 @@
+#include "cepch.h"
 #include "ContentBrowserPanel.h"
 #include <imgui.h>
-
-#include <iostream>
-#include <string>
 
 #include "CatEngine/Core/System.h" 
 
@@ -10,6 +8,8 @@
 #include "CatEngine/AssetManager/TextureImporter.h"
 
 #include "AssetBrowserPanel.h"
+
+#include "CatEngine/Editor/IconManager.h"
 
 const size_t MAX_FILE_PATH_LEN = 4096;
 
@@ -30,13 +30,11 @@ namespace CatEngine
 		: m_CurrentDirectory(Project::GetAssetDirectory())
 	{
         // TODO: Generate these as assets
-        m_DirectoryIcon = TextureImporter::ImportIconTexture("Resources/Icons/DirectoryIcon.png");
-		m_FileIcon = TextureImporter::ImportIconTexture("Resources/Icons/ScriptFileIcon.png");
 	}
 
-	void ContentBrowserPanel::OnImGuiRender()
+	void ContentBrowserPanel::OnImGuiRender(bool& isOpen)
 	{
-		ImGui::Begin("File Browser");
+		ImGui::Begin("File Browser", &isOpen);
 
 		if (m_CurrentDirectory != Project::GetAssetDirectory())
 		{
@@ -66,7 +64,7 @@ namespace CatEngine
             if (strncmp(filenameString.c_str(), ".", 1) != 0)
             {
                 ImGui::PushID(filenameString.c_str());
-                Ref<Texture2D> icon = directoryEntry.is_directory() ? m_DirectoryIcon : m_FileIcon;
+                Ref<Texture2D> icon = directoryEntry.is_directory() ? IconManager::GetIcon("DirectoryIcon") : IconManager::GetIcon("ScriptFileIcon");
                 ImGui::ImageButton("##ICON", (ImTextureID)(uint64_t)icon->GetRendererID(), { thumbnailSize, thumbnailSize }, { 0, 1 }, { 1, 0 });
 
                 if (ImGui::BeginDragDropSource())
@@ -181,13 +179,11 @@ namespace CatEngine
                             << "#include \"CatScriptCore/ScriptInclude.h\"\n"
                             << "namespace CatRuntime\n"
                             << "{\n"
-                            << "    class " << buffer << " : public ScriptObject\n"
+                            << "    class " << buffer << " : public Object\n"
                             << "    {\n"
                             << "    public:\n"
-                            << "        " << buffer << "(uint64_t entityID) : ScriptObject(entityID) {}\n"
-                            << "        virtual void Start() override;\n"
-                            << "        virtual void Update(float ts) override;\n"
-                            << "        static " << buffer << "* Create(uint64_t);\n"
+                            << "        virtual void Start();\n"
+                            << "        virtual void Update(float ts);\n"
                             << "    private:"
                             << "    // Be sure to put editor variables here, or in the public field!\n"
                             << "    };\n"
@@ -221,7 +217,6 @@ namespace CatEngine
                             << "    {\n"
                             << "        // Code placed here runs every frame\n"
                             << "    }\n\n"
-                            << "    " << buffer << "* " << buffer << "::Create(uint64_t entityID) { return new " << buffer << "(entityID); }\n\n"
                             << "}";
 
                         out << content.rdbuf();

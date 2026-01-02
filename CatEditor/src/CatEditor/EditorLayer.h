@@ -4,10 +4,9 @@
 
 #include "imgui.h"
 
-#include "Panels/ContentBrowserPanel.h"
-#include "Panels/AssetBrowserPanel.h"
-#include "Panels/SceneHierarchyPanel.h"
 #include "Panels/SceneViewportPanel.h"
+
+#include "CatEngine/Editor/PanelManager.h"
 
 namespace CatEngine
 {
@@ -70,6 +69,7 @@ namespace CatEngine
 		void OnOverlayRender();
 
     private:
+        Scope<PanelManager> m_PanelManager;
 
         std::filesystem::path m_CurrentProjectPath;
         std::filesystem::path m_EditorScenePath;
@@ -101,9 +101,6 @@ namespace CatEngine
 
         SceneViewportPanel m_SceneViewportPanel;
         SceneViewportPanel m_SceneCameraPanel;
-        SceneHierarchyPanel m_SceneHierarchyPanel;
-        ContentBrowserPanel m_ContentBrowserPanel;
-        AssetBrowserPanel m_AssetBrowserPanel;
 		
         int m_GizmoType = -1;
 
@@ -115,10 +112,6 @@ namespace CatEngine
 			Pause = 3
 		};
 		SceneState m_SceneState = SceneState::Edit;
-
-        Ref<Texture2D> m_IconStartRuntime, m_IconPauseRuntime, m_IconPauseRuntimeSelected, m_IconNextFrameRuntime, m_IconStopRuntime;
-		Ref<Texture2D> m_IconStartSimulation;
-
     private:
         static inline EditorLayer* s_Instance = nullptr;
     };

@@ -2,18 +2,17 @@
 
 #include "CatEngine/Renderer/Texture.h"
 
-#include "CatEngine/Scene/Scene.h"
-
-#include <filesystem>
+#include "CatEngine/Editor/EditorPanel.h"
 
 namespace CatEngine
 {
-	class AssetBrowserPanel
+	class AssetBrowserPanel : public EditorPanel
 	{
 	public:
 		AssetBrowserPanel();
 
-		void OnImGuiRender();
+		virtual void OnImGuiRender(bool& isOpen) override;
+        virtual void OnEvent(Event& e) override {};
 
         void ResetAssetDirectory();
 
@@ -40,9 +39,6 @@ namespace CatEngine
         static inline std::vector<TreeNode> m_TreeNodes;
 
         std::filesystem::path m_CurrentDirectory;
-
-		Ref<Texture2D> m_DirectoryIcon;
-		Ref<Texture2D> m_FileIcon;
 
         AssetHandle m_SelectionContext = 0;
         AssetHandle m_PreviousSelection = 0;
