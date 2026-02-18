@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 4.2.1)
+cmake_minimum_required(VERSION 4.2.3)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 project(CatEngine LANGUAGES C CXX)
 add_compile_options(

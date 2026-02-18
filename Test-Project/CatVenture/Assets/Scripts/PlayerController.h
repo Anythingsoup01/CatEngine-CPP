@@ -14,8 +14,6 @@ namespace CatRuntime
         void OnCollisionEnter(uint64_t other);
         void OnCollisionExit(uint64_t other);
 
-        static PlayerController* Create(uint64_t entityID);
-
     private:
         Object m_Entity;
         Texture2D m_CatTexture;

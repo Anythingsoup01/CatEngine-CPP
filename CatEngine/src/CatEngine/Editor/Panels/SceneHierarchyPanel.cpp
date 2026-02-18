@@ -567,9 +567,9 @@ namespace CatEngine
 			const auto& entityClasses = scriptEngine.GetScriptClasses();
 
             std::vector<const char*> classes = {""};
-            for (auto& [className, scriptClass] : entityClasses)
+            for (auto& [_, scriptClass] : entityClasses)
             {
-                classes.push_back(className.c_str());
+                classes.push_back(scriptClass->GetClassName());
             }
 
             if (ImGuiDraw::Combo("Class", sc.SelectedScript, classes))
@@ -581,10 +581,11 @@ namespace CatEngine
             if (!sc.Loaded && !sc.ClassName.empty())
             {
                 int i = 0;
-                for (auto& [className, scriptClass] : entityClasses)
+                for (auto& [_, scriptClass] : entityClasses)
                 {
                     i++;
-                    if (sc.ClassName == className)
+                    std::string scriptName = scriptClass->GetClassName();
+                    if (sc.ClassName == scriptName)
                     {
                         sc.SelectedScript = i;
                     }
@@ -594,7 +595,7 @@ namespace CatEngine
             sc.Loaded = true;
 
 
-			bool scriptClassExists = scriptEngine.ScriptClassExists(sc.ClassName);
+			bool scriptClassExists = scriptEngine.ScriptClassExists(sc.ClassName.c_str());
 			bool sceneRunning = m_Context->IsRunning();
 			if (sceneRunning)
 			{
@@ -720,7 +721,7 @@ namespace CatEngine
 			{
                 if(scriptClassExists)
                 {
-					Ref<ScriptClass> scriptClass = scriptEngine.GetScriptClass(component.ClassName);
+					Ref<ScriptClass> scriptClass = scriptEngine.GetScriptClass(component.ClassName.c_str());
 					const auto& fields = scriptClass->GetFields();
 
 					auto& scriptFields = scriptEngine.GetScriptFieldMap(selection);

@@ -8,7 +8,6 @@
 
 namespace CatEngine
 {
-
     enum class DataType
 	{
         Short,
@@ -58,10 +57,9 @@ namespace CatEngine
     
     struct ScriptField
 	{
-        std::string NameSpace;
-        std::string ClassName;
-		std::string Name;
 		DataType Type;
+        std::string Name;
+        CapyField* Field;
 	};
 
 	struct ScriptFieldInstance
@@ -102,4 +100,6 @@ namespace CatEngine
 		friend class ScriptEngine;
 		friend class ScriptInstance;
 	};
+
+    using ScriptFieldMap = std::unordered_map<UUID, ScriptFieldInstance>;
 }
