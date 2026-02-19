@@ -1,0 +1,131 @@
+Scene: SampleScene
+Entities:
+  - Entity: 17826502279639805133
+    TagComponent:
+      Tag: None
+    LayerComponent:
+      Layer: Default
+    NameComponent:
+      Name: GameObject
+    TransformComponent:
+      Position: [1.9271183, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+  - Entity: 3361706730667183589
+    TagComponent:
+      Tag: None
+    LayerComponent:
+      Layer: Default
+    NameComponent:
+      Name: Circle
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    CircleRendererComponent:
+      Color: [1, 1, 1, 1]
+      Thickness: 1
+      Fade: 0.00499999989
+    Rigidbody2DComponent:
+      BodyType: 2
+      FixedRotation: false
+    CircleCollider2DComponent:
+      Offset: [0, 0]
+      Radius: 0.5
+      ShowColliderBounds: false
+      Density: 1
+      Friction: 0.5
+      Restitution: 0
+      RestitutionThreshold: 0.5
+  - Entity: 515535472521845481
+    TagComponent:
+      Tag: None
+    LayerComponent:
+      Layer: Default
+    NameComponent:
+      Name: Enemy
+    TransformComponent:
+      Position: [10.3831263, -0.0127658844, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 0.0265282393, 0.0265282393, 1]
+      Texture: 3252004842661640856
+      Tiling: 1
+  - Entity: 5114399343120810540
+    TagComponent:
+      Tag: None
+    LayerComponent:
+      Layer: Default
+    NameComponent:
+      Name: Player
+    TransformComponent:
+      Position: [-5.53849268, -0.15319562, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [0.0332651138, 1, 0.0265282393, 1]
+      Texture: 9903971983362438089
+      Tiling: 3.9000001
+    CameraComponent:
+      Camera:
+        ProjectionType: 1
+        PerspectiveFOV: 0.785398185
+        PerspectiveNear: 0.00999999978
+        PerspectiveFar: 10000
+        OrthographicSize: 40
+        OrthographicNear: -1
+        OrthographicFar: 1
+      Primary: true
+      FixedAspectRatio: false
+    Rigidbody2DComponent:
+      BodyType: 2
+      FixedRotation: true
+    BoxCollider2DComponent:
+      Offset: [0, 0]
+      Size: [0.5, 0.5]
+      Rotation: 0
+      ShowColliderBounds: false
+      Density: 1
+      Friction: 0.5
+      Restitution: 0
+      RestitutionThreshold: 0.5
+    ScriptComponent:
+      ScriptID: 6176108674548425988
+      ClassName: PlayerController
+      Fields:
+        - FieldID: 246577070
+          FieldName: m_Entity
+          FieldType: Entity
+          Value: 515535472521845481
+        - FieldID: 1696333170
+          FieldName: m_CatTexture
+          FieldType: Texture2D
+          Value: 7155916114788326522
+  - Entity: 14096084207158609928
+    TagComponent:
+      Tag: None
+    LayerComponent:
+      Layer: Ground
+    NameComponent:
+      Name: Ground
+    TransformComponent:
+      Position: [2.28792953, -1.46803474, 0]
+      Rotation: [0, 0, 0]
+      Scale: [356.60968, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      Texture: 0
+      Tiling: 1
+    Rigidbody2DComponent:
+      BodyType: 0
+      FixedRotation: false
+    BoxCollider2DComponent:
+      Offset: [0, 0]
+      Size: [0.5, 0.5]
+      Rotation: 0
+      ShowColliderBounds: false
+      Density: 1
+      Friction: 0.5
+      Restitution: 0
+      RestitutionThreshold: 0.5
