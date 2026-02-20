@@ -124,6 +124,7 @@ set(SRCS
     "src/CatEngine/Scene/ScriptObject.h"
     "src/CatEngine/Scene/ContactListener.h"
     "src/CatEngine/Scene/Components/3D/TransformComponent.h"
+    "src/CatEngine/Scene/Components/3D/MeshComponent.h"
     "src/CatEngine/Scene/Components/Required/InformationComponents.h"
     "src/CatEngine/Scene/Components/Renderer/CameraComponent.h"
     "src/CatEngine/Scene/Components/Scripting/ScriptComponent.h"
@@ -464,6 +465,7 @@ target_include_directories(CatEngine PRIVATE
     "${CMAKE_SOURCE_DIR}/vendor/Box2D/include"
     "${CMAKE_SOURCE_DIR}/vendor/FileWatch"
     "${CMAKE_SOURCE_DIR}/vendor/Capybara/include"
+    "${CMAKE_SOURCE_DIR}/vendor/assimp/include"
 )
 
 target_link_libraries(CatEngine
@@ -475,6 +477,7 @@ target_link_libraries(CatEngine
     Box2D
     GL
     Capybara
+    assimp
 )
 
 target_compile_definitions(CatEngine PUBLIC

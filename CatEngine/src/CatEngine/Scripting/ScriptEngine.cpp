@@ -436,6 +436,7 @@ ScriptInstance::ScriptInstance(Ref<ScriptClass> scriptClass, Entity entity)
     : m_ScriptClass(scriptClass) {
   m_Instance = scriptClass->Instantiate(entity.GetUUID());
   CE_ASSERT(m_Instance);
+  std::cout << m_Instance << "\n";
 
   for (auto &[fieldID, field] : scriptClass->GetFields()) {
     size_t valueSize = TypeToSize(field.Type);
@@ -448,7 +449,13 @@ ScriptInstance::ScriptInstance(Ref<ScriptClass> scriptClass, Entity entity)
   }
 
   uint64_t data = entity.GetUUID();
-  SetFieldData(".m_EntityID", data);
+  capy_field_data_set(m_Instance, m_ScriptClass->m_CapyClass, ".m_EntityID",
+                      &data);
+
+  float fdata = 999.0f;
+
+  capy_field_data_set(m_Instance, m_ScriptClass->m_CapyClass, ".m_Control",
+                      &fdata);
 
   m_StartMethod = scriptClass->GetMethod("Start");
   m_UpdateMethod = scriptClass->GetMethod("Update");
@@ -502,5 +509,6 @@ bool ScriptInstance::GetFieldDataInternal(const std::string &name,
 void ScriptInstance::SetFieldDataInternal(const std::string &name,
                                           void *value) {
   capy_field_data_set(m_Instance, m_ScriptClass->m_CapyClass, name, value);
+  std::cout << m_Instance << "\n";
 }
 } // namespace CatEngine

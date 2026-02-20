@@ -40,6 +40,9 @@ void OpenGLRenderAPI::Init() {
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+  glEnable(GL_DEPTH_TEST);
+  glDepthFunc(GL_LESS);
+
   glEnable(GL_CULL_FACE);
   glFrontFace(GL_CCW);
 }
@@ -52,7 +55,7 @@ void OpenGLRenderAPI::SetViewport(uint32_t width, uint32_t height) {
 void OpenGLRenderAPI::Clear(const glm::vec4 &clearColor) {
   CE_PROFILE_FUNCTION();
   glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
-  glClear(GL_COLOR_BUFFER_BIT);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 void OpenGLRenderAPI::DrawIndexed(const Ref<VertexArray> &vertexArray) {

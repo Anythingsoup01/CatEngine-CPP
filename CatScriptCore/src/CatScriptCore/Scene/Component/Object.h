@@ -1,32 +1,31 @@
 #pragma once
 
-#include <cstdint>
-#include "Transform.h"
-#include "Tag.h"
 #include "Layer.h"
+#include "Tag.h"
+#include "Transform.h"
+#include <cstdint>
 
-namespace CatRuntime
-{
+#include <iostream>
 
-	class Object
-	{
-    protected:
-        uint64_t m_EntityID = 0;
-    public:
-        Object() = default;
-        Object(uint64_t entityID) : m_EntityID(entityID) {}
+namespace CatRuntime {
 
-        Transform transform() { return Transform{m_EntityID}; }
+class Object {
+protected:
+  uint64_t m_EntityID = 0;
+  float m_Control = 0.0f;
 
-        Tag tag() { return Tag{m_EntityID}; }
+public:
+  Object() = default;
+  Object(uint64_t entityID) : m_EntityID(entityID) {}
 
-        Layer layer() { return Layer{m_EntityID}; }
+  Transform transform() { return Transform{m_EntityID}; }
 
-        template<typename T>
-        bool HasComponent();
+  Tag tag() { return Tag{m_EntityID}; }
 
-        template<typename T>
-        T GetComponent();
+  Layer layer() { return Layer{m_EntityID}; }
 
-    };
-}
+  template <typename T> bool HasComponent();
+
+  template <typename T> T GetComponent();
+};
+} // namespace CatRuntime
