@@ -22,6 +22,8 @@ struct Renderer3DData {
   static const uint32_t MaxIndices = MaxCubes * 6;
   static const uint32_t MaxTextureSlots = 32;
 
+  static const uint32_t MaxLightCount = 8;
+
   Ref<VertexArray> CubeVertexArray;
   Ref<VertexBuffer> CubeVertexBuffer;
 
@@ -126,8 +128,11 @@ void Renderer3D::Init() {
   s_Data.CubeVertexPositions[22] = {0.5f, -0.5f, 0.5f, 1.0f};
   s_Data.CubeVertexPositions[23] = {-0.5f, -0.5f, 0.5f, 1.0f};
 
-  s_Data.Shaders.Load("QuadShader", "Resources/Shader/2D/QuadShader.vert",
-                      "Resources/Shader/2D/QuadShader.frag");
+  s_Data.Shaders.Load("QuadShader", "Resources/Shader/3D/PBS.vert",
+                      "Resources/Shader/3D/PBS.frag");
+
+  s_Data.Shaders.Load("LightSource", "Resources/Shader/3D/LightSource.vert",
+                      "Resources/Shader/3D/LightSource.frag");
 
   int32_t samplers[s_Data.MaxTextureSlots];
   for (uint32_t i = 0; i < s_Data.MaxTextureSlots; i++)

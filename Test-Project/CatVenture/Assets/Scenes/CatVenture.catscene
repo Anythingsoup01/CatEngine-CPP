@@ -1,5 +1,20 @@
 Scene: SampleScene
 Entities:
+  - Entity: 1010500143137803705
+    TagComponent:
+      Tag: None
+    LayerComponent:
+      Layer: Default
+    NameComponent:
+      Name: Light Source
+    TransformComponent:
+      Position: [0, 1.36195028, 2.75569248]
+      Rotation: [0, 0, 0]
+      Scale: [0.5, 0.5, 0.5]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+      Texture: 3727620841321001964
+      Tiling: 1
   - Entity: 9878193059516869459
     TagComponent:
       Tag: None
@@ -8,30 +23,10 @@ Entities:
     NameComponent:
       Name: GameObject
     TransformComponent:
-      Position: [4.53849411, 1.47441685, 3.03013754]
+      Position: [0, 0, 0]
       Rotation: [0, 0, 0]
-      Scale: [0.488612413, 1, 1]
-    SpriteRendererComponent:
-      Color: [1, 0, 0, 1]
-      Texture: 8763345818349488746
-      Tiling: 1
-  - Entity: 5605902401645087129
-    TagComponent:
-      Tag: None
-    LayerComponent:
-      Layer: Default
-    NameComponent:
-      Name: Face Two
-    TransformComponent:
-      Position: [0.548670292, -1.46206394e-05, 3.70720434]
-      Rotation: [-3.14159226, 0, -3.14159226]
-      Scale: [1.836061, 1.23403704, 0.511327624]
+      Scale: [1, 1, 1]
     SpriteRendererComponent:
       Color: [1, 1, 1, 1]
-      Texture: 7155916114788326522
+      Texture: 0
       Tiling: 1
-    ScriptComponent:
-      ScriptID: 38155226265035241
-      ClassName: BoxSpinner
-      Fields:
-        []

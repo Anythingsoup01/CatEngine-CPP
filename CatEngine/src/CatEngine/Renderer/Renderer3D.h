@@ -6,6 +6,7 @@
 #include <glm/glm.hpp>
 
 #include "CatEngine/Scene/Components/2D/SpriteRenderer.h"
+#include "CatEngine/Scene/Components/3D/LightSourceComponent.h"
 
 namespace CatEngine {
 
@@ -21,6 +22,15 @@ public:
   static void StartBatch();
   static void Flush();
   static void NextBatch();
+
+  static void DrawDirectionalLightSource(const glm::mat4 & transform,
+                              DirectionalLightComponent &source);
+
+  static void DrawPointLightSource(const glm::mat4 & transform,
+                              DirectionalLightComponent &source);
+
+  static void DrawSpotLightSource(const glm::mat4 & transform,
+                              DirectionalLightComponent &source);
 
   static void DrawCube(const glm::mat4 &transform,
                        SpriteRendererComponent &sprite, uint32_t entityID);
