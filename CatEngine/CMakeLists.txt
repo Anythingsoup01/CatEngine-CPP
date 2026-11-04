@@ -20,6 +20,7 @@ set(SRCS
     "src/CatEngine/Editor/Panels/SceneHierarchyPanel.cpp"
     "src/CatEngine/Editor/Panels/AssetBrowserPanel.cpp"
     "src/CatEngine/Editor/Panels/ContentBrowserPanel.cpp"
+    "src/CatEngine/Editor/Panels/DrawComponents.cpp"
     "src/CatEngine/ImGui/ImGuiBuild.cpp"
     "src/CatEngine/ImGui/ImGuiLayer.cpp"
     "src/CatEngine/AssetManager/AssetImporter.cpp"
@@ -80,6 +81,7 @@ set(SRCS
     "src/CatEngine/Editor/IconManager.h"
     "src/CatEngine/Editor/ImGui/CEImGui.h"
     "src/CatEngine/Editor/Panels/ContentBrowserPanel.h"
+    "src/CatEngine/Editor/Panels/DrawComponents.h"
     "src/CatEngine/Editor/Panels/SceneHierarchyPanel.h"
     "src/CatEngine/Editor/Panels/AssetBrowserPanel.h"
     "src/CatEngine/Editor/PanelManager.h"
@@ -459,7 +461,7 @@ target_include_directories(CatEngine PRIVATE
     "${CMAKE_SOURCE_DIR}/vendor/ImGuizmo"
     "${CMAKE_SOURCE_DIR}/vendor/Box2D/include"
     "${CMAKE_SOURCE_DIR}/vendor/FileWatch"
-    "${CMAKE_SOURCE_DIR}/vendor/Capybara/include"
+    "${CMAKE_SOURCE_DIR}/vendor/Capybara/Capybara/src"
 )
 
 target_link_libraries(CatEngine

@@ -1,11 +1,14 @@
-#include <filesystem>
+#pragma once
+#include "cepch.h"
 
 #include "CatEngine/Core/UUID.h"
 #include "ScriptEntityStorage.h"
 
+#include "CatEngine/Scene/Entity.h"
+#include "Capybara/Core/ReflectionTypes.h"
+#include <cstdint>
+
 namespace CatEngine {
-class Scene;
-class Entity;
 
 enum class CollisionType {
   None = 0,
@@ -13,26 +16,23 @@ enum class CollisionType {
   End,
 };
 
-////////////////////////////////////////////////////////////////////////////
-// Script Engine ///////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////
-
 class ScriptClass;
 class ScriptInstance;
 
 class ScriptEngine {
 public:
+  ScriptEngine();
+
   void Init();
   void Shutdown();
-
-  void InitializeFileSystems();
 
   void SetSceneContext(Ref<Scene> scene);
   void OnRuntimeStop();
 
-  void ReloadBinaries();
+  void PollJIT();
 
-  bool ScriptClassExists(const char *className);
+  bool ScriptClassExists(const std::string_view &className);
+
   void OnStartEntity(Entity e);
   void OnUpdateEntity(Entity e, float ts);
 
@@ -41,7 +41,7 @@ public:
   Ref<Scene> GetSceneContext();
   Ref<ScriptInstance> GetEntityScriptInstance(UUID entityID);
 
-  CapyObject *GetManagedInstance(UUID uuid);
+  Capybara::CapyObject::Instance *GetManagedInstance(UUID uuid);
 
   const ScriptFieldMap &GetInitializedFields(const UUID &entityID) const;
 
@@ -50,19 +50,16 @@ public:
   ScriptFieldMap &GetScriptFieldMap(Entity entity);
   ScriptFieldMap &GetScriptFieldMap(UUID entity);
 
-  UUID GetUUIDFromStringHash(const std::string &nameSpace,
-                             const std::string &className,
-                             const std::string &fieldName);
-
-  static ScriptEngine &GetMutable();
+  static ScriptEngine &GetMutable() { return *s_Instance; }
 
 private:
-  void InitCapy();
-  void ShutdownCapy();
+  void CapyInit();
+  void CapyShutdown();
 
-  CapyObject *InstantiateClass(CapyClass *capyClass);
+  Ref<Capybara::CapyObject> InstantiateClass(const std::string_view &className);
   void LoadBinaryClasses();
-
+private:
+  static inline ScriptEngine *s_Instance;
 private:
   friend class ScriptGlue;
   friend class Application;
@@ -79,16 +76,16 @@ private:
 class ScriptClass {
 public:
   ScriptClass() = default;
-  ScriptClass(const char *nameSpace, const char *className);
+  ScriptClass(const std::string &className);
 
-  ~ScriptClass() { m_ClassObject.release(); }
+  Ref<Capybara::CapyObject::Instance> Instantiate(UUID entityID);
 
-  CapyObject *Instantiate(UUID entityID);
-  CapyMethod *GetMethod(const char *methodName);
-  void *InvokeMethod(CapyObject *instance, CapyMethod *method,
-                     const std::vector<RuntimeValue> &values);
+  template <typename Ret, typename... Args>
+  Ret InvokeMethod(const std::string &methodName, Ref<Capybara::CapyObject::Instance> instance, Args &&...args) {
+    return instance->Invoke<Ret>(methodName, m_ClassObject.get(), std::forward<Args>(args)...);
+  }
 
-  const char *GetClassName() const { return m_ClassName; }
+  const char *GetClassName() const { return m_ClassName.c_str(); }
 
   const std::unordered_map<UUID, ScriptField> &GetFields() const {
     return m_Fields;
@@ -96,12 +93,11 @@ public:
 
 private:
   const char *m_ClassNamespace;
-  const char *m_ClassName;
+  const std::string m_ClassName;
 
   std::unordered_map<UUID, ScriptField> m_Fields;
 
-  std::unique_ptr<CapyObject> m_ClassObject;
-  CapyClass *m_CapyClass = nullptr;
+  Ref<Capybara::CapyObject> m_ClassObject;
 
   friend class ScriptEngine;
   friend class ScriptInstance;
@@ -133,27 +129,52 @@ public:
     return T();
   }
 
-  template <typename T> void SetFieldData(const std::string &name, T value) {
+  template <typename T> void SetFieldData(const std::string &name, T &value) {
     static_assert(sizeof(T) <= 128, "Type to large!");
-    SetFieldDataInternal(name, &value);
+    SetFieldDataInternal(name, value);
   }
 
-  CapyObject *GetManagedObject() { return m_Instance; }
+  Ref<Capybara::CapyObject::Instance> GetManagedObject() { return m_Instance; }
 
 private:
-  bool GetFieldDataInternal(const std::string &name, void *buffer);
-  void SetFieldDataInternal(const std::string &name, void *value);
+  template<typename T>
+  bool GetFieldDataInternal(const std::string &name, T *buffer) {
+    m_Instance->GetField(name, m_ScriptClass->m_ClassObject.get(), buffer);
+    if (!buffer)
+      return false;
+
+    return true;
+  }
+
+  template<typename T>
+  bool SetFieldDataInternal(const std::string &name, T &value) {
+    if (m_Instance->SetField(name, value, m_ScriptClass->m_ClassObject.get())) {
+      return true;
+    }
+
+    return false;
+  }
+
+  bool GetFieldDataInternal(const std::string &name, void *buffer, const uint64_t &size) {
+    m_Instance->GetFieldVoid(name, m_ScriptClass->m_ClassObject.get(), buffer, size);
+    if (!buffer)
+      return false;
+
+    return true;
+  }
+
+  bool SetFieldDataInternal(const std::string &name, void *value, const uint64_t &size) {
+    if (m_Instance->SetFieldVoid(name, m_ScriptClass->m_ClassObject.get(), value, size)) {
+      return true;
+    }
+
+    return false;
+  }
 
 private:
   Ref<ScriptClass> m_ScriptClass;
 
-  CapyObject *m_Instance = nullptr;
-  CapyMethod *m_StartMethod = nullptr;
-  CapyMethod *m_UpdateMethod = nullptr;
-  CapyMethod *m_CollisionEnterMethod = nullptr;
-  CapyMethod *m_CollisionExitMethod = nullptr;
-
-  std::unordered_map<std::string, std::vector<uint8_t>> m_DefaultFieldDatas;
+  Ref<Capybara::CapyObject::Instance> m_Instance = nullptr;
 
   static inline char s_FieldValueBuffer[8];
 
@@ -161,4 +182,4 @@ private:
   friend struct ScriptFieldInstance;
 };
 
-} // namespace CatEngine
+}

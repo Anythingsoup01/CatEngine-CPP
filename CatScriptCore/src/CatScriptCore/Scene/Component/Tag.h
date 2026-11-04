@@ -3,34 +3,31 @@
 #include "CatScriptCore/InternalCalls/InternalCalls.h"
 #include "InternalObjectData.h"
 
-namespace CatRuntime
-{
-	struct Tag
-	{
-    public:
-        uint64_t id;
+namespace CatRuntime {
+struct Tag {
+public:
+  uint64_t id;
 
-        struct TagProxy
-        {
-        public:
-            uint64_t id;
+  struct TagProxy {
+  public:
+    uint64_t id;
 
-            operator std::string() const 
-            {
-                if (id <= 0) return std::string();
-                return Object_GetTag(id);
-            }
+    operator std::string() const {
+      if (id == 0)
+        return std::string();
+      return Object_GetTag(id);
+    }
 
-            TagProxy& operator=(const std::string& other)
-            {
-                if (id <= 0) return *this;
-                Object_SetTag(id, other.c_str());
-                return *this;
-            }
-        };
+    TagProxy &operator=(const std::string &other) {
+      if (id == 0)
+        return *this;
+      Object_SetTag(id, other.c_str());
+      return *this;
+    }
+  };
 
-        TagProxy layer() { return TagProxy{id}; }
-    };
-}
+  TagProxy layer() { return TagProxy{id}; }
+};
+} // namespace CatRuntime
 
-std::ostream& operator<<(std::ostream& os, const CatRuntime::Tag& proxy);
+std::ostream &operator<<(std::ostream &os, const CatRuntime::Tag &proxy);

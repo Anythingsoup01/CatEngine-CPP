@@ -1,84 +1,89 @@
 #pragma once
 
-#include "CatEngine/Event/Event.h"
 #include "CatEngine/Event/ApplicationEvent.h"
+#include "CatEngine/Event/Event.h"
 
 #include "Window.h"
 
 #include "CatEngine/ImGui/ImGuiLayer.h"
 #include "CatEngine/Layer/LayerStack.h"
 
-namespace CatEngine
-{
-	struct ApplicationCommandLineArgs
-	{
-		int Count = 0;
-		char** Args = nullptr;
+#include "CatEngine/Scripting/ScriptEngine.h"
 
-		const char* operator[](int index) const
-		{
-			CE_API_ASSERT(index < Count, "");
-			return Args[index];
-		}
-	};
+namespace CatEngine {
+struct ApplicationCommandLineArgs {
+  int Count = 0;
+  char **Args = nullptr;
 
-	struct ApplicationSpecification
-	{
-		std::string Name = "CatEngine";
-		std::string WorkingDirectory;
-		ApplicationCommandLineArgs CommandlineArgs;
-	};
-    class Application
-    {
-    public:
-        Application(const ApplicationSpecification& spec);
-        ~Application();
+  const char *operator[](int index) const {
+    CE_API_ASSERT(index < Count, "");
+    return Args[index];
+  }
+};
 
-        void Run();
-        void OnEvent(Event& e);
+struct ApplicationSpecification {
+  std::string Name = "CatEngine";
+  std::string WorkingDirectory;
+  ApplicationCommandLineArgs CommandlineArgs;
+};
+class Application {
+public:
+  Application(const ApplicationSpecification &spec);
+  ~Application();
 
-        void PushLayer(Layer* layer);
-        void PushOverlay(Layer* overlay);
+  void Run();
+  void OnEvent(Event &e);
 
-        void PopLayer(Layer* layer);
-        void PopOverlay(Layer* overlay);
+  void PushLayer(Layer *layer);
+  void PushOverlay(Layer *overlay);
 
-        static Application& Get() { return *s_Instance; }
-        Window& GetWindow() { return m_Window; }
-		void SubmitToMainThread(const std::function<void()>& function);
+  void PopLayer(Layer *layer);
+  void PopOverlay(Layer *overlay);
 
-        const std::filesystem::path& GetMainPath() const { return m_CatEngineFilesPath; }
+  static Application &Get() { return *s_Instance; }
+  Window &GetWindow() { return m_Window; }
+  void SubmitToMainThread(const std::function<void()> &function);
 
-        const ApplicationSpecification& GetSpecification() const { return m_Specification; }
+  const std::filesystem::path &GetMainPath() const {
+    return m_CatEngineFilesPath;
+  }
 
-        void Close() { m_Running = false; }
+  const ApplicationSpecification &GetSpecification() const {
+    return m_Specification;
+  }
 
-    private:
-        bool OnWindowClose(WindowCloseEvent& e);
-        bool OnWindowResize(WindowResizeEvent& e);
-		void ExecuteMainThreadQueue();
-    private:
-        ApplicationSpecification m_Specification;
+  void Close() { m_Running = false; }
 
-        bool m_Running = false;
-        bool m_Minimized = false;
+private:
+  bool OnWindowClose(WindowCloseEvent &e);
+  bool OnWindowResize(WindowResizeEvent &e);
+  void ExecuteMainThreadQueue();
 
-        Window m_Window;
-        float m_LastFrameTime = 0.0f;
+private:
+  ApplicationSpecification m_Specification;
 
-        ImGuiLayer* m_ImGuiLayer;
-        LayerStack m_LayerStack;
+  bool m_Running = false;
+  bool m_Minimized = false;
 
-		std::vector<std::function<void()>> m_MainThreadQueue;
-		std::mutex m_MainThreadQueueMutex;
+  Window m_Window;
+  float m_LastFrameTime = 0.0f;
 
-        static inline Application* s_Instance = nullptr;
+  ImGuiLayer *m_ImGuiLayer;
+  LayerStack m_LayerStack;
 
-        std::filesystem::path m_CatEngineFilesPath;
-    private:
-        friend class ScriptEngine;
-    };
+  ScriptEngine m_ScriptEngine;
 
-    Application* CreateApplication(const ApplicationCommandLineArgs& args);
+  std::vector<std::function<void()>> m_MainThreadQueue;
+  std::mutex m_MainThreadQueueMutex;
 
-}
+  static inline Application *s_Instance = nullptr;
+
+  std::filesystem::path m_CatEngineFilesPath;
+
+private:
+  friend class ScriptEngine;
+};
+
+Application *CreateApplication(const ApplicationCommandLineArgs &args);
+
+} // namespace CatEngine

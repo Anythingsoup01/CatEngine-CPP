@@ -11,32 +11,6 @@ Entities:
       Position: [1.9271183, 0, 0]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-  - Entity: 3361706730667183589
-    TagComponent:
-      Tag: None
-    LayerComponent:
-      Layer: Default
-    NameComponent:
-      Name: Circle
-    TransformComponent:
-      Position: [0, 0, 0]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    CircleRendererComponent:
-      Color: [1, 1, 1, 1]
-      Thickness: 1
-      Fade: 0.00499999989
-    Rigidbody2DComponent:
-      BodyType: 2
-      FixedRotation: false
-    CircleCollider2DComponent:
-      Offset: [0, 0]
-      Radius: 0.5
-      ShowColliderBounds: false
-      Density: 1
-      Friction: 0.5
-      Restitution: 0
-      RestitutionThreshold: 0.5
   - Entity: 515535472521845481
     TagComponent:
       Tag: None
@@ -65,7 +39,7 @@ Entities:
       Scale: [1, 1, 1]
     SpriteRendererComponent:
       Color: [0.0332651138, 1, 0.0265282393, 1]
-      Texture: 9903971983362438089
+      Texture: 7155916114788326522
       Tiling: 3.9000001
     CameraComponent:
       Camera:
@@ -91,17 +65,17 @@ Entities:
       Restitution: 0
       RestitutionThreshold: 0.5
     ScriptComponent:
-      ScriptID: 6176108674548425988
+      ScriptID: 10915935544667640449
       ClassName: PlayerController
       Fields:
-        - FieldID: 1696333170
-          FieldName: m_CatTexture
-          FieldType: Texture2D
-          Value: 7155916114788326522
         - FieldID: 246577070
           FieldName: m_Entity
           FieldType: Entity
           Value: 515535472521845481
+        - FieldID: 1696333170
+          FieldName: m_CatTexture
+          FieldType: Texture2D
+          Value: 7155916114788326522
   - Entity: 14096084207158609928
     TagComponent:
       Tag: None

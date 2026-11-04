@@ -2,11 +2,9 @@
 
 #include <stdint.h>
 
-namespace CatRuntime
-{
-    struct Texture2D
-    {
-    public:
-        uint64_t ID;
-    };
-}
+namespace CatRuntime {
+struct Texture2D {
+public:
+  uint64_t ID;
+};
+} // namespace CatRuntime

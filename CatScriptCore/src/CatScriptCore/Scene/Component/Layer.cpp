@@ -3,7 +3,7 @@
 
 std::ostream& operator<<(std::ostream& os, const CatRuntime::Layer& proxy)
 {
-    std::string layerStr(CatRuntime::Object_GetLayer(proxy.id));
+    std::string layerStr(Object_GetLayer(proxy.id));
     os << layerStr;
     return os;
 }

@@ -1,11 +1,16 @@
 #include "ScriptEngine.h"
+#include "CatEngine/Scripting/ScriptEntityStorage.h"
 #include "cepch.h"
 
-#include <capybara/capybara.h>
+#include <Capybara/Core/Capybara.h>
+#include <Capybara/Core/ReflectionTypes.h>
+
+#include <Capybara/JIT/JIT.h>
 
 #include "CatEngine/Scene/Entity.h"
 #include "CatEngine/Scene/Scene.h"
 
+#include <cstdint>
 #include <glm/glm.hpp>
 
 #include "CatEngine/Core/Application.h"
@@ -46,72 +51,37 @@ static std::unordered_map<std::string, DataType> s_DataTypeLookup = {
 };
 
 struct ScriptEngineData {
-  CapyDomain *RootDomain;
-
-  CapyImage *AppBinaryImage;
-
   std::filesystem::path CoreLibraryPath;
 
   std::unordered_map<uint64_t, Ref<ScriptClass>> EntityClasses;
   std::unordered_map<UUID, Ref<ScriptInstance>> EntityInstances;
-
   std::unordered_map<UUID, ScriptFieldMap> EntityScriptFields;
-  std::unordered_map<std::string, UUID> StoredFieldIDs;
-
-  std::vector<std::function<void()>> MainThreadQueue;
-
-  bool SourceFileReloadPending = false;
-  bool BinaryReloadPending = false;
 
   Ref<Scene> SceneContext = nullptr;
 };
 
 static ScriptEngineData *s_ScriptData = nullptr;
 
-void CustomFileSystemEventCallback(FileEventType type,
-                                   const std::filesystem::path &path) {
-
-  if (type == FileEventType::Delete)
-    return;
-  // s_ScriptData->ReloadTimer = Timer();
-
-  bool isRunning = s_ScriptData->SceneContext->IsRunning();
-
-  if (isRunning) {
-    if (!s_ScriptData->SourceFileReloadPending) {
-      s_ScriptData->SourceFileReloadPending = true;
-      s_ScriptData->MainThreadQueue.emplace_back(
-          []() { ScriptEngine::GetMutable().ReloadBinaries(); });
-    } else if (s_ScriptData->SourceFileReloadPending) {
-      s_ScriptData->MainThreadQueue.clear();
-      s_ScriptData->MainThreadQueue.emplace_back(
-          []() { ScriptEngine::GetMutable().ReloadBinaries(); });
-    }
-
-  } else if (!isRunning) {
-    using namespace std::chrono;
-    // std::this_thread::sleep_for(500ms);
-    if (!s_ScriptData->SourceFileReloadPending) {
-      s_ScriptData->SourceFileReloadPending = true;
-      Application::Get().SubmitToMainThread(
-          [path]() { ScriptEngine::GetMutable().ReloadBinaries(); });
-    }
-  }
-}
-
 ////////////////////////////////////////////////////////////////////////////
 // Script Engine ///////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////
 
-void ScriptEngine::Init() {
+ScriptEngine::ScriptEngine() {
+  if (s_Instance) {
+    return;
+  }
+  s_Instance = this;
+
   s_ScriptData = new ScriptEngineData();
+}
 
-  InitCapy();
-
-  LoadBinaryClasses();
-
+void ScriptEngine::Init() {
   ScriptGlue::RegisterComponents();
   ScriptGlue::RegisterFunctions();
+
+  CapyInit();
+
+  LoadBinaryClasses();
 }
 
 void ScriptEngine::Shutdown() {
@@ -119,18 +89,7 @@ void ScriptEngine::Shutdown() {
   s_ScriptData->EntityClasses.clear();
   delete s_ScriptData;
 
-  ShutdownCapy();
-}
-
-void ScriptEngine::InitializeFileSystems() {
-  const std::filesystem::path &path = Project::GetAssetDirectory();
-  capy_set_source_path(path, CustomFileSystemEventCallback, true);
-
-  auto *lib = capy_domain_library_open("CapyBinary.so", false);
-
-  s_ScriptData->AppBinaryImage = lib->Image.get();
-
-  ReloadBinaries();
+  CapyShutdown();
 }
 
 void ScriptEngine::SetSceneContext(Ref<Scene> scene) {
@@ -139,42 +98,28 @@ void ScriptEngine::SetSceneContext(Ref<Scene> scene) {
 
 void ScriptEngine::OnRuntimeStop() {
   s_ScriptData->EntityInstances.clear();
-
   s_ScriptData->SceneContext = nullptr;
-
-  if (s_ScriptData->SourceFileReloadPending ||
-      !s_ScriptData->MainThreadQueue.empty())
-    Application::Get().SubmitToMainThread(s_ScriptData->MainThreadQueue.at(0));
 }
 
-void ScriptEngine::ReloadBinaries() {
-#ifdef CE_RELEASE
-  // CE_CLI_TRACE(s_ScriptData->ReloadTimer.ElapsedMillis());
-#endif
-  // CE_API_TRACE(s_ScriptData->ReloadTimer.ElapsedMillis());
+void ScriptEngine::PollJIT() {
+  if (!s_ScriptData->SceneContext || s_ScriptData->SceneContext->IsRunning())
+    return;
 
-  capy_poll();
+  if (!Capybara::Jit::Poll())
+    return;
 
   Application::Get().SubmitToMainThread([this]() {
-    s_ScriptData->RootDomain = capy_get_root_domain();
-
-    auto *lib = capy_domain_library_open("CapyBinary.so", false);
-
-    s_ScriptData->AppBinaryImage = lib->Image.get();
-
     LoadBinaryClasses();
 
     ScriptGlue::RegisterFunctions();
     ScriptGlue::RegisterComponents();
-
-    CE_API_WARN(capy_dump_domain());
   });
-
-  s_ScriptData->SourceFileReloadPending = false;
 }
 
-bool ScriptEngine::ScriptClassExists(const char *className) {
-  uint64_t hash = Hash::GenerateFNVHash(className);
+bool ScriptEngine::ScriptClassExists(const std::string_view &className) {
+  // TODO: Crossover event! Add namespace tracking, i.e anything before the
+  // class name
+  uint64_t hash = Hash::GenerateFNVHash(className.data());
   return s_ScriptData->EntityClasses.find(hash) !=
          s_ScriptData->EntityClasses.end();
 }
@@ -186,8 +131,7 @@ void ScriptEngine::OnStartEntity(Entity e) {
   if (ScriptEngine::ScriptClassExists(sc.ClassName.c_str())) {
     UUID entityID = e.GetUUID();
 
-    Ref<ScriptInstance> instance = CreateRef<ScriptInstance>(
-        s_ScriptData->EntityClasses[Hash::GenerateFNVHash(sc.ClassName)], e);
+    Ref<ScriptInstance> instance = CreateRef<ScriptInstance>(s_ScriptData->EntityClasses[Hash::GenerateFNVHash(sc.ClassName)], e);
 
     if (!instance)
       return;
@@ -204,8 +148,7 @@ void ScriptEngine::OnStartEntity(Entity e) {
 
       for (const auto &[uuid, fieldInstance] : scriptFieldMap) {
         CE_API_WARN("Field Instance Name: {}", fieldInstance.Field.Name);
-        instance->SetFieldDataInternal(fieldInstance.Field.Name,
-                                       (void *)fieldInstance.m_Data.Data);
+        instance->SetFieldDataInternal(fieldInstance.Field.Name, fieldInstance.m_Data.Data, fieldInstance.Field.Size);
       }
     }
 
@@ -225,16 +168,12 @@ void ScriptEngine::OnUpdateEntity(Entity e, float ts) {
   }
 }
 
-void ScriptEngine::DispatchCollisionEvent(UUID uuidA, UUID uuidB,
-                                          CollisionType type) {
-Fields:
+void ScriptEngine::DispatchCollisionEvent(UUID uuidA, UUID uuidB, CollisionType type) {
   Ref<ScriptInstance> scriptA, scriptB;
-  if (s_ScriptData->EntityInstances.find(uuidA) !=
-      s_ScriptData->EntityInstances.end())
+  if (s_ScriptData->EntityInstances.find(uuidA) != s_ScriptData->EntityInstances.end())
     scriptA = s_ScriptData->EntityInstances[uuidA];
 
-  if (s_ScriptData->EntityInstances.find(uuidB) !=
-      s_ScriptData->EntityInstances.end())
+  if (s_ScriptData->EntityInstances.find(uuidB) != s_ScriptData->EntityInstances.end())
     scriptB = s_ScriptData->EntityInstances[uuidB];
 
   switch (type) {
@@ -267,7 +206,9 @@ Ref<ScriptInstance> ScriptEngine::GetEntityScriptInstance(UUID entityID) {
   return it->second;
 }
 
-CapyObject *ScriptEngine::GetManagedInstance(UUID uuid) {
+#if 0
+
+Capybara::CapyObject::Instance *ScriptEngine::GetManagedInstance(UUID uuid) {
   if (s_ScriptData->EntityInstances.find(uuid) !=
       s_ScriptData->EntityInstances.end())
     return s_ScriptData->EntityInstances.at(uuid)->GetManagedObject();
@@ -275,10 +216,13 @@ CapyObject *ScriptEngine::GetManagedInstance(UUID uuid) {
   return nullptr;
 }
 
+#endif
+
 const ScriptFieldMap &
 ScriptEngine::GetInitializedFields(const UUID &entityID) const {
   static ScriptFieldMap s_EmptyFieldMap = {};
-  if (!s_ScriptData->EntityScriptFields.contains(entityID))
+  if (s_ScriptData->EntityScriptFields.find(entityID) ==
+      s_ScriptData->EntityScriptFields.end())
     return s_EmptyFieldMap;
 
   return s_ScriptData->EntityScriptFields.at(entityID);
@@ -308,93 +252,34 @@ ScriptFieldMap &ScriptEngine::GetScriptFieldMap(UUID uuid) {
   return s_ScriptData->EntityScriptFields[uuid];
 }
 
-UUID ScriptEngine::GetUUIDFromStringHash(const std::string &nameSpace,
-                                         const std::string &className,
-                                         const std::string &fieldName) {
-  std::string combined;
-  if (!nameSpace.empty() && !className.empty())
-    combined = nameSpace + "::" + className + "::" + fieldName;
-  else if (!nameSpace.empty())
-    combined = nameSpace + "::" + fieldName;
-  else if (!className.empty())
-    combined = className + "::" + fieldName;
+void ScriptEngine::CapyInit() {
+  Capybara::Capybara::Init();
 
-  if (s_ScriptData->StoredFieldIDs.contains(combined))
-    return s_ScriptData->StoredFieldIDs[combined];
+  Capybara::Jit::SetBuildDirectory(Project::GetAssetDirectory() / ".capy");
+  Capybara::Capybara::SetExternalLibrary(Application::Get().GetMainPath() / "build/CatScriptCore/libCatScriptCore.so", Application::Get().GetMainPath() / "CatScriptCore/src");
+  Capybara::Jit::Init(Project::GetAssetDirectory());
+  Capybara::Capybara::LoadLibrary(Project::GetAssetDirectory() / ".capy/CapyRuntimeLib.so");
 
-  UUID newID(Hash::GenerateFNVHash(combined));
-  s_ScriptData->StoredFieldIDs[combined] = newID;
-  return newID;
 }
 
-ScriptEngine &ScriptEngine::GetMutable() {
-  static ScriptEngine s_Instance;
-  return s_Instance;
-}
-
-void ScriptEngine::InitCapy() {
-  CapyDomain *rootDomain = capy_init();
-
-  capy_set_core_bin_include_path(Application::Get().GetMainPath() /
-                                 "CatScriptCore/src");
-
-  capy_domain_library_open(Application::Get().GetMainPath() /
-                               "build/CatScriptCore/libCatScriptCore.so",
-                           true);
-
-  std::vector<CapyString> ignoredNamespaces = {
-      capy_string_literal("spdlog"), capy_string_literal("fmt"),
-      capy_string_literal("literals"), capy_string_literal("internal")};
-
-  capy_set_ignored_namespace(ignoredNamespaces);
-
-  if (rootDomain)
-    s_ScriptData->RootDomain = rootDomain;
-  else
-    CE_API_ERROR("Could not load Jit!");
-}
-
-void ScriptEngine::ShutdownCapy() { capy_shutdown(); }
+void ScriptEngine::CapyShutdown() { Capybara::Capybara::Shutdown(); }
 
 void ScriptEngine::LoadBinaryClasses() {
   s_ScriptData->EntityClasses.clear();
-  for (auto &[_, lib] : s_ScriptData->RootDomain->Libraries) {
-    if (lib->IsCore)
-      continue;
 
-    const CapyTableInfo *typeDefinitionsTable =
-        capy_table_info_get(lib->Image.get(), CapyTableType::TypeDef);
+  const auto &capyClasses = Capybara::Capybara::GetClasses();
 
-    for (auto &[classHash, classMap] : typeDefinitionsTable->Symbols) {
-      const char *nameSpace = classMap.at(0).Namespace.c_str();
-      const char *name = classMap.at(0).ClassName.c_str();
-      std::string fullName;
-      if (strlen(nameSpace) != 0)
-        fullName = fmt::format("{}.{}", nameSpace, name);
-      else
-        fullName = name;
+  for (auto &[className, classObj] : capyClasses) {
+    Ref<ScriptClass> scriptClass = CreateRef<ScriptClass>(className);
+    uint32_t scriptHash = Hash::GenerateFNVHash(className);
+    for (auto &field : classObj->Fields) {
+      DataType type = s_DataTypeLookup.at(field.TypeName);
+      std::string name = field.Name;
 
-      CE_API_TRACE(fullName);
-
-      CapyClass *capyClass =
-          capy_class_from_name(s_ScriptData->AppBinaryImage, nameSpace, name);
-
-      Ref<ScriptClass> scriptClass = CreateRef<ScriptClass>(nameSpace, name);
-
-      s_ScriptData
-          ->EntityClasses[Hash::GenerateFNVHash(capyClass->ClassName.c_str())] =
-          scriptClass;
-
-      std::vector<CapyField *> fields = capy_fields_from_class(capyClass);
-
-      for (auto *fld : fields) {
-        const char *fieldName = fld->Name.c_str();
-
-        DataType type = s_DataTypeLookup[fld->FieldTypeString.c_str()];
-        scriptClass->m_Fields[Hash::GenerateFNVHash(fieldName)] = {
-            type, fieldName, fld};
-      }
+      uint32_t fieldHash = Hash::GenerateFNVHash(name);
+      scriptClass->m_Fields[fieldHash] = {type, name, field.SizeInBytes};
     }
+    s_ScriptData->EntityClasses.emplace(scriptHash, scriptClass);
   }
 }
 
@@ -402,30 +287,17 @@ void ScriptEngine::LoadBinaryClasses() {
 // Script Class ////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////
 
-ScriptClass::ScriptClass(const char *nameSpace, const char *className)
-    : m_ClassName(className), m_ClassNamespace(nameSpace) {
-  m_CapyClass =
-      capy_class_from_name(s_ScriptData->AppBinaryImage, nameSpace, className);
-  CE_API_ASSERT(m_CapyClass, "Class is null!");
+ScriptClass::ScriptClass(const std::string &className)
+    : m_ClassName(className) {
+  m_ClassObject = Capybara::Capybara::GetClass(className);
+  CE_API_ASSERT(m_ClassObject, "Class is null!");
 }
 
-CapyObject *ScriptClass::Instantiate(UUID entityID) {
-  CE_API_ASSERT(m_CapyClass, "Class is null!");
-  return capy_instantiate_object(m_CapyClass);
-}
-
-CapyMethod *ScriptClass::GetMethod(const char *methodName) {
-  CE_API_ASSERT(m_CapyClass, "Class is null!");
-  return capy_method_from_class(m_CapyClass, methodName);
-}
-
-void *ScriptClass::InvokeMethod(CapyObject *instance, CapyMethod *m,
-                                const std::vector<RuntimeValue> &values) {
-  CE_API_ASSERT(m_CapyClass, "Class is null!");
-  std::vector<RuntimeValue> vals;
-  vals = values;
-  vals.insert(vals.begin(), instance->Memory);
-  return capy_function_call_from_method(m, vals);
+Ref<Capybara::CapyObject::Instance> ScriptClass::Instantiate(UUID entityID) {
+  CE_API_ASSERT(m_ClassObject, "Class is null!");
+  auto instance = m_ClassObject->CreateInstance();
+  instance->SetField("m_EntityID", entityID.uuid(), m_ClassObject.get());
+  return instance;
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -436,71 +308,27 @@ ScriptInstance::ScriptInstance(Ref<ScriptClass> scriptClass, Entity entity)
     : m_ScriptClass(scriptClass) {
   m_Instance = scriptClass->Instantiate(entity.GetUUID());
   CE_ASSERT(m_Instance);
-
-  for (auto &[fieldID, field] : scriptClass->GetFields()) {
-    size_t valueSize = TypeToSize(field.Type);
-    std::vector<uint8_t> buffer(valueSize);
-
-    capy_field_data_get(m_Instance, m_ScriptClass->m_CapyClass, field.Name,
-                        buffer.data());
-
-    m_DefaultFieldDatas[field.Name] = std::move(buffer);
-  }
-
-  uint64_t data = entity.GetUUID();
-  SetFieldData(".m_EntityID", data);
-
-  m_StartMethod = scriptClass->GetMethod("Start");
-  m_UpdateMethod = scriptClass->GetMethod("Update");
-
-  m_CollisionEnterMethod = scriptClass->GetMethod("OnCollisionEnter");
-  m_CollisionExitMethod = scriptClass->GetMethod("OnCollisionExit");
 }
 
 ScriptInstance::~ScriptInstance() {
   if (!m_Instance)
     return;
-
-  // Restore default field data safely
-  for (auto &[name, buffer] : m_DefaultFieldDatas) {
-    SetFieldData(name, buffer.data());
-  }
-
-  m_DefaultFieldDatas.clear();
 }
 
 void ScriptInstance::InvokeUpdateMethod(float ts) {
-  if (m_UpdateMethod)
-    m_ScriptClass->InvokeMethod(m_Instance, m_UpdateMethod, {ts});
+  m_ScriptClass->InvokeMethod<void>("Update", m_Instance, ts);
 }
 
 void ScriptInstance::InvokeStartMethod() {
-  if (m_StartMethod)
-    m_ScriptClass->InvokeMethod(m_Instance, m_StartMethod, {});
+  m_ScriptClass->InvokeMethod<void>("Start", m_Instance);
 }
+
 void ScriptInstance::InvokeOnCollisionEnter(const UUID &other) {
-  if (m_CollisionEnterMethod)
-    m_ScriptClass->InvokeMethod(m_Instance, m_CollisionEnterMethod,
-                                {(uint64_t)other.uuid()});
+  m_ScriptClass->InvokeMethod<void>("OnCollisionEnter", m_Instance, (uint64_t)other.uuid());
 }
 
 void ScriptInstance::InvokeOnCollisionExit(const UUID &other) {
-  if (m_CollisionExitMethod)
-    m_ScriptClass->InvokeMethod(m_Instance, m_CollisionExitMethod,
-                                {(uint64_t)other.uuid()});
+  m_ScriptClass->InvokeMethod<void>("OnCollisionExit", m_Instance, (uint64_t)other.uuid());
 }
 
-bool ScriptInstance::GetFieldDataInternal(const std::string &name,
-                                          void *buffer) {
-  capy_field_data_get(m_Instance, m_ScriptClass->m_CapyClass, name, buffer);
-  if (!buffer)
-    return false;
-
-  return true;
-}
-
-void ScriptInstance::SetFieldDataInternal(const std::string &name,
-                                          void *value) {
-  capy_field_data_set(m_Instance, m_ScriptClass->m_CapyClass, name, value);
-}
 } // namespace CatEngine

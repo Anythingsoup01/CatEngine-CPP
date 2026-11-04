@@ -2,93 +2,90 @@
 
 #include <entt.hpp>
 
-#include "CatEngine/Renderer/EditorCamera.h"
 #include "CatEngine/Core/TimeStep.h"
 #include "CatEngine/Core/UUID.h"
+#include "CatEngine/Renderer/EditorCamera.h"
 
 #include "CatEngine/AssetManager/Asset.h"
 #include "CatEngine/Scene/ContactListener.h"
 
 class b2World;
 
-namespace CatEngine
-{
+namespace CatEngine {
 
-    class Entity;
+class Entity;
 
-    class Scene : public Asset
-    {
-    public:
-        Scene();
-        ~Scene();
+class Scene : public Asset {
+public:
+  Scene();
+  ~Scene();
 
-		void CopyTo(Ref<Scene>& target);
+  void CopyTo(Ref<Scene> &target);
 
-		Entity CreateEntity(const std::string& name = std::string());
-		Entity CreateEntityWithUUID(UUID uuid, const std::string& name = std::string());
-		void DeleteEntity(Entity entity);
-        
-		void OnPauseStart();
-		void OnPauseStop();
+  Entity CreateEntity(const std::string &name = std::string());
+  Entity CreateEntityWithUUID(UUID uuid,
+                              const std::string &name = std::string());
+  void DeleteEntity(Entity entity);
 
-		void OnRuntimeStart();
-		void OnRuntimeStop();
+  void OnPauseStart();
+  void OnPauseStop();
 
-		void OnSimulationStart();
-		void OnSimulationStop();
+  void OnRuntimeStart();
+  void OnRuntimeStop();
 
-        void OnUpdateEditor(Time ts, EditorCamera& camera);
-        void OnUpdateMainCameraPreview(Time ts); // This is outside of the runtime, used for the camera preview
-        void OnUpdateSimulation(Time time, EditorCamera& camera);
-        void OnUpdateRuntime(Time ts);
+  void OnSimulationStart();
+  void OnSimulationStop();
 
-        void ShutdownRuntime();
+  void OnUpdateEditor(Time ts, EditorCamera &camera);
+  void OnUpdateMainCameraPreview(
+      Time ts); // This is outside of the runtime, used for the camera preview
+  void OnUpdateSimulation(Time time, EditorCamera &camera);
+  void OnUpdateRuntime(Time ts);
 
-        void OnViewportResize(uint32_t width, uint32_t height);
+  void ShutdownRuntime();
 
-		void DuplicateEntity(Entity entity);
-		Entity PasteEntity(Entity entity);
+  void OnViewportResize(uint32_t width, uint32_t height);
 
-		Entity FindEntityByName(std::string_view name);
-		Entity GetEntityByUUID(UUID entityID);
+  void DuplicateEntity(Entity entity);
+  Entity PasteEntity(Entity entity);
 
-		Entity GetPrimaryCameraEntity();
+  Entity FindEntityByName(std::string_view name);
+  Entity GetEntityByUUID(UUID entityID);
 
-		template<typename... Components>
-		auto GetAllComponentsWith()
-		{
-			return m_Registry.view<Components...>();
-		}
+  Entity GetPrimaryCameraEntity();
 
-        entt::registry& GetReg() { return m_Registry; }
+  template <typename... Components> auto GetAllComponentsWith() {
+    return m_Registry.view<Components...>();
+  }
 
-        bool IsRunning() { return m_IsRunning; }
+  entt::registry &GetReg() { return m_Registry; }
 
+  bool IsRunning() { return m_IsRunning; }
 
-        static AssetType GetStaticType() { return AssetType::Scene; }
-        virtual AssetType GetType() const override { return GetStaticType(); }
+  static AssetType GetStaticType() { return AssetType::Scene; }
+  virtual AssetType GetType() const override { return GetStaticType(); }
 
-    private:
-        template<typename T>
-		    void OnComponentAdded(Entity entity, T& component);
+private:
+  template <typename T> void OnComponentAdded(Entity entity, T &component);
 
-		void OnPhysics2DStart();
-        void OnPhysics2DUpdate(Time ts);
-		void OnPhysics2DStop();
+  void OnPhysics2DStart();
+  void OnPhysics2DUpdate(Time ts);
+  void OnPhysics2DStop();
 
-        void OnScriptStart();
-    private:
-        entt::registry m_Registry;
-        uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
+  void OnScriptStart();
 
-        std::unordered_map<UUID, entt::entity> m_EntityMap;
+private:
+  entt::registry m_Registry;
+  uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
 
-        b2World* m_PhysicsWorld = nullptr;
-        ContactListener m_ContactListenter;
+  std::unordered_map<UUID, entt::entity> m_EntityMap;
 
-		bool m_IsRunning = false;
-		bool m_IsPaused = false;
+  b2World *m_PhysicsWorld = nullptr;
+  ContactListener m_ContactListenter;
 
-        friend class Entity;
-    };
-}
+  bool m_IsRunning = false;
+  bool m_IsPaused = false;
+
+  friend class Entity;
+};
+} // namespace CatEngine

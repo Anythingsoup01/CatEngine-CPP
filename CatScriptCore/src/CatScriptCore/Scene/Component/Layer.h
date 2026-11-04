@@ -1,52 +1,48 @@
 #pragma once
 
-#include "InternalObjectData.h"
 #include "CatScriptCore/InternalCalls/InternalCalls.h"
+#include "InternalObjectData.h"
 
-namespace CatRuntime
-{
-    struct Layer
-    {
-    public:
-        uint64_t id;
+namespace CatRuntime {
+struct Layer {
+public:
+  uint64_t id;
 
-        operator std::string() const 
-        {
-            if (id <= 0) return std::string();
-            return Object_GetLayer(id);
-        }
+  operator std::string() const {
+    if (id == 0)
+      return std::string();
+    return Object_GetLayer(id);
+  }
 
-        bool operator==(const std::string& other) const 
-        {
-            if (id <= 0) return false;
-            std::string thisStr = Object_GetLayer(id);
+  bool operator==(const std::string &other) const {
+    if (id == 0)
+      return false;
+    std::string thisStr = Object_GetLayer(id);
 
-            if (thisStr == other)
-                return true;
+    if (thisStr == other)
+      return true;
 
-            return false;
-        }
+    return false;
+  }
 
-        bool operator==(const char* other) const 
-        {
-            if (id <= 0) return false;
-            std::string thisStr = Object_GetLayer(id);
-            std::string otherStr(other);
-            if (thisStr == otherStr)
-                return true;
+  bool operator==(const char *other) const {
+    if (id == 0)
+      return false;
+    std::string thisStr = Object_GetLayer(id);
+    std::string otherStr(other);
+    if (thisStr == otherStr)
+      return true;
 
-            return false;
-        }
+    return false;
+  }
 
-        Layer& operator=(const std::string& other)
-        {
-            if (id <= 0) return *this;
-            Object_SetLayer(id, other.c_str());
-            return *this;
-        }
-    };
-}
+  Layer &operator=(const std::string &other) {
+    if (id == 0)
+      return *this;
+    Object_SetLayer(id, other.c_str());
+    return *this;
+  }
+};
+} // namespace CatRuntime
 
-std::ostream& operator<<(std::ostream& os, const CatRuntime::Layer& proxy);
-
-
+std::ostream &operator<<(std::ostream &os, const CatRuntime::Layer &proxy);

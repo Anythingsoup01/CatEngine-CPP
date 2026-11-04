@@ -22,7 +22,7 @@ target_include_directories(CatEditor PRIVATE
     "${CMAKE_SOURCE_DIR}/vendor/yaml/include"
     "${CMAKE_SOURCE_DIR}/vendor/ImGuizmo"
     "${CMAKE_SOURCE_DIR}/vendor/Box2D/include"
-    "${CMAKE_SOURCE_DIR}/vendor/Capybara/include"
+    "${CMAKE_SOURCE_DIR}/vendor/Capybara/Capybara/src"
 )
 
 target_link_libraries(CatEditor
