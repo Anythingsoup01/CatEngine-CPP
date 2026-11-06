@@ -146,9 +146,11 @@ void ScriptEngine::OnStartEntity(Entity e) {
       const ScriptFieldMap &scriptFieldMap =
           s_ScriptData->EntityScriptFields.at(entityID);
 
-      for (const auto &[uuid, fieldInstance] : scriptFieldMap) {
-        CE_API_WARN("Field Instance Name: {}", fieldInstance.Field.Name);
-        instance->SetFieldDataInternal(fieldInstance.Field.Name, fieldInstance.m_Data.Data, fieldInstance.Field.Size);
+      for (const auto &[entityID, scriptHash] : scriptFieldMap) {
+        for (const auto &[fieldHash, fieldInstance] : scriptHash) {
+          CE_API_WARN("Field Instance Name: {}", fieldInstance.Field.Name);
+          instance->SetFieldDataInternal(fieldInstance.Field.Name, fieldInstance.Data.Data, fieldInstance.Field.Size);
+        }
       }
     }
 
@@ -206,18 +208,6 @@ Ref<ScriptInstance> ScriptEngine::GetEntityScriptInstance(UUID entityID) {
   return it->second;
 }
 
-#if 0
-
-Capybara::CapyObject::Instance *ScriptEngine::GetManagedInstance(UUID uuid) {
-  if (s_ScriptData->EntityInstances.find(uuid) !=
-      s_ScriptData->EntityInstances.end())
-    return s_ScriptData->EntityInstances.at(uuid)->GetManagedObject();
-
-  return nullptr;
-}
-
-#endif
-
 const ScriptFieldMap &
 ScriptEngine::GetInitializedFields(const UUID &entityID) const {
   static ScriptFieldMap s_EmptyFieldMap = {};
@@ -266,20 +256,72 @@ void ScriptEngine::CapyShutdown() { Capybara::Capybara::Shutdown(); }
 
 void ScriptEngine::LoadBinaryClasses() {
   s_ScriptData->EntityClasses.clear();
+  Capybara::Capybara::ReloadLibrary(Project::GetAssetDirectory() / ".capy/CapyRuntimeLib.so");
 
   const auto &capyClasses = Capybara::Capybara::GetClasses();
+
 
   for (auto &[className, classObj] : capyClasses) {
     Ref<ScriptClass> scriptClass = CreateRef<ScriptClass>(className);
     uint32_t scriptHash = Hash::GenerateFNVHash(className);
+
+    // 1. Populate scriptClass fields ordered/mapped by ByteOffset for execution/layout
     for (auto &field : classObj->Fields) {
       DataType type = s_DataTypeLookup.at(field.TypeName);
       std::string name = field.Name;
+      uint64_t fieldHash = Hash::GenerateFNVHash(field.Name);
 
-      uint32_t fieldHash = Hash::GenerateFNVHash(name);
-      scriptClass->m_Fields[fieldHash] = {type, name, field.SizeInBytes};
+      scriptClass->m_Fields[fieldHash] = {name, type, field.SizeInBytes, field.DefaultValue};
     }
+
     s_ScriptData->EntityClasses.emplace(scriptHash, scriptClass);
+  }
+  // 2. Clean up and synchronize entity field instances across all entities
+  for (auto entityIt = s_ScriptData->EntityScriptFields.begin(); entityIt != s_ScriptData->EntityScriptFields.end(); ) {
+    auto &[entityUUID, scriptFieldMap] = *entityIt;
+
+    for (auto scriptIt = scriptFieldMap.begin(); scriptIt != scriptFieldMap.end(); ) {
+      uint64_t scriptHash = scriptIt->first;
+      auto &fieldInstanceMap = scriptIt->second;
+
+      // If the script class no longer exists at all, drop its field entries
+      if (s_ScriptData->EntityClasses.find(scriptHash) == s_ScriptData->EntityClasses.end()) {
+        scriptIt = scriptFieldMap.erase(scriptIt);
+        continue;
+      }
+
+      Ref<ScriptClass> scriptClass = s_ScriptData->EntityClasses.at(scriptHash);
+
+      // Build a set of currently valid field hashes for this script class
+      std::unordered_set<uint64_t> validFieldHashes;
+      for (const auto &[fieldID, field] : scriptClass->m_Fields) {
+        validFieldHashes.insert(fieldID);
+      }
+
+      // Prune any stored field instance that no longer exists in the compiled code
+      for (auto fieldIt = fieldInstanceMap.begin(); fieldIt != fieldInstanceMap.end(); ) {
+        uint64_t fieldHash = fieldIt->first;
+        if (validFieldHashes.find(fieldHash) == validFieldHashes.end()) {
+          fieldIt = fieldInstanceMap.erase(fieldIt); // Field was deleted or renamed!
+        } else {
+          ++fieldIt;
+        }
+      }
+
+      // Clean up empty script maps if no instances remain
+      if (fieldInstanceMap.empty()) {
+        scriptIt = scriptFieldMap.erase(scriptIt);
+      } else {
+        ++scriptIt;
+      }
+    }
+
+    // Clean up entity entry if it has no active scripts left
+    if (scriptFieldMap.empty()) {
+      entityIt = s_ScriptData->EntityScriptFields.erase(entityIt);
+    } else {
+      ++entityIt;
+    }
   }
 }
 

@@ -123,6 +123,7 @@ set(SRCS
     "src/CatEngine/Scene/ContactListener.h"
     "src/CatEngine/Scene/Components/3D/TransformComponent.h"
     "src/CatEngine/Scene/Components/Required/InformationComponents.h"
+    "src/CatEngine/Scene/Components/Required/RelationshipComponent.h"
     "src/CatEngine/Scene/Components/Renderer/CameraComponent.h"
     "src/CatEngine/Scene/Components/Scripting/ScriptComponent.h"
     "src/CatEngine/Scene/Components/Physics/BoxCollider2D.h"

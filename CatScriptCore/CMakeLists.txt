@@ -34,5 +34,6 @@ target_include_directories(CatScriptCore PRIVATE
 target_compile_options(CatScriptCore PRIVATE
     -fPIC
     -gdwarf-4
+    -rdynamic
 )
 

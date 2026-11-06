@@ -1,31 +1,39 @@
 Scene: SampleScene
 Entities:
-  - Entity: 17826502279639805133
+  - Entity: 14096084207158609928
     TagComponent:
       Tag: None
     LayerComponent:
-      Layer: Default
+      Layer: Ground
     NameComponent:
-      Name: GameObject
+      Name: Ground
     TransformComponent:
-      Position: [1.9271183, 0, 0]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-  - Entity: 515535472521845481
-    TagComponent:
-      Tag: None
-    LayerComponent:
-      Layer: Default
-    NameComponent:
-      Name: Enemy
-    TransformComponent:
-      Position: [10.3831263, -0.0127658844, 0]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
+      LocalPosition: [0, -5.40062332, 0]
+      LocalRotation: [0, 0, 0]
+      LocalScale: [30, 1, 1]
     SpriteRendererComponent:
-      Color: [1, 0.0265282393, 0.0265282393, 1]
-      Texture: 3252004842661640856
+      Color: [1, 1, 1, 1]
+      Texture: 0
       Tiling: 1
+    Rigidbody2DComponent:
+      BodyType: 0
+      FixedRotation: false
+    BoxCollider2DComponent:
+      Offset: [0, 0]
+      Size: [0.5, 0.5]
+      Rotation: 0
+      ShowColliderBounds: false
+      Density: 1
+      Friction: 0.5
+      Restitution: 0
+      RestitutionThreshold: 0.5
+    ScriptComponent:
+      Scripts:
+        []
+    RelationshipComponent:
+      ParentID: 0
+      Children:
+        []
   - Entity: 5114399343120810540
     TagComponent:
       Tag: None
@@ -34,9 +42,9 @@ Entities:
     NameComponent:
       Name: Player
     TransformComponent:
-      Position: [-5.53849268, -0.15319562, 0]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
+      LocalPosition: [-2.5805912, 0, 0]
+      LocalRotation: [0, 0, 0]
+      LocalScale: [1, 1, 1]
     SpriteRendererComponent:
       Color: [0.0332651138, 1, 0.0265282393, 1]
       Texture: 7155916114788326522
@@ -65,41 +73,16 @@ Entities:
       Restitution: 0
       RestitutionThreshold: 0.5
     ScriptComponent:
-      ScriptID: 10915935544667640449
-      ClassName: PlayerController
-      Fields:
-        - FieldID: 246577070
-          FieldName: m_Entity
-          FieldType: Entity
-          Value: 515535472521845481
-        - FieldID: 1696333170
-          FieldName: m_CatTexture
-          FieldType: Texture2D
-          Value: 7155916114788326522
-  - Entity: 14096084207158609928
-    TagComponent:
-      Tag: None
-    LayerComponent:
-      Layer: Ground
-    NameComponent:
-      Name: Ground
-    TransformComponent:
-      Position: [2.28792953, -1.46803474, 0]
-      Rotation: [0, 0, 0]
-      Scale: [356.60968, 1, 1]
-    SpriteRendererComponent:
-      Color: [1, 1, 1, 1]
-      Texture: 0
-      Tiling: 1
-    Rigidbody2DComponent:
-      BodyType: 0
-      FixedRotation: false
-    BoxCollider2DComponent:
-      Offset: [0, 0]
-      Size: [0.5, 0.5]
-      Rotation: 0
-      ShowColliderBounds: false
-      Density: 1
-      Friction: 0.5
-      Restitution: 0
-      RestitutionThreshold: 0.5
+      Scripts:
+        - ScriptID: 1101011320
+          ClassName: PlayerController
+          Fields:
+            - FieldID: 13916145
+              FieldName: m_PlayerSpeed
+              FieldType: Float
+              FieldSize: 4
+              Value: 0.100000001
+    RelationshipComponent:
+      ParentID: 0
+      Children:
+        []

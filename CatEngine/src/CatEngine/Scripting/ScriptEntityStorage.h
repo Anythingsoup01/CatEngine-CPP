@@ -3,6 +3,7 @@
 #include <Capybara/Core/ReflectionTypes.h>
 #include <cstdint>
 #include <glm/glm.hpp>
+#include <unordered_map>
 
 #include "CatEngine/Core/UUID.h"
 
@@ -64,38 +65,36 @@ inline uint64_t TypeToSize(const DataType &type) {
 }
 
 struct ScriptField {
-  DataType Type;
   std::string Name;
+  DataType Type;
   uint64_t Size;
+  std::vector<uint8_t> DefaultValue;
 };
 
 struct ScriptFieldInstance {
-  std::string Name;
   ScriptField Field;
+  Buffer Data;
 
-  ScriptFieldInstance() { m_Data.Allocate(128); }
+  ScriptFieldInstance() { Data.Allocate(128); }
 
   template <typename T> T GetValue() {
     static_assert(sizeof(T) <= 128, "Type to large!");
-    return m_Data.Read<T>();
+    return Data.Read<T>();
   }
 
   template <typename T> T GetValue() const {
     static_assert(sizeof(T) <= 128, "Type to large!");
-    return m_Data.Read<T>();
+    return Data.Read<T>();
   }
 
   template <typename T> void SetValue(T value) {
     static_assert(sizeof(T) <= 128, "Type to large!");
-    m_Data.Write(&value, TypeToSize(Field.Type));
+    Data.Write(&value, TypeToSize(Field.Type));
   }
 
-private:
-  Buffer m_Data;
-
-  friend class ScriptEngine;
-  friend class ScriptInstance;
 };
 
-using ScriptFieldMap = std::unordered_map<UUID, ScriptFieldInstance>;
+// Key by script name hash, field instances keyed by field hash
+using ScriptFieldMap = std::unordered_map<uint64_t, std::unordered_map<uint64_t, ScriptFieldInstance>>;
+
 } // namespace CatEngine

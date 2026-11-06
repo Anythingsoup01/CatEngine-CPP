@@ -1,7 +1,7 @@
 #pragma once
 
-#include "2D/SpriteRenderer.h"
 #include "2D/CircleRenderer.h"
+#include "2D/SpriteRenderer.h"
 
 #include "3D/TransformComponent.h"
 
@@ -12,30 +12,21 @@
 #include "Physics/Rigidbody2D.h"
 
 #include "Required/InformationComponents.h"
+#include "Required/RelationshipComponent.h"
 
 #include "Scripting/ScriptComponent.h"
 
+namespace CatEngine {
 
-namespace CatEngine
-{
+template <typename... Component> struct ComponentGroup {};
 
+using AllComponents = ComponentGroup<
+    TagComponent, LayerComponent, RelationshipComponent, TransformComponent, CameraComponent,
+    SpriteRendererComponent, CircleRendererComponent, BoxCollider2DComponent,
+    CircleCollider2DComponent, Rigidbody2DComponent, ScriptComponent>;
 
-	template<typename... Component>
-	struct ComponentGroup
-	{
+template <typename T> const char *ComponentToString() { return "NULL"; }
 
-	};
+template <> const char *ComponentToString<TagComponent>();
 
-	using AllComponents =
-		ComponentGroup<TagComponent, LayerComponent, TransformComponent, CameraComponent,
-		SpriteRendererComponent, CircleRendererComponent,
-        BoxCollider2DComponent, CircleCollider2DComponent, Rigidbody2DComponent,
-		ScriptComponent>;
-
-    template<typename T>
-    const char* ComponentToString() { return "NULL"; }
-
-    template<> const char* ComponentToString<TagComponent>();
-
-
-}
+} // namespace CatEngine

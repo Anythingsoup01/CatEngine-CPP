@@ -1,20 +1,23 @@
 #pragma once
 #include "Scene.h"
-namespace CatEngine 
-{
+#include "yaml-cpp/emitter.h"
+namespace CatEngine {
 
-	class SceneSerializer
-	{
-	public:
-		SceneSerializer(const Ref<Scene>& scene);
+class SceneSerializer {
+public:
+  SceneSerializer(const Ref<Scene> &scene);
 
-		void Serialize(const std::string& filepath);
-		void SerializeRuntime(const std::string& filepath);
+  void SerializeEntity(YAML::Emitter &out, Entity e);
 
-		bool Deserialize(const std::string& filepath);
-		bool DeserializeRuntime(const std::string& filepath);
-	private:
-		Ref<Scene> m_Scene;
-	};
-}
+  void Serialize(const std::string &filepath);
+  void SerializeRuntime(const std::string &filepath);
 
+  void DeserializeEntity(YAML::Node &node, UUID parent);
+
+  bool Deserialize(const std::string &filepath);
+  bool DeserializeRuntime(const std::string &filepath);
+
+private:
+  Ref<Scene> m_Scene;
+};
+} // namespace CatEngine

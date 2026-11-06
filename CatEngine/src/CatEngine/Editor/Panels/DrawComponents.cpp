@@ -1,6 +1,7 @@
 #include "DrawComponents.h"
 #include "CatEngine/AssetManager/AssetManager.h"
 #include "CatEngine/Core/Application.h"
+#include "CatEngine/Core/Hash.h"
 #include "CatEngine/Editor/ImGui/CEImGui.h"
 #include "CatEngine/Project/Project.h"
 #include "CatEngine/Scene/Components/3D/TransformComponent.h"
@@ -8,6 +9,7 @@
 #include "CatEngine/Scripting/ScriptEngine.h"
 #include "imgui.h"
 #include "imgui_internal.h"
+#include <cstdint>
 
 namespace CatEngine {
 
@@ -56,11 +58,13 @@ void DrawTransformComponent(Entity selection) {
   }
 
   if (open) {
-    ImGuiDraw::Vec3("Position", component.Position, 0.1f, 0.0f, 0.0f);
-    glm::vec3 rotation = glm::degrees(component.Rotation);
+
+    ImGuiDraw::Vec3("Position", component.LocalPosition, 0.1f, 0.0f, 0.0f);
+    glm::vec3 rotation = glm::degrees(component.LocalRotation);
     ImGuiDraw::Vec3("Rotation", rotation, 0.1f, 0.0f, 0.0f);
-    component.Rotation = glm::radians(rotation);
-    ImGuiDraw::Vec3("Scale", component.Scale, 0.1f, 0.0f, 0.0f);
+    component.LocalRotation = glm::radians(rotation);
+    ImGuiDraw::Vec3("Scale", component.LocalScale, 0.1f, 0.0f, 0.0f);
+
     ImGui::TreePop();
   }
 }
@@ -534,450 +538,339 @@ void DrawScriptComponent(Entity selection) {
     ImGui::EndPopup();
   }
 
-  if (open) {
-    auto &sc = component;
-    const auto &entityClasses = scriptEngine.GetScriptClasses();
-
-    std::vector<const char *> classes = {""};
-    for (auto &[_, scriptClass] : entityClasses) {
-      classes.push_back(scriptClass->GetClassName());
-    }
-
-    if (ImGuiDraw::Combo("Class", sc.SelectedScript, classes)) {
-      sc.ClassName = sc.SelectedScript != 0 ? classes.at(sc.SelectedScript) : "";
-    }
-
-    if (!sc.Loaded && !sc.ClassName.empty()) {
-      int i = 0;
-      for (auto &[_, scriptClass] : entityClasses) {
-        i++;
-        std::string scriptName = scriptClass->GetClassName();
-        if (sc.ClassName == scriptName) {
-          sc.SelectedScript = i;
-        }
-      }
-    }
-
-    sc.Loaded = true;
-
-    bool scriptClassExists =
-        scriptEngine.ScriptClassExists(sc.ClassName.c_str());
-    bool sceneRunning = context->IsRunning();
-    if (sceneRunning) {
-      Ref<ScriptInstance> scriptInstance =
-          scriptEngine.GetEntityScriptInstance(selection.GetUUID());
-      if (scriptInstance) {
-        const auto &fields = scriptInstance->GetScriptClass()->GetFields();
-
-        for (const auto &[uuid, field] : fields) {
-          switch (field.Type) {
-          case DataType::Short: {
-            int16_t data = scriptInstance->GetFieldData<int16_t>(field.Name);
-            if (ImGuiDraw::Int1(field.Name, (int &)data))
-              scriptInstance->SetFieldData(field.Name, data);
-            break;
-          }
-          case DataType::UShort: {
-            uint16_t data = scriptInstance->GetFieldData<uint16_t>(field.Name);
-            if (ImGuiDraw::Int1(field.Name, (int &)data))
-              scriptInstance->SetFieldData(field.Name, data);
-            break;
-          }
-          case DataType::Int: {
-            int32_t data = scriptInstance->GetFieldData<int32_t>(field.Name);
-            if (ImGuiDraw::Int1(field.Name, data))
-              scriptInstance->SetFieldData(field.Name, data);
-            break;
-          }
-          case DataType::UInt: {
-            uint32_t data = scriptInstance->GetFieldData<uint32_t>(field.Name);
-            if (ImGuiDraw::Int1(field.Name, (int &)data))
-              scriptInstance->SetFieldData(field.Name, data);
-            break;
-          }
-          case DataType::Long: {
-            int64_t data = scriptInstance->GetFieldData<int64_t>(field.Name);
-            if (ImGuiDraw::Int1(field.Name, (int &)data))
-              scriptInstance->SetFieldData(field.Name, data);
-            break;
-          }
-          case DataType::ULong: {
-            uint64_t data = scriptInstance->GetFieldData<uint64_t>(field.Name);
-            if (ImGuiDraw::Int1(field.Name, (int &)data))
-              scriptInstance->SetFieldData(field.Name, data);
-            break;
-          }
-          case DataType::Float: {
-            float data = scriptInstance->GetFieldData<float>(field.Name);
-            if (ImGuiDraw::Vec1(field.Name, data))
-              scriptInstance->SetFieldData(field.Name, data);
-            break;
-          }
-          case DataType::Double: {
-            double data = scriptInstance->GetFieldData<double>(field.Name);
-            if (ImGuiDraw::Vec1(field.Name, (float &)data))
-              scriptInstance->SetFieldData(field.Name, data);
-            break;
-          }
-          case DataType::Bool: {
-            bool data = scriptInstance->GetFieldData<bool>(field.Name);
-            if (ImGuiDraw::CheckBox(field.Name, data))
-              scriptInstance->SetFieldData(field.Name, data);
-            break;
-          }
-          case DataType::Vector2: {
-            glm::vec2 data =
-                scriptInstance->GetFieldData<glm::vec2>(field.Name);
-            if (ImGuiDraw::Vec2(field.Name, data))
-              scriptInstance->SetFieldData(field.Name, data);
-            break;
-          }
-          case DataType::Vector3: {
-            glm::vec3 data =
-                scriptInstance->GetFieldData<glm::vec3>(field.Name);
-            if (ImGuiDraw::Vec3(field.Name, data))
-              scriptInstance->SetFieldData(field.Name, data);
-            break;
-          }
-          case DataType::Vector4: {
-            glm::vec4 data =
-                scriptInstance->GetFieldData<glm::vec4>(field.Name);
-            if (ImGuiDraw::Vec4(field.Name, data))
-              scriptInstance->SetFieldData(field.Name, data);
-            break;
-          }
-          case DataType::Entity: {
-            uint64_t data = scriptInstance->GetFieldData<uint64_t>(field.Name);
-            std::string labelName = context->GetEntityByUUID(data).GetName();
-            labelName = labelName.empty() ? "(empty)" : labelName;
-            labelName.append(" (Entity)");
-            ImGuiDraw::DataField(field.Name, labelName);
-            break;
-          }
-          case DataType::Texture2D: {
-            uint64_t data = scriptInstance->GetFieldData<uint64_t>(field.Name);
-            std::string labelName = Project::GetActive()
-                                        ->GetEditorAssetManager()
-                                        ->GetMetaData(data)
-                                        .AssetName;
-            labelName = labelName.empty() ? "(empty)" : labelName;
-            labelName.append(" (Texture2D)");
-            ImGuiDraw::DataField(field.Name, labelName);
-            break;
-          }
-          }
-        }
-      }
-    } else // Scene isn't running
-    {
-      if (scriptClassExists) {
-        Ref<ScriptClass> scriptClass =
-            scriptEngine.GetScriptClass(component.ClassName.c_str());
-        const auto &fields = scriptClass->GetFields();
-
-        auto &scriptFields = scriptEngine.GetScriptFieldMap(selection);
-
-        for (const auto &[uuid, field] : fields) {
-          if (scriptFields.find(uuid) != scriptFields.end()) {
-            // Display control to set it
-
-            switch (field.Type) {
-            case DataType::Short: {
-              ScriptFieldInstance &scriptFieldInstance = scriptFields.at(uuid);
-              int16_t data = scriptFieldInstance.GetValue<int16_t>();
-              if (ImGuiDraw::Int1(field.Name, (int &)data))
-                scriptFieldInstance.SetValue(data);
-              break;
-            }
-
-            case DataType::UShort: {
-              ScriptFieldInstance &scriptFieldInstance = scriptFields.at(uuid);
-              uint16_t data = scriptFieldInstance.GetValue<uint16_t>();
-              if (ImGuiDraw::Int1(field.Name, (int &)data))
-                scriptFieldInstance.SetValue(data);
-              break;
-            }
-
-            case DataType::Int: {
-              ScriptFieldInstance &scriptFieldInstance = scriptFields.at(uuid);
-              int32_t data = scriptFieldInstance.GetValue<int32_t>();
-              if (ImGuiDraw::Int1(field.Name, (int &)data))
-                scriptFieldInstance.SetValue(data);
-              break;
-            }
-
-            case DataType::UInt: {
-              ScriptFieldInstance &scriptFieldInstance = scriptFields.at(uuid);
-              uint32_t data = scriptFieldInstance.GetValue<uint32_t>();
-              if (ImGuiDraw::Int1(field.Name, (int &)data))
-                scriptFieldInstance.SetValue(data);
-              break;
-            }
-
-            case DataType::Long: {
-              ScriptFieldInstance &scriptFieldInstance = scriptFields.at(uuid);
-              int64_t data = scriptFieldInstance.GetValue<int64_t>();
-              if (ImGuiDraw::Int1(field.Name, (int &)data))
-                scriptFieldInstance.SetValue(data);
-              break;
-            }
-
-            case DataType::ULong: {
-              ScriptFieldInstance &scriptFieldInstance = scriptFields.at(uuid);
-              uint64_t data = scriptFieldInstance.GetValue<uint64_t>();
-              if (ImGuiDraw::Int1(field.Name, (int &)data))
-                scriptFieldInstance.SetValue(data);
-              break;
-            }
-
-            case DataType::Float: {
-              ScriptFieldInstance &scriptFieldInstance = scriptFields.at(uuid);
-              float data = scriptFieldInstance.GetValue<float>();
-              if (ImGuiDraw::Vec1(field.Name, data))
-                scriptFieldInstance.SetValue(data);
-              break;
-            }
-
-            case DataType::Double: {
-              ScriptFieldInstance &scriptFieldInstance = scriptFields.at(uuid);
-              double data = scriptFieldInstance.GetValue<double>();
-              if (ImGuiDraw::Vec1(field.Name, (float &)data))
-                scriptFieldInstance.SetValue(data);
-              break;
-            }
-
-            case DataType::Bool: {
-              ScriptFieldInstance &scriptFieldInstance = scriptFields.at(uuid);
-              bool data = scriptFieldInstance.GetValue<bool>();
-              if (ImGuiDraw::CheckBox(field.Name, data))
-                scriptFieldInstance.SetValue(data);
-              break;
-            }
-
-            case DataType::Vector2: {
-              ScriptFieldInstance &scriptFieldInstance = scriptFields.at(uuid);
-              glm::vec2 data = scriptFieldInstance.GetValue<glm::vec2>();
-              if (ImGuiDraw::Vec2(field.Name, data))
-                scriptFieldInstance.SetValue(data);
-              break;
-            }
-
-            case DataType::Vector3: {
-              ScriptFieldInstance &scriptFieldInstance = scriptFields.at(uuid);
-              glm::vec3 data = scriptFieldInstance.GetValue<glm::vec3>();
-              if (ImGuiDraw::Vec3(field.Name, data))
-                scriptFieldInstance.SetValue(data);
-              break;
-            }
-
-            case DataType::Vector4: {
-              ScriptFieldInstance &scriptFieldInstance = scriptFields.at(uuid);
-              glm::vec4 data = scriptFieldInstance.GetValue<glm::vec4>();
-              if (ImGuiDraw::Vec4(field.Name, data))
-                scriptFieldInstance.SetValue(data);
-              break;
-            }
-
-            case DataType::Entity: {
-              ScriptFieldInstance &scriptFieldInstance = scriptFields.at(uuid);
-              uint64_t data = scriptFieldInstance.GetValue<uint64_t>();
-
-              std::string labelName = context->GetEntityByUUID(data).GetName();
-              labelName.append(" (Entity)");
-              ImGuiDraw::DataField(field.Name, labelName);
-
-              if (ImGui::BeginDragDropTarget()) {
-                if (const ImGuiPayload *payload =
-                        ImGui::AcceptDragDropPayload("SCENE_HIERARCHY_ITEM")) {
-                  UUID entityID = *(UUID *)payload->Data;
-                  scriptFieldInstance.SetValue(entityID.uuid());
-                }
-                ImGui::EndDragDropTarget();
-              }
-              break;
-            }
-
-            case DataType::Texture2D: {
-              ScriptFieldInstance &scriptFieldInstance = scriptFields.at(uuid);
-              uint64_t data = scriptFieldInstance.GetValue<uint64_t>();
-
-              std::string label = Project::GetActive()
-                                      ->GetEditorAssetManager()
-                                      ->GetMetaData(data)
-                                      .AssetName;
-              label.append(" (Texture2D)");
-              ImGuiDraw::DataField(field.Name, label);
-
-              if (ImGui::BeginDragDropTarget()) {
-                if (const ImGuiPayload *payload =
-                        ImGui::AcceptDragDropPayload("ASSET_MANAGER_ITEM")) {
-                  UUID assetHandle = *(UUID *)payload->Data;
-                  const auto &asset =
-                      Project::GetActive()->GetEditorAssetManager()->GetAsset(
-                          assetHandle);
-
-                  if (asset->GetType() == AssetType::Texture2D)
-                    scriptFieldInstance.SetValue(assetHandle);
-                }
-                ImGui::EndDragDropTarget();
-              }
-              break;
-            }
-            }
-          } else // Script field instance isn't in the map
-          {
-            switch (field.Type) {
-            case DataType::Short: {
-              int16_t data = 0;
-              if (ImGuiDraw::Int1(field.Name, (int &)data)) {
-                ScriptFieldInstance &sfi = scriptFields[uuid];
-                sfi.Field = field;
-                sfi.SetValue(data);
-              }
-              break;
-            }
-            case DataType::UShort: {
-              uint16_t data = 0;
-              if (ImGuiDraw::Int1(field.Name, (int &)data)) {
-                ScriptFieldInstance &sfi = scriptFields[uuid];
-                sfi.Field = field;
-                sfi.SetValue(data);
-              }
-              break;
-            }
-            case DataType::Int: {
-              int32_t data = 0;
-              if (ImGuiDraw::Int1(field.Name, (int &)data)) {
-                ScriptFieldInstance &sfi = scriptFields[uuid];
-                sfi.Field = field;
-                sfi.SetValue(data);
-              }
-              break;
-            }
-            case DataType::UInt: {
-              uint32_t data = 0;
-              if (ImGuiDraw::Int1(field.Name, (int &)data)) {
-                ScriptFieldInstance &sfi = scriptFields[uuid];
-                sfi.Field = field;
-                sfi.SetValue(data);
-              }
-              break;
-            }
-            case DataType::Long: {
-              int64_t data = 0;
-              if (ImGuiDraw::Int1(field.Name, (int &)data)) {
-                ScriptFieldInstance &sfi = scriptFields[uuid];
-                sfi.Field = field;
-                sfi.SetValue(data);
-              }
-              break;
-            }
-            case DataType::ULong: {
-              uint64_t data = 0;
-              if (ImGuiDraw::Int1(field.Name, (int &)data)) {
-                ScriptFieldInstance &sfi = scriptFields[uuid];
-                sfi.Field = field;
-                sfi.SetValue(data);
-              }
-              break;
-            }
-            case DataType::Float: {
-              float data = 0.0f;
-              if (ImGuiDraw::Vec1(field.Name, data)) {
-                ScriptFieldInstance &sfi = scriptFields[uuid];
-                sfi.Field = field;
-                sfi.SetValue(data);
-              }
-              break;
-            }
-            case DataType::Double: {
-              double data = 0.0;
-              if (ImGuiDraw::Vec1(field.Name, (float &)data)) {
-                ScriptFieldInstance &sfi = scriptFields[uuid];
-                sfi.Field = field;
-                sfi.SetValue(data);
-              }
-              break;
-            }
-            case DataType::Bool: {
-              bool data = false;
-              if (ImGuiDraw::CheckBox(field.Name, data)) {
-                ScriptFieldInstance &sfi = scriptFields[uuid];
-                sfi.Field = field;
-                sfi.SetValue(data);
-              }
-              break;
-            }
-            case DataType::Vector2: {
-              glm::vec2 data(0.0f);
-              if (ImGuiDraw::Vec2(field.Name, data)) {
-                ScriptFieldInstance &sfi = scriptFields[uuid];
-                sfi.Field = field;
-                sfi.SetValue(data);
-              }
-              break;
-            }
-            case DataType::Vector3: {
-              glm::vec3 data(0.0f);
-              if (ImGuiDraw::Vec3(field.Name, data)) {
-                ScriptFieldInstance &sfi = scriptFields[uuid];
-                sfi.Field = field;
-                sfi.SetValue(data);
-              }
-              break;
-            }
-            case DataType::Vector4: {
-              glm::vec4 data(0.0f);
-              if (ImGuiDraw::Vec4(field.Name, data)) {
-                ScriptFieldInstance &sfi = scriptFields[uuid];
-                sfi.Field = field;
-                sfi.SetValue(data);
-              }
-              break;
-            }
-            case DataType::Entity: {
-              ImGuiDraw::DataField(field.Name, "Entity (empty)");
-              if (ImGui::BeginDragDropTarget()) {
-                if (const ImGuiPayload *payload =
-                        ImGui::AcceptDragDropPayload("SCENE_HIERARCHY_ITEM")) {
-                  UUID entityID = *(UUID *)payload->Data;
-                  ScriptFieldInstance &sfi = scriptFields[uuid];
-                  sfi.Field = field;
-                  sfi.SetValue(entityID.uuid());
-                }
-                ImGui::EndDragDropTarget();
-              }
-              ImGui::PopItemWidth();
-              break;
-            }
-            case DataType::Texture2D: {
-              ImGuiDraw::DataField(field.Name, "Texture2D (empty)");
-              if (ImGui::BeginDragDropTarget()) {
-                if (const ImGuiPayload *payload =
-                        ImGui::AcceptDragDropPayload("ASSET_MANAGER_ITEM")) {
-                  UUID assetID = *(UUID *)payload->Data;
-                  const auto &asset =
-                      Project::GetActive()->GetEditorAssetManager()->GetAsset(
-                          assetID);
-                  if (asset->GetType() == AssetType::Texture2D) {
-                    ScriptFieldInstance &sfi = scriptFields[uuid];
-                    sfi.Field = field;
-                    sfi.SetValue(assetID.uuid());
-                  }
-                }
-                ImGui::EndDragDropTarget();
-              }
-              break;
-            }
-            }
-          }
-        }
-      }
-    }
+  if (!open) {
     ImGui::TreePop();
+    if (removeComponent)
+      selection.RemoveComponent<ScriptComponent>();
   }
+
+  auto &sc = component;
+  const auto &entityClasses = scriptEngine.GetScriptClasses();
+
+  std::vector<const char *> classes = {""};
+  for (auto &[_, scriptClass] : entityClasses) {
+    classes.push_back(scriptClass->GetClassName());
+  }
+
+  bool classChanged = false;
+
+  if (ImGuiDraw::Combo("Class", sc.SelectedScript, classes)) {
+    sc.ClassName = sc.SelectedScript != 0 ? classes.at(sc.SelectedScript) : "";
+    classChanged = true;
+  }
+
+  if (!sc.Loaded && !sc.ClassName.empty()) {
+    int i = 0;
+    for (auto &[_, scriptClass] : entityClasses) {
+      i++;
+      std::string scriptName = scriptClass->GetClassName();
+      if (sc.ClassName == scriptName) {
+        sc.SelectedScript = i;
+      }
+    }
+  }
+
+  if (sc.ScriptID == 0 || classChanged) {
+    sc.ScriptID = Hash::GenerateFNVHash(sc.ClassName);
+  }
+
+
+  sc.Loaded = true;
+
+  bool scriptClassExists = scriptEngine.ScriptClassExists(sc.ClassName.c_str());
+  bool sceneRunning = context->IsRunning();
+
+  if (sceneRunning) {
+    Ref<ScriptInstance> scriptInstance =
+        scriptEngine.GetEntityScriptInstance(selection.GetUUID());
+
+    if (!scriptInstance) {
+      ImGui::TreePop();
+      if (removeComponent)
+        selection.RemoveComponent<ScriptComponent>();
+    }
+
+    const auto &fields = scriptInstance->GetScriptClass()->GetFields();
+
+    for (const auto &[uuid, field] : fields) {
+      switch (field.Type) {
+        case DataType::Short: {
+          int16_t data = scriptInstance->GetFieldData<int16_t>(field.Name);
+          if (ImGuiDraw::Int1(field.Name, (int &)data))
+            scriptInstance->SetFieldData(field.Name, data);
+          break;
+        }
+        case DataType::UShort: {
+          uint16_t data = scriptInstance->GetFieldData<uint16_t>(field.Name);
+          if (ImGuiDraw::Int1(field.Name, (int &)data))
+            scriptInstance->SetFieldData(field.Name, data);
+          break;
+        }
+        case DataType::Int: {
+          int32_t data = scriptInstance->GetFieldData<int32_t>(field.Name);
+          if (ImGuiDraw::Int1(field.Name, data))
+            scriptInstance->SetFieldData(field.Name, data);
+          break;
+        }
+        case DataType::UInt: {
+          uint32_t data = scriptInstance->GetFieldData<uint32_t>(field.Name);
+          if (ImGuiDraw::Int1(field.Name, (int &)data))
+            scriptInstance->SetFieldData(field.Name, data);
+          break;
+        }
+        case DataType::Long: {
+          int64_t data = scriptInstance->GetFieldData<int64_t>(field.Name);
+          if (ImGuiDraw::Int1(field.Name, (int &)data))
+            scriptInstance->SetFieldData(field.Name, data);
+          break;
+        }
+        case DataType::ULong: {
+          uint64_t data = scriptInstance->GetFieldData<uint64_t>(field.Name);
+          if (ImGuiDraw::Int1(field.Name, (int &)data))
+            scriptInstance->SetFieldData(field.Name, data);
+          break;
+        }
+        case DataType::Float: {
+          float data = scriptInstance->GetFieldData<float>(field.Name);
+          if (ImGuiDraw::Vec1(field.Name, data))
+            scriptInstance->SetFieldData(field.Name, data);
+          break;
+        }
+        case DataType::Double: {
+          double data = scriptInstance->GetFieldData<double>(field.Name);
+          if (ImGuiDraw::Vec1(field.Name, (float &)data))
+            scriptInstance->SetFieldData(field.Name, data);
+          break;
+        }
+        case DataType::Bool: {
+          bool data = scriptInstance->GetFieldData<bool>(field.Name);
+          if (ImGuiDraw::CheckBox(field.Name, data))
+            scriptInstance->SetFieldData(field.Name, data);
+          break;
+        }
+        case DataType::Vector2: {
+          glm::vec2 data = scriptInstance->GetFieldData<glm::vec2>(field.Name);
+          if (ImGuiDraw::Vec2(field.Name, data))
+            scriptInstance->SetFieldData(field.Name, data);
+          break;
+        }
+        case DataType::Vector3: {
+          glm::vec3 data = scriptInstance->GetFieldData<glm::vec3>(field.Name);
+          if (ImGuiDraw::Vec3(field.Name, data))
+            scriptInstance->SetFieldData(field.Name, data);
+          break;
+        }
+        case DataType::Vector4: {
+          glm::vec4 data = scriptInstance->GetFieldData<glm::vec4>(field.Name);
+          if (ImGuiDraw::Vec4(field.Name, data))
+            scriptInstance->SetFieldData(field.Name, data);
+          break;
+        }
+        case DataType::Entity: {
+          uint64_t data = scriptInstance->GetFieldData<uint64_t>(field.Name);
+          std::string labelName = context->GetEntityByUUID(data).GetName();
+          labelName = labelName.empty() ? "(empty)" : labelName;
+          labelName.append(" (Entity)");
+          ImGuiDraw::DataField(field.Name, labelName);
+          break;
+        }
+        case DataType::Texture2D: {
+          uint64_t data = scriptInstance->GetFieldData<uint64_t>(field.Name);
+          std::string labelName = Project::GetActive()
+            ->GetEditorAssetManager()
+            ->GetMetaData(data)
+            .AssetName;
+          labelName = labelName.empty() ? "(empty)" : labelName;
+          labelName.append(" (Texture2D)");
+          ImGuiDraw::DataField(field.Name, labelName);
+          break;
+        }
+      }
+    }
+  }
+
+  if (!scriptClassExists) {
+    ImGui::TreePop();
+    if (removeComponent)
+      selection.RemoveComponent<ScriptComponent>();
+    return;
+  }
+
+  Ref<ScriptClass> scriptClass =
+      scriptEngine.GetScriptClass(component.ClassName.c_str());
+  const auto &fields = scriptClass->GetFields();
+
+  auto &scriptFields = scriptEngine.GetScriptFieldMap(selection);
+  auto &scriptInstanceMap = scriptFields[sc.ScriptID]; // Get the inner map for this script
+
+  for (const auto &[fieldID, field] : fields) {
+    bool hasInstance = (scriptInstanceMap.find(fieldID) != scriptInstanceMap.end());
+
+    // Helper to get or create the instance when modified
+    auto getOrCreateInstance = [&]() -> ScriptFieldInstance& {
+      if (!hasInstance) {
+        ScriptFieldInstance &sfi = scriptInstanceMap[fieldID];
+        sfi.Field = field;
+        if (!field.DefaultValue.empty()) {
+          sfi.SetValue(field.DefaultValue); // Or populate from DefaultValue vector
+        }
+        hasInstance = true;
+      }
+      return scriptInstanceMap[fieldID];
+    };
+
+    switch (field.Type) {
+      case DataType::Short: {
+        int16_t data = hasInstance ? scriptInstanceMap[fieldID].GetValue<int16_t>() 
+                                   : (!field.DefaultValue.empty() ? *(int16_t*)field.DefaultValue.data() : 0);
+        if (ImGuiDraw::Int1(field.Name, (int &)data)) {
+          getOrCreateInstance().SetValue(data);
+        }
+        break;
+      }
+      case DataType::UShort: {
+        uint16_t data = hasInstance ? scriptInstanceMap[fieldID].GetValue<uint16_t>() 
+                                    : (!field.DefaultValue.empty() ? *(uint16_t*)field.DefaultValue.data() : 0);
+        if (ImGuiDraw::Int1(field.Name, (int &)data)) {
+          getOrCreateInstance().SetValue(data);
+        }
+        break;
+      }
+      case DataType::Int: {
+        int32_t data = hasInstance ? scriptInstanceMap[fieldID].GetValue<int32_t>() 
+                                   : (!field.DefaultValue.empty() ? *(int32_t*)field.DefaultValue.data() : 0);
+        if (ImGuiDraw::Int1(field.Name, (int &)data)) {
+          getOrCreateInstance().SetValue(data);
+        }
+        break;
+      }
+      case DataType::UInt: {
+        uint32_t data = hasInstance ? scriptInstanceMap[fieldID].GetValue<uint32_t>() 
+                                    : (!field.DefaultValue.empty() ? *(uint32_t*)field.DefaultValue.data() : 0);
+        if (ImGuiDraw::Int1(field.Name, (int &)data)) {
+          getOrCreateInstance().SetValue(data);
+        }
+        break;
+      }
+      case DataType::Long: {
+        int64_t data = hasInstance ? scriptInstanceMap[fieldID].GetValue<int64_t>() 
+                                   : (!field.DefaultValue.empty() ? *(int64_t*)field.DefaultValue.data() : 0);
+        if (ImGuiDraw::Int1(field.Name, (int &)data)) {
+          getOrCreateInstance().SetValue(data);
+        }
+        break;
+      }
+      case DataType::ULong: {
+        uint64_t data = hasInstance ? scriptInstanceMap[fieldID].GetValue<uint64_t>() 
+                                    : (!field.DefaultValue.empty() ? *(uint64_t*)field.DefaultValue.data() : 0);
+        if (ImGuiDraw::Int1(field.Name, (int &)data)) {
+          getOrCreateInstance().SetValue(data);
+        }
+        break;
+      }
+      case DataType::Float: {
+        float data = hasInstance ? scriptInstanceMap[fieldID].GetValue<float>() 
+                                 : (!field.DefaultValue.empty() ? *(float*)field.DefaultValue.data() : 0.0f);
+        if (ImGuiDraw::Vec1(field.Name, data)) {
+          getOrCreateInstance().SetValue(data);
+        }
+        break;
+      }
+      case DataType::Double: {
+        double data = hasInstance ? scriptInstanceMap[fieldID].GetValue<double>() 
+                                  : (!field.DefaultValue.empty() ? *(double*)field.DefaultValue.data() : 0.0);
+        if (ImGuiDraw::Vec1(field.Name, (float &)data)) {
+          getOrCreateInstance().SetValue(data);
+        }
+        break;
+      }
+      case DataType::Bool: {
+        bool data = hasInstance ? scriptInstanceMap[fieldID].GetValue<bool>() 
+                                : (!field.DefaultValue.empty() ? *(bool*)field.DefaultValue.data() : false);
+        if (ImGuiDraw::CheckBox(field.Name, data)) {
+          getOrCreateInstance().SetValue(data);
+        }
+        break;
+      }
+      case DataType::Vector2: {
+        glm::vec2 data = hasInstance ? scriptInstanceMap[fieldID].GetValue<glm::vec2>() 
+                                     : (!field.DefaultValue.empty() ? *(glm::vec2*)field.DefaultValue.data() : glm::vec2(0.0f));
+        if (ImGuiDraw::Vec2(field.Name, data)) {
+          getOrCreateInstance().SetValue(data);
+        }
+        break;
+      }
+      case DataType::Vector3: {
+        glm::vec3 data = hasInstance ? scriptInstanceMap[fieldID].GetValue<glm::vec3>() 
+                                     : (!field.DefaultValue.empty() ? *(glm::vec3*)field.DefaultValue.data() : glm::vec3(0.0f));
+        if (ImGuiDraw::Vec3(field.Name, data)) {
+          getOrCreateInstance().SetValue(data);
+        }
+        break;
+      }
+      case DataType::Vector4: {
+        glm::vec4 data = hasInstance ? scriptInstanceMap[fieldID].GetValue<glm::vec4>() 
+                                     : (!field.DefaultValue.empty() ? *(glm::vec4*)field.DefaultValue.data() : glm::vec4(0.0f));
+        if (ImGuiDraw::Vec4(field.Name, data)) {
+          getOrCreateInstance().SetValue(data);
+        }
+        break;
+      }
+      case DataType::Entity: {
+        uint64_t entityID = hasInstance ? scriptInstanceMap[fieldID].GetValue<uint64_t>() 
+                                        : (!field.DefaultValue.empty() ? *(uint64_t*)field.DefaultValue.data() : 0);
+        std::string labelName = (entityID != 0 && context)
+            ? context->GetEntityByUUID(entityID).GetName()
+            : "";
+        labelName = labelName.empty() ? "(empty)" : labelName;
+        labelName.append(" (Entity)");
+
+        ImGuiDraw::DataField(field.Name, labelName);
+        if (ImGui::BeginDragDropTarget()) {
+          if (const ImGuiPayload *payload =
+              ImGui::AcceptDragDropPayload("SCENE_HIERARCHY_ITEM")) {
+            UUID droppedEntityID = *(UUID *)payload->Data;
+            getOrCreateInstance().SetValue(droppedEntityID.uuid());
+          }
+          ImGui::EndDragDropTarget();
+        }
+        break;
+      }
+      case DataType::Texture2D: {
+        uint64_t assetID = hasInstance ? scriptInstanceMap[fieldID].GetValue<uint64_t>() 
+                                       : (!field.DefaultValue.empty() ? *(uint64_t*)field.DefaultValue.data() : 0);
+        std::string label = "";
+        if (assetID != 0 && Project::GetActive() &&
+            Project::GetActive()->GetEditorAssetManager()) {
+          label = Project::GetActive()
+              ->GetEditorAssetManager()
+              ->GetMetaData(assetID)
+              .AssetName;
+        }
+        label = label.empty() ? "(empty)" : label;
+        label.append(" (Texture2D)");
+
+        ImGuiDraw::DataField(field.Name, label);
+        if (ImGui::BeginDragDropTarget()) {
+          if (const ImGuiPayload *payload =
+              ImGui::AcceptDragDropPayload("ASSET_MANAGER_ITEM")) {
+            UUID droppedAssetID = *(UUID *)payload->Data;
+            const auto &asset =
+                Project::GetActive()->GetEditorAssetManager()->GetAsset(
+                    droppedAssetID);
+            if (asset && asset->GetType() == AssetType::Texture2D) {
+              getOrCreateInstance().SetValue(droppedAssetID.uuid());
+            }
+          }
+          ImGui::EndDragDropTarget();
+        }
+        break;
+      }
+    }
+  }
+
+  ImGui::TreePop();
   if (removeComponent)
-    selection.RemoveComponent<ScriptComponent>();
-}
+    selection.RemoveComponent<ScriptComponent>();}
 
 } // namespace CatEngine

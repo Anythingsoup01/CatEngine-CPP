@@ -1,29 +1,27 @@
 #pragma once
 
-#include "CatScriptCore/Types/Texture.h"
 #include <CatScriptCore/ScriptInclude.h>
 
-namespace CatRuntime
-{
-    class PlayerController : public Object
-    {
-    public:
-        void Start();
-        void Update(float ts);
+namespace CatRuntime {
+class __attribute__((visibility("default"))) PlayerController : public Object {
+public:
+  PlayerController();
+  ~PlayerController();
 
-        void OnCollisionEnter(uint64_t other);
-        void OnCollisionExit(uint64_t other);
+  void Start();
+  void Update(float ts);
 
-    private:
-        Object m_Entity;
-        Texture2D m_CatTexture;
+  void OnCollisionEnter(Object other);
+  void OnCollisionExit(Object other);
 
-        float m_PlayerTerminalVelocity = 25.0f;
-        float m_PlayerSpeed = 5;
-        float m_JumpForce = 25.0f;
+private:
+  float m_PlayerTerminalVelocity = 25.0f;
+  float m_PlayerSpeed = 10;
+  float m_JumpForce = 25.0f;
 
-        bool m_Grounded = false;
-        bool m_CanJump = false;
+  float m_SpeedScale = 0.001f;
 
-    };
-}
+  bool m_Grounded = false;
+  bool m_CanJump = false;
+};
+} // namespace CatRuntime

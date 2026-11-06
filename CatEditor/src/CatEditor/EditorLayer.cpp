@@ -1,5 +1,6 @@
 #include "EditorLayer.h"
 
+#include "CatEngine/Scene/Entity.h"
 #include "imgui.h"
 #include <imgui_internal.h>
 
@@ -87,6 +88,7 @@ void EditorLayer::OnUpdate(Time deltaTime) {
     }
     case SceneState::Simulate: {
       OnUpdateSimulation(deltaTime);
+      OnUpdateEditor(deltaTime);
       break;
     }
     case SceneState::Pause: {
@@ -171,9 +173,9 @@ void EditorLayer::OnOverlayRender() {
 
     if (selectedEntity) {
       auto &tc = selectedEntity.GetComponent<TransformComponent>();
-      glm::vec3 position = tc.Position;
-      glm::mat4 rotation = glm::toMat4(glm::quat(tc.Rotation));
-      glm::vec3 scale = tc.Scale;
+      glm::vec3 position = tc.WorldPosition;
+      glm::mat4 rotation = glm::toMat4(glm::quat(tc.WorldRotation));
+      glm::vec3 scale = tc.WorldScale;
       glm::mat4 transform = glm::translate(glm::mat4(1.f), position) *
                             rotation * glm::scale(glm::mat4(1.f), scale);
       Renderer2D::DrawRect(transform, glm::vec4(0.85f, 0.1f, 0.85f, 1.0f));
@@ -189,8 +191,8 @@ void EditorLayer::OnOverlayRender() {
       auto [tc, cc2D] =
           view.get<TransformComponent, CircleCollider2DComponent>(entity);
       if (cc2D.ShowColliderBounds) {
-        glm::vec3 position = tc.Position + glm::vec3(cc2D.Offset, 0.0001f);
-        glm::vec3 scale = tc.Scale * glm::vec3(cc2D.Radius * 2.f);
+        glm::vec3 position = tc.WorldPosition + glm::vec3(cc2D.Offset, 0.0001f);
+        glm::vec3 scale = tc.WorldScale * glm::vec3(cc2D.Radius * 2.f);
 
         CircleRendererComponent crc;
         crc.Color = glm::vec4(0.2f, 0.2f, 0.95f, 1.0f);
@@ -212,13 +214,14 @@ void EditorLayer::OnOverlayRender() {
       auto [tc, bc2D] =
           view.get<TransformComponent, BoxCollider2DComponent>(entity);
       if (bc2D.ShowColliderBounds) {
-        glm::vec3 scale = tc.Scale * glm::vec3(bc2D.Size * 2.f, 1.f);
+        glm::vec3 scale = tc.WorldScale * glm::vec3(bc2D.Size * 2.f, 1.f);
 
         // Thing to note - You have to translate & rotate Collider2D's after the
         // objecct itself
         glm::mat4 transform =
-            glm::translate(glm::mat4(1.f), tc.Position) *
-            glm::rotate(glm::mat4(1.0f), tc.Rotation.z, glm::vec3(0, 0, 1)) *
+            glm::translate(glm::mat4(1.f), tc.WorldPosition) *
+            glm::rotate(glm::mat4(1.0f), tc.WorldRotation.z,
+                        glm::vec3(0, 0, 1)) *
             glm::translate(glm::mat4(1.0f), glm::vec3(bc2D.Offset, 0.001f)) *
             glm::rotate(glm::mat4(1.0f), glm::radians(bc2D.Rotation),
                         glm::vec3(0, 0, 1)) *
@@ -236,7 +239,10 @@ void EditorLayer::ImGuizmoDraw(Entity selectedEntity,
                                glm::mat4 cameraView) {
   // Entity transform
   auto &tc = selectedEntity.GetComponent<TransformComponent>();
-  glm::mat4 transform = tc.GetTransform();
+  glm::mat4 transform = selectedEntity.GetWorldTransform();
+
+  // Entity Children
+  auto &rc = selectedEntity.GetComponent<RelationshipComponent>();
 
   // Snapping
   bool snap = Input::IsKeyPressed(KeyCode::LeftControl);
@@ -253,13 +259,29 @@ void EditorLayer::ImGuizmoDraw(Entity selectedEntity,
       glm::value_ptr(transform), nullptr, snap ? snapValues : nullptr);
 
   if (ImGuizmo::IsUsing()) {
-    glm::vec3 position, rotation, scale;
-    Math::DecomposeTransform(transform, position, rotation, scale);
+    // 1. Get the parent's world matrix (if a parent exists)
+    glm::mat4 parentWorldMatrix = glm::mat4(1.0f);
+    if (rc.Parent != 0) {
+      Entity parent = m_CurrentScene->GetEntityByUUID(rc.Parent);
+      if (parent) {
+        parentWorldMatrix = parent.GetWorldTransform();
+      }
+    }
 
-    glm::vec3 deltaRotation = rotation - tc.Rotation;
-    tc.Position = position;
-    tc.Rotation += deltaRotation;
-    tc.Scale = scale;
+    // 2. Convert the manipulated World Matrix back into Local Space
+    glm::mat4 localMatrix = glm::inverse(parentWorldMatrix) * transform;
+
+    // 3. Decompose the local matrix
+    glm::vec3 localPosition, localRotation, localScale;
+    Math::DecomposeTransform(localMatrix, localPosition, localRotation,
+                             localScale);
+
+    // 4. Update your local component fields safely using your delta rotation
+    // trick
+    glm::vec3 deltaRotation = localRotation - tc.LocalRotation;
+    tc.LocalPosition = localPosition;
+    tc.LocalRotation += deltaRotation;
+    tc.LocalScale = localScale;
   }
 }
 
@@ -319,7 +341,6 @@ void EditorLayer::OnUpdateMainCameraPreview(Time deltaTime) {
 
 void EditorLayer::OnUpdateRuntime(Time deltaTime) {
   if (m_SceneCameraPanel.IsActive()) {
-    OnUpdateEditor(deltaTime);
     m_SceneCameraPanel.FramebufferResized();
 
     m_SceneCameraPanel.BindFramebuffer();

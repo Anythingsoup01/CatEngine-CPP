@@ -45,6 +45,14 @@ CE_ADD_INTERNAL_CALL(Transform_SetRotation, void, uint64_t, CatRuntime::Vector3 
 CE_ADD_INTERNAL_CALL(Transform_GetScale, void, uint64_t, CatRuntime::Vector3 *);
 CE_ADD_INTERNAL_CALL(Transform_SetScale, void, uint64_t, CatRuntime::Vector3 *);
 
+CE_ADD_INTERNAL_CALL(Transform_GetLocalPosition, void, uint64_t, CatRuntime::Vector3 *);
+CE_ADD_INTERNAL_CALL(Transform_SetLocalPosition, void, uint64_t, CatRuntime::Vector3 *);
+CE_ADD_INTERNAL_CALL(Transform_GetLocalRotation, void, uint64_t, CatRuntime::Vector3 *);
+CE_ADD_INTERNAL_CALL(Transform_SetLocalRotation, void, uint64_t, CatRuntime::Vector3 *);
+CE_ADD_INTERNAL_CALL(Transform_GetLocalScale, void, uint64_t, CatRuntime::Vector3 *);
+CE_ADD_INTERNAL_CALL(Transform_SetLocalScale, void, uint64_t, CatRuntime::Vector3 *);
+
+
 CE_ADD_INTERNAL_CALL(Sprite_GetColor, void, uint64_t, CatRuntime::Vector4 *);
 CE_ADD_INTERNAL_CALL(Sprite_SetColor, void, uint64_t, CatRuntime::Vector4 *);
 CE_ADD_INTERNAL_CALL(Sprite_GetTextureID, void, uint64_t, uint64_t *);

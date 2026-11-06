@@ -7,6 +7,7 @@
 #include "CatEngine/Scene/Entity.h"
 #include "Capybara/Core/ReflectionTypes.h"
 #include <cstdint>
+#include <unordered_map>
 
 namespace CatEngine {
 

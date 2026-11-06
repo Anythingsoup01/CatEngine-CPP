@@ -132,35 +132,68 @@ static void Rigidbody2D_ApplyLinearImpulseToCenter(UUID entityID,
 
 static void Transform_GetPosition(UUID entityID, glm::vec3 *outPosition) {
   const Entity &entity = GetEntity(entityID);
-  *outPosition = entity.GetComponent<TransformComponent>().Position;
+  *outPosition = entity.GetComponent<TransformComponent>().WorldPosition;
 }
 
 static void Transform_SetPosition(UUID entityID, glm::vec3 *position) {
   const Entity &entity = GetEntity(entityID);
 
-  entity.GetComponent<TransformComponent>().Position = *position;
+  entity.GetComponent<TransformComponent>().WorldPosition = *position;
 }
 
 static void Transform_GetRotation(UUID entityID, glm::vec3 *outRotation) {
   const Entity &entity = GetEntity(entityID);
-  *outRotation = entity.GetComponent<TransformComponent>().Rotation;
+  *outRotation = entity.GetComponent<TransformComponent>().WorldRotation;
 }
 
 static void Transform_SetRotation(UUID entityID, glm::vec3 *rotation) {
   const Entity &entity = GetEntity(entityID);
 
-  entity.GetComponent<TransformComponent>().Rotation = *rotation;
+  entity.GetComponent<TransformComponent>().WorldRotation = *rotation;
 }
 
 static void Transform_GetScale(UUID entityID, glm::vec3 *outScale) {
   const Entity &entity = GetEntity(entityID);
-  *outScale = entity.GetComponent<TransformComponent>().Scale;
+  *outScale = entity.GetComponent<TransformComponent>().WorldScale;
 }
 
 static void Transform_SetScale(UUID entityID, glm::vec3 *scale) {
   const Entity &entity = GetEntity(entityID);
 
-  entity.GetComponent<TransformComponent>().Scale = *scale;
+  entity.GetComponent<TransformComponent>().WorldScale = *scale;
+}
+
+static void Transform_GetLocalPosition(UUID entityID, glm::vec3 *outPosition) {
+  const Entity &entity = GetEntity(entityID);
+  *outPosition = entity.GetComponent<TransformComponent>().LocalPosition;
+}
+
+static void Transform_SetLocalPosition(UUID entityID, glm::vec3 *position) {
+  const Entity &entity = GetEntity(entityID);
+
+  entity.GetComponent<TransformComponent>().LocalPosition = *position;
+}
+
+static void Transform_GetLocalRotation(UUID entityID, glm::vec3 *outRotation) {
+  const Entity &entity = GetEntity(entityID);
+  *outRotation = entity.GetComponent<TransformComponent>().LocalRotation;
+}
+
+static void Transform_SetLocalRotation(UUID entityID, glm::vec3 *rotation) {
+  const Entity &entity = GetEntity(entityID);
+
+  entity.GetComponent<TransformComponent>().LocalRotation = *rotation;
+}
+
+static void Transform_GetLocalScale(UUID entityID, glm::vec3 *outScale) {
+  const Entity &entity = GetEntity(entityID);
+  *outScale = entity.GetComponent<TransformComponent>().LocalScale;
+}
+
+static void Transform_SetLocalScale(UUID entityID, glm::vec3 *scale) {
+  const Entity &entity = GetEntity(entityID);
+
+  entity.GetComponent<TransformComponent>().LocalScale = *scale;
 }
 
 #pragma endregion
@@ -248,6 +281,13 @@ void ScriptGlue::RegisterFunctions() {
   CE_ADD_INTERNAL_CALL(Transform_SetRotation);
   CE_ADD_INTERNAL_CALL(Transform_GetScale);
   CE_ADD_INTERNAL_CALL(Transform_SetScale);
+
+  CE_ADD_INTERNAL_CALL(Transform_GetLocalPosition);
+  CE_ADD_INTERNAL_CALL(Transform_SetLocalPosition);
+  CE_ADD_INTERNAL_CALL(Transform_GetLocalRotation);
+  CE_ADD_INTERNAL_CALL(Transform_SetLocalRotation);
+  CE_ADD_INTERNAL_CALL(Transform_GetLocalScale);
+  CE_ADD_INTERNAL_CALL(Transform_SetLocalScale);
 #pragma endregion
 
 #pragma region Sprite

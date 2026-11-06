@@ -1,7 +1,10 @@
 #include "Scene.h"
+#include "CatEngine/Core/Log.h"
 #include "cepch.h"
 
 #include "Components/Components.h"
+#include "Components/Required/RelationshipComponent.h"
+
 #include "Entity.h"
 
 #include "CatEngine/Renderer/Renderer2D.h"
@@ -14,6 +17,7 @@
 #include <box2d/b2_fixture.h>
 #include <box2d/b2_polygon_shape.h>
 #include <box2d/b2_world.h>
+#include <random>
 
 #include "CatEngine/Scripting/ScriptEngine.h"
 
@@ -83,8 +87,12 @@ void Scene::CopyTo(Ref<Scene> &target) {
   for (auto e : idView) {
     UUID uuid = srcRegistry.get<IDComponent>(e).ID;
     auto name = srcRegistry.get<NameComponent>(e).Name;
-    enttMap[uuid] = target->CreateEntityWithUUID(uuid, name);
+    UUID parent = srcRegistry.get<RelationshipComponent>(e).Parent;
+
+    enttMap[uuid] = target->CreateEntityWithUUID(uuid, name, parent);
   }
+
+  target->RegisterParents();
 
   CopyComponent<TagComponent>(dstRegistry, srcRegistry, enttMap);
   CopyComponent<LayerComponent>(dstRegistry, srcRegistry, enttMap);
@@ -100,26 +108,14 @@ void Scene::CopyTo(Ref<Scene> &target) {
 
 void Scene::OnUpdateEditor(Time ts, EditorCamera &camera) {
   CE_PROFILE_FUNCTION();
+  UpdateTransforms();
   Renderer2D::BeginScene(camera);
-  // Draw Sprites
-  {
-    auto group = m_Registry.group<TransformComponent>(
-        entt::get<SpriteRendererComponent>);
-    for (auto entity : group) {
-      auto [transform, sprite] =
-          group.get<TransformComponent, SpriteRendererComponent>(entity);
-
-      Renderer2D::DrawSprite(transform.GetTransform(), sprite, (int)entity);
-    }
-  }
-  // Draw Circles
-  {
-    auto view = m_Registry.view<TransformComponent, CircleRendererComponent>();
-    for (auto entity : view) {
-      auto [transform, circle] =
-          view.get<TransformComponent, CircleRendererComponent>(entity);
-
-      Renderer2D::DrawCircle(transform.GetTransform(), circle, (int)entity);
+  const auto &rootEntities = GetRootEntities();
+  for (auto entityID : rootEntities) {
+    Entity rootEntity = GetEntityByUUID(entityID);
+    if (rootEntity) {
+      // Pass identity matrix (1.0) as the base parent matrix for roots
+      DrawEntityRecursive(rootEntity, glm::mat4(1.0f));
     }
   }
   Renderer2D::EndScene();
@@ -138,7 +134,7 @@ void Scene::OnUpdateMainCameraPreview(Time ts) {
 
       if (camera.Primary) {
         mainCamera = &camera.Camera;
-        cameraTransform = transform.GetTransform();
+        cameraTransform = transform.GetWorldTransform();
         break;
       }
     }
@@ -146,27 +142,12 @@ void Scene::OnUpdateMainCameraPreview(Time ts) {
 
   if (mainCamera) {
     Renderer2D::BeginScene(mainCamera->GetProjection(), cameraTransform);
-
-    // Draw Sprites
-    {
-      auto group = m_Registry.group<TransformComponent>(
-          entt::get<SpriteRendererComponent>);
-      for (auto entity : group) {
-        auto [transform, sprite] =
-            group.get<TransformComponent, SpriteRendererComponent>(entity);
-
-        Renderer2D::DrawSprite(transform.GetTransform(), sprite, (int)entity);
-      }
-    }
-    // Draw Circles
-    {
-      auto view =
-          m_Registry.view<TransformComponent, CircleRendererComponent>();
-      for (auto entity : view) {
-        auto [transform, circle] =
-            view.get<TransformComponent, CircleRendererComponent>(entity);
-
-        Renderer2D::DrawCircle(transform.GetTransform(), circle, (int)entity);
+    const auto &rootEntities = GetRootEntities();
+    for (auto entityID : rootEntities) {
+      Entity rootEntity = GetEntityByUUID(entityID);
+      if (rootEntity) {
+        // Pass identity matrix (1.0) as the base parent matrix for roots
+        DrawEntityRecursive(rootEntity, glm::mat4(1.0f));
       }
     }
     Renderer2D::EndScene();
@@ -185,6 +166,8 @@ void Scene::OnRuntimeStart() {
 
 void Scene::OnUpdateRuntime(Time time) {
   CE_PROFILE_FUNCTION();
+  UpdateTransforms();
+
   if (!m_IsPaused) {
     // Update Scripts
     {
@@ -197,6 +180,7 @@ void Scene::OnUpdateRuntime(Time time) {
     // Physics 2D
     OnPhysics2DUpdate(time);
   }
+
   // Render 2D
   Camera *mainCamera = nullptr;
   glm::mat4 cameraTransform;
@@ -208,7 +192,7 @@ void Scene::OnUpdateRuntime(Time time) {
 
       if (camera.Primary) {
         mainCamera = &camera.Camera;
-        cameraTransform = transform.GetTransform();
+        cameraTransform = transform.GetWorldTransform();
         break;
       }
     }
@@ -217,30 +201,18 @@ void Scene::OnUpdateRuntime(Time time) {
   if (mainCamera) {
     Renderer2D::BeginScene(mainCamera->GetProjection(), cameraTransform);
     // Draw Sprites
-    {
-      auto group = m_Registry.group<TransformComponent>(
-          entt::get<SpriteRendererComponent>);
-      for (auto entity : group) {
-        auto [transform, sprite] =
-            group.get<TransformComponent, SpriteRendererComponent>(entity);
-
-        Renderer2D::DrawSprite(transform.GetTransform(), sprite, (int)entity);
-      }
-    }
-    // Draw Circles
-    {
-      auto view =
-          m_Registry.view<TransformComponent, CircleRendererComponent>();
-      for (auto entity : view) {
-        auto [transform, circle] =
-            view.get<TransformComponent, CircleRendererComponent>(entity);
-
-        Renderer2D::DrawCircle(transform.GetTransform(), circle, (int)entity);
+    const auto &rootEntities = GetRootEntities();
+    for (auto entityID : rootEntities) {
+      Entity rootEntity = GetEntityByUUID(entityID);
+      if (rootEntity) {
+        // Pass identity matrix (1.0) as the base parent matrix for roots
+        DrawEntityRecursive(rootEntity, glm::mat4(1.0f));
       }
     }
     Renderer2D::EndScene();
   }
 }
+
 void Scene::OnViewportResize(uint32_t width, uint32_t height) {
   if (m_ViewportWidth == width && m_ViewportHeight == height)
     return;
@@ -288,6 +260,7 @@ void Scene::OnSimulationStart() { OnPhysics2DStart(); }
 
 void Scene::OnUpdateSimulation(Time time, EditorCamera &camera) {
   CE_PROFILE_FUNCTION();
+  UpdateTransforms();
   if (!m_IsPaused) {
     // Physics 2D
 
@@ -307,36 +280,21 @@ void Scene::OnUpdateSimulation(Time time, EditorCamera &camera) {
 
         b2Body *body = (b2Body *)rb2d.RuntimeBody;
         const auto &position = body->GetPosition();
-        transform.Position.x = position.x;
-        transform.Position.y = position.y;
-        transform.Rotation.z = body->GetAngle();
+        transform.LocalPosition.x = position.x;
+        transform.LocalPosition.y = position.y;
+        transform.LocalRotation.z = body->GetAngle();
       }
     }
   }
   Renderer2D::BeginScene(camera);
-
-  // Draw Sprites
-  {
-    auto group = m_Registry.group<TransformComponent>(
-        entt::get<SpriteRendererComponent>);
-    for (auto entity : group) {
-      auto [transform, sprite] =
-          group.get<TransformComponent, SpriteRendererComponent>(entity);
-
-      Renderer2D::DrawSprite(transform.GetTransform(), sprite, (int)entity);
+  const auto &rootEntities = GetRootEntities();
+  for (auto entityID : rootEntities) {
+    Entity rootEntity = GetEntityByUUID(entityID);
+    if (rootEntity) {
+      // Pass identity matrix (1.0) as the base parent matrix for roots
+      DrawEntityRecursive(rootEntity, glm::mat4(1.0f));
     }
   }
-  // Draw Circles
-  {
-    auto view = m_Registry.view<TransformComponent, CircleRendererComponent>();
-    for (auto entity : view) {
-      auto [transform, circle] =
-          view.get<TransformComponent, CircleRendererComponent>(entity);
-
-      Renderer2D::DrawCircle(transform.GetTransform(), circle, (int)entity);
-    }
-  }
-
   Renderer2D::EndScene();
 }
 
@@ -345,17 +303,25 @@ void Scene::OnSimulationStop() { OnPhysics2DStop(); }
 void Scene::OnPhysics2DStart() {
   CE_PROFILE_FUNCTION();
 
+  UpdateTransforms(); 
+
   m_PhysicsWorld = new b2World({0.0f, -9.8f});
   m_PhysicsWorld->SetContactListener(&m_ContactListenter);
+  
   auto view = m_Registry.view<Rigidbody2DComponent>();
   for (auto e : view) {
     Entity entity = {e, this};
-    auto &transform = entity.GetComponent<TransformComponent>();
     auto &rb2d = entity.GetComponent<Rigidbody2DComponent>();
+
+    // 1. Compute true absolute world transform recursively
+    glm::mat4 worldTransform = entity.GetWorldTransform();
+    glm::vec3 worldPos, worldRot, worldScale;
+    Math::DecomposeTransform(worldTransform, worldPos, worldRot, worldScale);
+
     b2BodyDef bodyDef;
     bodyDef.type = Rigidbody2DTypeToBox2DType(rb2d.Type);
-    bodyDef.position.Set(transform.Position.x, transform.Position.y);
-    bodyDef.angle = transform.Rotation.z;
+    bodyDef.position.Set(worldPos.x, worldPos.y); // Use true world position
+    bodyDef.angle = worldRot.z;                   // Use true world rotation
 
     b2Body *body = m_PhysicsWorld->CreateBody(&bodyDef);
     body->SetFixedRotation(rb2d.FixedRotation);
@@ -365,9 +331,11 @@ void Scene::OnPhysics2DStart() {
       auto &bc2d = entity.GetComponent<BoxCollider2DComponent>();
 
       b2PolygonShape boxShape;
-      boxShape.SetAsBox(
-          transform.Scale.x * bc2d.Size.x, transform.Scale.y * bc2d.Size.y,
-          {bc2d.Offset.x, bc2d.Offset.y}, glm::radians(bc2d.Rotation));
+      // Use decomposed worldScale instead of cached WorldScale
+      boxShape.SetAsBox(worldScale.x * bc2d.Size.x,
+                        worldScale.y * bc2d.Size.y,
+                        {bc2d.Offset.x, bc2d.Offset.y},
+                        glm::radians(bc2d.Rotation));
 
       b2FixtureDef fixtureDef;
       fixtureDef.shape = &boxShape;
@@ -384,7 +352,8 @@ void Scene::OnPhysics2DStart() {
 
       b2CircleShape circleShape;
       circleShape.m_p.Set(cc2d.Offset.x, cc2d.Offset.y);
-      circleShape.m_radius = transform.Scale.x * cc2d.Radius;
+      // Use decomposed worldScale
+      circleShape.m_radius = worldScale.x * cc2d.Radius;
 
       b2FixtureDef fixtureDef;
       fixtureDef.shape = &circleShape;
@@ -410,12 +379,44 @@ void Scene::OnPhysics2DUpdate(Time ts) {
     Entity entity{e, this};
     auto &transform = entity.GetComponent<TransformComponent>();
     auto &rb2d = entity.GetComponent<Rigidbody2DComponent>();
+    auto &rc = entity.GetComponent<RelationshipComponent>();
 
     b2Body *body = (b2Body *)rb2d.RuntimeBody;
+    if (!body) continue;
+
     const auto &position = body->GetPosition();
-    transform.Position.x = position.x;
-    transform.Position.y = position.y;
-    transform.Rotation.z = body->GetAngle();
+    float angle = body->GetAngle();
+
+    if (rc.Parent != 0) {
+      // --- CHILD ENTITY ---
+      Entity parent = GetEntityByUUID(rc.Parent);
+      if (parent) {
+        // 1. Build the body's world matrix from Box2D data
+        glm::mat4 bodyWorldMatrix = 
+            glm::translate(glm::mat4(1.0f), {position.x, position.y, 0.0f}) *
+            glm::rotate(glm::mat4(1.0f), angle, {0.0f, 0.0f, 1.0f}) *
+            glm::scale(glm::mat4(1.0f), transform.LocalScale);
+
+        // 2. Convert world matrix to local space relative to the parent
+        glm::mat4 parentWorldMatrix = parent.GetWorldTransform();
+        glm::mat4 localMatrix = glm::inverse(parentWorldMatrix) * bodyWorldMatrix;
+
+        // 3. Decompose local matrix
+        glm::vec3 translation, rotation, scale;
+        Math::DecomposeTransform(localMatrix, translation, rotation, scale);
+
+        // 4. Assign back using your LocalPosition.z 2D angle convention
+        transform.LocalPosition.x = translation.x;
+        transform.LocalPosition.y = translation.y;
+        transform.LocalPosition.z = rotation.z; // Local 2D rotation angle
+        transform.LocalScale = scale;
+      }
+    } else {
+      // --- ROOT ENTITY ---
+      transform.LocalPosition.x = position.x;
+      transform.LocalPosition.y = position.y;
+      transform.LocalPosition.z = angle;
+    }
   }
 }
 
@@ -430,6 +431,35 @@ void Scene::OnScriptStart() {
   for (auto &e : view) {
     Entity entity = {e, this};
     ScriptEngine::GetMutable().OnStartEntity(entity);
+  }
+}
+
+void Scene::UpdateTransforms() {
+  for (auto entityID : m_RootEntities) {
+    Entity rootEntity = GetEntityByUUID(entityID);
+    // Pass an identity matrix as the "parent" matrix for roots
+    CalculateTransformRecursive(rootEntity, glm::mat4(1.0f));
+  }
+}
+
+void Scene::CalculateTransformRecursive(Entity entity,
+                                        const glm::mat4 &parentWorldMatrix) {
+  auto &tc = entity.GetComponent<TransformComponent>();
+  auto &rc = entity.GetComponent<RelationshipComponent>();
+
+  // 1. Calculate true world matrix via matrix multiplication
+  glm::mat4 worldMatrix = parentWorldMatrix * tc.GetLocalTransform();
+
+  // 2. Decompose back into World fields for rendering and physics
+  Math::DecomposeTransform(worldMatrix, tc.WorldPosition, tc.WorldRotation,
+                           tc.WorldScale);
+
+  // 3. Pass this world matrix down to all children
+  for (auto childUUID : rc.Children) {
+    Entity childEntity = GetEntityByUUID(childUUID);
+    if (childEntity) {
+      CalculateTransformRecursive(childEntity, worldMatrix);
+    }
   }
 }
 
@@ -471,7 +501,8 @@ Entity Scene::GetPrimaryCameraEntity() {
 Entity Scene::CreateEntity(const std::string &name) {
   return CreateEntityWithUUID(UUID(), name);
 }
-Entity Scene::CreateEntityWithUUID(UUID uuid, const std::string &name) {
+Entity Scene::CreateEntityWithUUID(UUID uuid, const std::string &name,
+                                   UUID parent) {
   CE_PROFILE_FUNCTION();
   Entity entity = {m_Registry.create(), this};
 
@@ -482,6 +513,12 @@ Entity Scene::CreateEntityWithUUID(UUID uuid, const std::string &name) {
   layer.Layer = "Default";
   auto &entityName = entity.AddComponent<NameComponent>();
   entityName.Name = name.empty() ? "GameObject" : name;
+  auto &relationship = entity.AddComponent<RelationshipComponent>();
+  if (parent.uuid() != 0) { // Child
+    relationship.Parent = parent;
+  } else {
+    m_RootEntities.push_back(uuid);
+  }
 
   entity.AddComponent<TransformComponent>();
 
@@ -491,8 +528,194 @@ Entity Scene::CreateEntityWithUUID(UUID uuid, const std::string &name) {
 }
 
 void Scene::DeleteEntity(Entity entity) {
+  auto &rc = entity.GetComponent<RelationshipComponent>();
+  for (auto &child : rc.Children) {
+    DeleteEntity(GetEntityByUUID(child));
+  }
   m_EntityMap.erase(entity.GetUUID());
+  m_RootEntities.erase(std::remove(m_RootEntities.begin(),
+                                     m_RootEntities.end(),
+                                     entity.GetUUID()),
+                         m_RootEntities.end());
   m_Registry.destroy(entity);
+
+}
+
+void Scene::DrawEntityRecursive(Entity entity,
+                                const glm::mat4 &parentWorldMatrix) {
+  auto &tc = entity.GetComponent<TransformComponent>();
+  auto &rc = entity.GetComponent<RelationshipComponent>();
+
+  // 1. Compute true world matrix by multiplying parent's matrix with local
+  // matrix
+  glm::mat4 worldMatrix = parentWorldMatrix * tc.GetLocalTransform();
+
+  // 2. (Optional) Update cached world components if physics or other systems
+  // need them
+  Math::DecomposeTransform(worldMatrix, tc.WorldPosition, tc.WorldRotation,
+                           tc.WorldScale);
+
+  // 3. Render Sprites
+  if (entity.HasComponent<SpriteRendererComponent>()) {
+    auto &sprite = entity.GetComponent<SpriteRendererComponent>();
+    Renderer2D::DrawSprite(worldMatrix, sprite, (int)entity.GetEntityID());
+  }
+
+  // 4. Render Circles
+  if (entity.HasComponent<CircleRendererComponent>()) {
+    auto &circle = entity.GetComponent<CircleRendererComponent>();
+    Renderer2D::DrawCircle(worldMatrix, circle, (int)entity.GetEntityID());
+  }
+
+  // 5. Recursively draw all children, passing this entity's world matrix down
+  for (auto childUUID : rc.Children) {
+    Entity child = GetEntityByUUID(childUUID);
+    if (child) {
+      DrawEntityRecursive(child, worldMatrix);
+    }
+  }
+}
+
+void Scene::ReparentEntity(Entity entity, Entity newParent) {
+  auto &rc = entity.GetComponent<RelationshipComponent>();
+  auto &tc = entity.GetComponent<TransformComponent>();
+
+  glm::mat4 oldWorldTransform = entity.GetWorldTransform();
+
+  // 1. Detach from old parent or root list
+  if (rc.Parent != 0) {
+    Entity oldParent = GetEntityByUUID(rc.Parent);
+    auto &oldChildren =
+        oldParent.GetComponent<RelationshipComponent>().Children;
+    oldChildren.erase(
+        std::remove(oldChildren.begin(), oldChildren.end(), entity.GetUUID()),
+        oldChildren.end());
+  } else {
+    for (auto child : rc.Children) {
+      if (child.uuid() == newParent.GetUUID()) {
+        return;
+      }
+    }
+    // Remove from root entities list if you track root entities separately
+    m_RootEntities.erase(std::remove(m_RootEntities.begin(),
+                                     m_RootEntities.end(), entity.GetUUID()),
+                         m_RootEntities.end());
+  }
+
+  
+
+  // 2. Attach to new parent
+  if (newParent) {
+    rc.Parent = newParent.GetUUID();
+    auto &newParentRc = newParent.GetComponent<RelationshipComponent>();
+    newParentRc.Children.push_back(entity.GetUUID());
+
+    // 4. Calculate new local transform: Local = Inverse(NewParentWorld) * OldWorld
+    glm::mat4 newParentWorldMatrix = newParent.GetWorldTransform();
+    glm::mat4 localMatrix = glm::inverse(newParentWorldMatrix) * oldWorldTransform;
+
+    // 5. Decompose into the component's local fields
+    glm::vec3 localRotation;
+    Math::DecomposeTransform(localMatrix, tc.LocalPosition, localRotation, tc.LocalScale);
+    tc.LocalRotation = localRotation;
+    } else {
+    // Unparenting to root (Parent == 0)
+    rc.Parent = 0;
+
+    // When becoming a root, local transform IS the world transform
+    glm::vec3 localRotation;
+    Math::DecomposeTransform(oldWorldTransform, tc.LocalPosition, localRotation, tc.LocalScale);
+    tc.LocalRotation = localRotation;
+
+    // Make sure to add it back to your root entities list if you maintain one
+    m_RootEntities.push_back(entity.GetUUID());
+  }
+}
+
+void Scene::MoveEntityBefore(Entity entityToMove, Entity targetEntity) {
+  auto &moveRel = entityToMove.GetComponent<RelationshipComponent>();
+  auto &targetRel = targetEntity.GetComponent<RelationshipComponent>();
+
+  // Unlink from current parent/root
+  if (moveRel.Parent != 0) {
+    Entity oldParent = GetEntityByUUID(moveRel.Parent);
+    auto &oldChildren =
+        oldParent.GetComponent<RelationshipComponent>().Children;
+    oldChildren.erase(std::remove(oldChildren.begin(), oldChildren.end(),
+                                  entityToMove.GetUUID()),
+                      oldChildren.end());
+  } else {
+    m_RootEntities.erase(std::remove(m_RootEntities.begin(),
+                                     m_RootEntities.end(),
+                                     entityToMove.GetUUID()),
+                         m_RootEntities.end());
+  }
+
+  // Match target's parent
+  moveRel.Parent = targetRel.Parent;
+
+  if (targetRel.Parent != 0) {
+    Entity parent = GetEntityByUUID(targetRel.Parent);
+    auto &siblings = parent.GetComponent<RelationshipComponent>().Children;
+    auto it =
+        std::find(siblings.begin(), siblings.end(), targetEntity.GetUUID());
+    siblings.insert(it, entityToMove.GetUUID());
+  } else {
+    auto it = std::find(m_RootEntities.begin(), m_RootEntities.end(),
+                        targetEntity.GetUUID());
+    m_RootEntities.insert(it, entityToMove.GetUUID());
+  }
+}
+
+void Scene::MoveEntityAfter(Entity entityToMove, Entity targetEntity) {
+  auto &moveRel = entityToMove.GetComponent<RelationshipComponent>();
+  auto &targetRel = targetEntity.GetComponent<RelationshipComponent>();
+
+  // Unlink from current parent/root
+  if (moveRel.Parent != 0) {
+    Entity oldParent = GetEntityByUUID(moveRel.Parent);
+    auto &oldChildren =
+        oldParent.GetComponent<RelationshipComponent>().Children;
+    oldChildren.erase(std::remove(oldChildren.begin(), oldChildren.end(),
+                                  entityToMove.GetUUID()),
+                      oldChildren.end());
+  } else {
+    m_RootEntities.erase(std::remove(m_RootEntities.begin(),
+                                     m_RootEntities.end(),
+                                     entityToMove.GetUUID()),
+                         m_RootEntities.end());
+  }
+
+  // Match target's parent
+  moveRel.Parent = targetRel.Parent;
+
+  if (targetRel.Parent != 0) {
+    Entity parent = GetEntityByUUID(targetRel.Parent);
+    auto &siblings = parent.GetComponent<RelationshipComponent>().Children;
+    auto it =
+        std::find(siblings.begin(), siblings.end(), targetEntity.GetUUID());
+    if (it != siblings.end()) {
+      siblings.insert(it + 1, entityToMove.GetUUID());
+    }
+  } else {
+    auto it = std::find(m_RootEntities.begin(), m_RootEntities.end(),
+                        targetEntity.GetUUID());
+    if (it != m_RootEntities.end()) {
+      m_RootEntities.insert(it + 1, entityToMove.GetUUID());
+    }
+  }
+}
+
+void Scene::RegisterParents() {
+  auto view = m_Registry.view<IDComponent, RelationshipComponent>();
+  for (auto entity : view) {
+    auto [id, relation] = view.get<IDComponent, RelationshipComponent>(entity);
+
+    if (relation.Parent != 0) {
+      Entity parent = GetEntityByUUID(relation.Parent);
+      parent.GetComponent<RelationshipComponent>().Children.push_back(id.ID);
+    }
+  }
 }
 
 template <typename T>
@@ -542,5 +765,9 @@ void Scene::OnComponentAdded<ScriptComponent>(Entity entity,
 template <>
 void Scene::OnComponentAdded<IDComponent>(Entity entity,
                                           IDComponent &component) {}
+
+template <>
+void Scene::OnComponentAdded<RelationshipComponent>(
+    Entity entity, RelationshipComponent &component) {}
 
 } // namespace CatEngine

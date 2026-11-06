@@ -1,6 +1,7 @@
 #pragma once
 
 #include <entt.hpp>
+#include <vector>
 
 #include "CatEngine/Core/TimeStep.h"
 #include "CatEngine/Core/UUID.h"
@@ -23,9 +24,10 @@ public:
   void CopyTo(Ref<Scene> &target);
 
   Entity CreateEntity(const std::string &name = std::string());
-  Entity CreateEntityWithUUID(UUID uuid,
-                              const std::string &name = std::string());
+  Entity CreateEntityWithUUID(UUID uuid, const std::string &name = std::string(), UUID parent = 0);
   void DeleteEntity(Entity entity);
+
+  void DrawEntityRecursive(Entity e, const glm::mat4 &parentWorldMatrix);
 
   void OnPauseStart();
   void OnPauseStop();
@@ -62,6 +64,14 @@ public:
 
   bool IsRunning() { return m_IsRunning; }
 
+  void ReparentEntity(Entity e, Entity newParent);
+  void MoveEntityBefore(Entity e, Entity targetEntity);
+  void MoveEntityAfter(Entity e, Entity targetEntity);
+
+  void RegisterParents();
+
+  std::vector<UUID> &GetRootEntities() { return m_RootEntities; }
+
   static AssetType GetStaticType() { return AssetType::Scene; }
   virtual AssetType GetType() const override { return GetStaticType(); }
 
@@ -74,11 +84,16 @@ private:
 
   void OnScriptStart();
 
+  void UpdateTransforms();
+
+  void CalculateTransformRecursive(Entity e, const glm::mat4 &parentWorldMatrix);
+
 private:
   entt::registry m_Registry;
   uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
 
   std::unordered_map<UUID, entt::entity> m_EntityMap;
+  std::vector<UUID> m_RootEntities;
 
   b2World *m_PhysicsWorld = nullptr;
   ContactListener m_ContactListenter;

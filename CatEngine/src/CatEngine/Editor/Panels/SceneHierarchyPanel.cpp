@@ -7,10 +7,12 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "CatEngine/Core/UUID.h"
 #include "CatEngine/Scene/Components/Components.h"
 
 #include "CatEngine/Editor/ImGui/CEImGui.h"
 
+#include "CatEngine/Scene/Components/Required/RelationshipComponent.h"
 #include "CatEngine/Scripting/ScriptEngine.h"
 #include "CatEngine/Scripting/ScriptEntityStorage.h"
 
@@ -62,15 +64,32 @@ void SceneHierarchyPanel::OnImGuiRender(bool &isOpen) {
       ImGui::TableSetColumnIndex(0);
 
       {
-        for (auto entity : m_Context->GetReg().view<entt::entity>()) {
-          DrawEntityNode({entity, m_Context.get()});
+        for (auto entity : m_Context->GetRootEntities()) {
+          Entity e = m_Context->GetEntityByUUID(entity);
+          auto &rel = e.GetComponent<RelationshipComponent>();
+          if (rel.Parent == 0) { // Root Node
+            DrawEntityNode(e);
+          }
         }
       }
 
       ImGui::TableNextRow();
       ImGui::TableSetColumnIndex(0);
       ImGui::Spacing();
-      ImGui::Dummy(ImVec2(0, 50.0f));
+      ImGui::Dummy(ImGui::GetContentRegionAvail());
+
+      if (ImGui::BeginDragDropTarget()) {
+        if (const ImGuiPayload *payload = ImGui::AcceptDragDropPayload("SCENE_HIERARCHY_ITEM")) {
+          UUID droppedEntityID = *(UUID *)payload->Data;
+          Entity droppedEntity = m_Context->GetEntityByUUID(droppedEntityID);
+
+          if (droppedEntity) {
+            // Dropped into empty space = Make it a root-level entity (Parent = 0)
+            m_Context->ReparentEntity(droppedEntity, {}); 
+          }
+        }
+        ImGui::EndDragDropTarget();
+      }
 
       if (ImGui::BeginPopupContextWindow(nullptr,
                                          ImGuiPopupFlags_MouseButtonRight |
@@ -150,11 +169,26 @@ void SceneHierarchyPanel::OnImGuiRender(bool &isOpen) {
 void SceneHierarchyPanel::DrawEntityNode(Entity entity) {
   ImGui::PushID(std::to_string(entity.GetUUID()).c_str());
   const char *name = "Unnamed Entity";
-  if (entity.HasComponent<NameComponent>())
-    name = entity.GetComponent<NameComponent>().Name.c_str();
+  name = entity.GetComponent<NameComponent>().Name.c_str();
+
+  auto &relationship = entity.GetComponent<RelationshipComponent>();
 
   const float edgeOffset = 4.0f;
   const float rowHeight = 21.0f;
+
+  ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow |
+                             ImGuiTreeNodeFlags_SpanAvailWidth |
+                             ImGuiTreeNodeFlags_FramePadding;
+
+  // If it has no children, make it a leaf node so it doesn't show an arrow
+  if (relationship.Children.empty()) {
+    flags |= ImGuiTreeNodeFlags_Leaf;
+  }
+
+  // Highlight if selected
+  if (m_SelectionContext == entity) {
+    flags |= ImGuiTreeNodeFlags_Selected;
+  }
 
   // ImGui item height tweaks
   auto *window = ImGui::GetCurrentWindow();
@@ -176,12 +210,6 @@ void SceneHierarchyPanel::DrawEntityNode(Entity entity) {
           20,
       rowAreaMin.y + rowHeight};
 
-  const bool isSelected = m_SelectionContext == entity;
-
-  ImGuiTreeNodeFlags flags = (isSelected ? ImGuiTreeNodeFlags_Selected : 0) |
-                             ImGuiTreeNodeFlags_OpenOnArrow;
-  flags |= ImGuiTreeNodeFlags_SpanAvailWidth;
-
   const std::string strID = name;
 
   const bool opened = ImGui::TreeNodeEx(strID.c_str(), flags);
@@ -190,8 +218,58 @@ void SceneHierarchyPanel::DrawEntityNode(Entity entity) {
     UUID entityID = entity.GetUUID();
     ImGui::SetDragDropPayload("SCENE_HIERARCHY_ITEM", &entityID,
                               sizeof(entityID));
+    ImGui::Text("Moving: %s", name);
     ImGui::EndDragDropSource();
   }
+
+ if (ImGui::BeginDragDropTarget()) {
+    if (const ImGuiPayload *payload = ImGui::AcceptDragDropPayload("SCENE_HIERARCHY_ITEM")) {
+      UUID droppedEntityID = *(UUID *)payload->Data;
+      Entity droppedEntity = m_Context->GetEntityByUUID(droppedEntityID);
+
+      if (droppedEntity && droppedEntity != entity) {
+        ImVec2 mousePos = ImGui::GetMousePos();
+        ImVec2 itemRectMin = ImGui::GetItemRectMin();
+        ImVec2 itemRectMax = ImGui::GetItemRectMax();
+        float itemHeight = itemRectMax.y - itemRectMin.y;
+
+        float relativeY = mousePos.y - itemRectMin.y;
+
+        // Wased thresholds: Top 35% = Before, Bottom 35% = After, Middle 30% = Reparent
+        if (relativeY < itemHeight * 0.35f) {
+          // Drop Above (Sibling Reorder - Before)
+          m_Context->MoveEntityBefore(droppedEntity, entity);
+        } 
+        else if (relativeY > itemHeight * 0.65f) {
+          // Drop Below (Sibling Reorder - After)
+          m_Context->MoveEntityAfter(droppedEntity, entity);
+        } 
+        else {
+          // Drop Directly On (Reparent as Child)
+          m_Context->ReparentEntity(droppedEntity, entity);
+        }
+      }
+    }
+
+    // Optional: Draw visual indicator lines so you can see where it's dropping
+    ImVec2 mousePos = ImGui::GetMousePos();
+    ImVec2 itemRectMin = ImGui::GetItemRectMin();
+    ImVec2 itemRectMax = ImGui::GetItemRectMax();
+    float itemHeight = itemRectMax.y - itemRectMin.y;
+    float relativeY = mousePos.y - itemRectMin.y;
+
+    auto* drawList = ImGui::GetWindowDrawList();
+    if (relativeY < itemHeight * 0.35f) {
+      // Draw line above item
+      drawList->AddLine(itemRectMin, ImVec2(itemRectMax.x, itemRectMin.y), IM_COL32(0, 120, 255, 255), 2.0f);
+    } else if (relativeY > itemHeight * 0.65f) {
+      // Draw line below item
+      drawList->AddLine(ImVec2(itemRectMin.x, itemRectMax.y), itemRectMax, IM_COL32(0, 120, 255, 255), 2.0f);
+    }
+
+    ImGui::EndDragDropTarget();
+  }
+
 
   if (ImGui::IsMouseDoubleClicked(0) && ImGui::IsItemHovered()) {
     m_SelectionContext = entity;
@@ -206,6 +284,12 @@ void SceneHierarchyPanel::DrawEntityNode(Entity entity) {
   }
 
   if (opened) {
+    for (auto childUUID : relationship.Children) {
+      Entity childEntity = m_Context->GetEntityByUUID(childUUID);
+      if (childEntity) {
+        DrawEntityNode(childEntity);
+      }
+    }
     ImGui::TreePop();
   }
   if (entityDeleted) {
@@ -308,7 +392,6 @@ void SceneHierarchyPanel::DrawComponents(Entity selection) {
   }
 
   DrawComponentsHelper(selection);
-
 }
 
 template <typename T>

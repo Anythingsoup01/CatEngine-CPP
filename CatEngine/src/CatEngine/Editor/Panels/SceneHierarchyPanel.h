@@ -6,6 +6,7 @@
 #include "CatEngine/Scene/Scene.h"
 
 namespace CatEngine {
+
 class SceneHierarchyPanel : public EditorPanel {
 public:
   SceneHierarchyPanel() = default;
@@ -37,6 +38,8 @@ private:
   Ref<Scene> m_Context;
   Entity m_SelectionContext;
   Entity m_PreviousSelection;
+
+
 };
 
 } // namespace CatEngine

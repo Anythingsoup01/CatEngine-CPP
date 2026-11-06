@@ -1,24 +1,28 @@
 #include "PlayerController.h"
+#include "CatScriptCore/Types/Vector.h"
+
+#include "CatScriptCore/Scene/Component/AllComponents.h"
 
 namespace CatRuntime {
+
+PlayerController::PlayerController() {}
+
+PlayerController::~PlayerController() {}
+
 void PlayerController::Start() {
-  auto spriteRenderer = GetComponent<SpriteRenderer>();
-  spriteRenderer.texture() = m_CatTexture;
-  m_Entity.transform().position() = {0, 0, 0};
 }
 
 void PlayerController::Update(float ts) {
-
   Vector2 playerVelocity = {0, 0};
 
   if (m_Grounded) {
     if (Input::KeyPressed(KeyCode::A)) {
       if (playerVelocity.x > -m_PlayerTerminalVelocity)
-        playerVelocity.x += -m_PlayerSpeed;
+        playerVelocity.x += -m_PlayerSpeed * m_SpeedScale;
     }
     if (Input::KeyPressed(KeyCode::D)) {
       if (playerVelocity.x < m_PlayerTerminalVelocity)
-        playerVelocity.x += m_PlayerSpeed;
+        playerVelocity.x += m_PlayerSpeed * m_SpeedScale;
     }
     if (Input::KeyPressed(KeyCode::Space)) {
       if (m_CanJump) {
@@ -31,21 +35,29 @@ void PlayerController::Update(float ts) {
   rb2d.ApplyLinearImpulse(playerVelocity, {0, 0});
 }
 
-void PlayerController::OnCollisionEnter(uint64_t other) {
-  Object oth(other);
+void PlayerController::OnCollisionEnter(Object other) {
+  std::cout << "OTHER LAYER: " << other.layer() << "\n";
 
-  std::cout << "OTHER LAYER: " << oth.layer() << "\n";
-
-  if (oth.layer() == "Ground" && !m_CanJump) {
+  if (other.layer() == "Ground" && !m_CanJump) {
     m_Grounded = true;
     m_CanJump = true;
   }
+
+  if (other.HasComponent<SpriteRenderer>()) {
+    auto sr = other.GetComponent<SpriteRenderer>();
+    sr.color() = Vector4{1, 1, 0, 1};
+  }
 }
 
-void PlayerController::OnCollisionExit(uint64_t other) {
-  Object oth(other);
-  if (oth.layer() == "Ground" && !m_CanJump) {
+void PlayerController::OnCollisionExit(Object other) {
+  if (other.layer() == "Ground" && !m_CanJump) {
     m_Grounded = false;
   }
+
+  if (other.HasComponent<SpriteRenderer>()) {
+    auto sr = other.GetComponent<SpriteRenderer>();
+    sr.color() = Vector4{1, 1, 1, 1};
+  }
+
 }
 } // namespace CatRuntime

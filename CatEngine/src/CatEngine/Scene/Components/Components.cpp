@@ -10,6 +10,7 @@ namespace CatEngine
 
     REGISTER_COMPONENT_TYPE(TagComponent);
     REGISTER_COMPONENT_TYPE(LayerComponent);
+    REGISTER_COMPONENT_TYPE(RelationshipComponent);
     REGISTER_COMPONENT_TYPE(TransformComponent);
     REGISTER_COMPONENT_TYPE(CameraComponent);
     REGISTER_COMPONENT_TYPE(SpriteRendererComponent);
