@@ -26,7 +26,6 @@
 
 typedef uint32_t RendererID;
 
-#define CE_API_ASSERT(x, ...) if (!(x)) { CatEngine::Log::GetAPILogger()->critical(__VA_ARGS__); raise(SIGTRAP); }
 namespace CatEngine
 {
 	template<typename T>

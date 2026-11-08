@@ -1,48 +1,35 @@
-set(SRCS
-    "src/CatEditor/Entrypoint/CatEditorApp.cpp"
-    "src/CatEditor/Panels/SceneViewportPanel.cpp"
-    "src/CatEditor/EditorLayer.cpp"
-    "src/CatEditor/UI/CatGui.h"
-    "src/CatEditor/Panels/Panel.h"
-    "src/CatEditor/Panels/SceneViewportPanel.h"
-    "src/CatEditor/EditorLayer.h"
-)
-add_executable(CatEditor ${SRCS})
+add_executable(CatEditor)
+
 set_property(TARGET CatEditor PROPERTY CXX_STANDARD 20)
+target_sources(CatEditor PRIVATE
+src/CatEditor/Panels/SceneViewportPanel.cpp
+src/CatEditor/Entrypoint/CatEditorApp.cpp
+src/CatEditor/EditorLayer.cpp
+)
 
 target_include_directories(CatEditor PRIVATE
-    "src"
-    "${CMAKE_SOURCE_DIR}/CatEngine/src"
-    "${CMAKE_SOURCE_DIR}/vendor/spdlog/include"
-    "${CMAKE_SOURCE_DIR}/vendor/imgui"
-    "${CMAKE_SOURCE_DIR}/vendor/glm"
-    "${CMAKE_SOURCE_DIR}/vendor/entt"
-    "${CMAKE_SOURCE_DIR}/vendor/Glad/include"
-    "${CMAKE_SOURCE_DIR}/vendor/NFD-E/src/include"
-    "${CMAKE_SOURCE_DIR}/vendor/yaml/include"
-    "${CMAKE_SOURCE_DIR}/vendor/ImGuizmo"
-    "${CMAKE_SOURCE_DIR}/vendor/Box2D/include"
-    "${CMAKE_SOURCE_DIR}/vendor/Capybara/Capybara/src"
+src
+../CatEngine/src
+../vendor/spdlog/include
+../vendor/imgui
+../vendor/glm
+../vendor/entt
+../vendor/Glad/include
+../vendor/NFD-E/src/include
+../vendor/yaml/include
+../vendor/ImGuizmo
+../vendor/Box2D/include
+../vendor/Capybara/Capybara/src
 )
 
 target_link_libraries(CatEditor
-    CatEngine
+CatEngine
 )
 
 target_compile_definitions(CatEditor PUBLIC
-    GLFW_INCLUDE_NONE
-    CE_DISPLAY_WAYLAND
+GLFW_INCLUDE_NONE
+CE_DISPLAY_WAYLAND
 )
 
-if(CMAKE_BUILD_TYPE STREQUAL Debug)
-target_compile_definitions(CatEditor
-PUBLIC
-    CE_DEBUG
-)
-endif(CMAKE_BUILD_TYPE STREQUAL Debug)
-if(CMAKE_BUILD_TYPE STREQUAL Release)
-target_compile_definitions(CatEditor
-PUBLIC
-    CE_RELEASE
-)
-endif(CMAKE_BUILD_TYPE STREQUAL Release)
+
+

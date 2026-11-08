@@ -1,21 +1,20 @@
 Project = {
-    name = "CatScriptCore",
-    kind = "SharedLib",
-    language = "C++",
-    dialect = "20",
+	name = "CatScriptCore",
+	kind = "SharedLib",
+	language = "C++",
+	dialect = "20",
 
-    files = {
-        "src/*.cpp",
-        "src/*.h",
-    },
+	files = {
+		"src/**.cpp",
+	},
 
-    includedirs = {
-        "src",
-    },
+	includedirs = {
+		"src",
+	},
 
-    flags = {
-        "-fPIC",
-        "-gdwarf-4",
-    "-rdynamic"
-    },
+	flags = {
+		"-fPIC",
+		"-gdwarf-4",
+		"-rdynamic",
+	},
 }
