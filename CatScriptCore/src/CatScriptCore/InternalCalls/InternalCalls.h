@@ -38,6 +38,24 @@ CE_ADD_INTERNAL_CALL(Rigidbody2D_ApplyLinearImpulse, void, uint64_t, CatRuntime:
 CE_ADD_INTERNAL_CALL(Rigidbody2D_ApplyLinearImpulseToCenter, void, uint64_t,
                      CatRuntime::Vector2 *, bool);
 
+// BoxCollider2D Internal Calls
+CE_ADD_INTERNAL_CALL(BoxCollider2D_GetOffset, void, uint64_t, CatRuntime::Vector2*)
+CE_ADD_INTERNAL_CALL(BoxCollider2D_SetOffset, void, uint64_t, CatRuntime::Vector2*)
+CE_ADD_INTERNAL_CALL(BoxCollider2D_GetSize, void, uint64_t, CatRuntime::Vector2*)
+CE_ADD_INTERNAL_CALL(BoxCollider2D_SetSize, void, uint64_t, CatRuntime::Vector2*)
+CE_ADD_INTERNAL_CALL(BoxCollider2D_GetRotation, void, uint64_t, float*)
+CE_ADD_INTERNAL_CALL(BoxCollider2D_SetRotation, void, uint64_t, float*)
+CE_ADD_INTERNAL_CALL(BoxCollider2D_GetShowColliderBounds, void, uint64_t, bool*)
+CE_ADD_INTERNAL_CALL(BoxCollider2D_SetShowColliderBounds, void, uint64_t, bool*)
+CE_ADD_INTERNAL_CALL(BoxCollider2D_GetDensity, void, uint64_t, float*)
+CE_ADD_INTERNAL_CALL(BoxCollider2D_SetDensity, void, uint64_t, float*)
+CE_ADD_INTERNAL_CALL(BoxCollider2D_GetFriction, void, uint64_t, float*)
+CE_ADD_INTERNAL_CALL(BoxCollider2D_SetFriction, void, uint64_t, float*)
+CE_ADD_INTERNAL_CALL(BoxCollider2D_GetRestitution, void, uint64_t, float*)
+CE_ADD_INTERNAL_CALL(BoxCollider2D_SetRestitution, void, uint64_t, float*)
+CE_ADD_INTERNAL_CALL(BoxCollider2D_GetRestitutionThreshold, void, uint64_t, float*)
+CE_ADD_INTERNAL_CALL(BoxCollider2D_SetRestitutionThreshold, void, uint64_t, float*)
+
 CE_ADD_INTERNAL_CALL(Transform_GetPosition, void, uint64_t, CatRuntime::Vector3 *);
 CE_ADD_INTERNAL_CALL(Transform_SetPosition, void, uint64_t, CatRuntime::Vector3 *);
 CE_ADD_INTERNAL_CALL(Transform_GetRotation, void, uint64_t, CatRuntime::Vector3 *);
