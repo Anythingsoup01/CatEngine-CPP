@@ -15,6 +15,8 @@ struct CircleCollider2DComponent {
   float Restitution = 0.0f;
   float RestitutionThreshold = 0.5f;
 
+  bool IsDirty = false;
+
   // Storage for runtime
   void *RuntimeFixture = nullptr;
 

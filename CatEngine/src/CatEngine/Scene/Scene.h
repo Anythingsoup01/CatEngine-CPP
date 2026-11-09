@@ -95,12 +95,11 @@ private:
   std::unordered_map<UUID, entt::entity> m_EntityMap;
   std::vector<UUID> m_RootEntities;
 
-  b2World *m_PhysicsWorld = nullptr;
-  ContactListener m_ContactListenter;
 
   bool m_IsRunning = false;
   bool m_IsPaused = false;
 
   friend class Entity;
+  friend class Physics2D;
 };
 } // namespace CatEngine
