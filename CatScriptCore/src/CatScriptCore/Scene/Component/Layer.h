@@ -1,47 +1,23 @@
 #pragma once
 
 #include "CatScriptCore/InternalCalls/InternalCalls.h"
-#include "InternalObjectData.h"
+#include <cstdint>
 
 namespace CatRuntime {
 struct Layer {
+protected:
+  uint64_t m_EntityID;
+
 public:
-  uint64_t id;
+  Layer(const uint64_t &entityID) : m_EntityID(entityID) {}
 
-  operator std::string() const {
-    if (id == 0)
-      return std::string();
-    return Object_GetLayer(id);
-  }
+  operator std::string() const;
 
-  bool operator==(const std::string &other) const {
-    if (id == 0)
-      return false;
-    std::string thisStr = Object_GetLayer(id);
+  bool operator==(const std::string &other) const;
 
-    if (thisStr == other)
-      return true;
+  bool operator==(const char *other) const;
 
-    return false;
-  }
-
-  bool operator==(const char *other) const {
-    if (id == 0)
-      return false;
-    std::string thisStr = Object_GetLayer(id);
-    std::string otherStr(other);
-    if (thisStr == otherStr)
-      return true;
-
-    return false;
-  }
-
-  Layer &operator=(const std::string &other) {
-    if (id == 0)
-      return *this;
-    Object_SetLayer(id, other.c_str());
-    return *this;
-  }
+  Layer &operator=(const std::string &other);
 };
 } // namespace CatRuntime
 

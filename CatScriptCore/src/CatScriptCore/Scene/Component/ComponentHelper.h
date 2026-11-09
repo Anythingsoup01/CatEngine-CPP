@@ -8,7 +8,7 @@
     Vector4IndexProxy(const uint64_t &entityID, const int &index,              \
                       const Field &field)                                      \
         : m_EntityID(entityID), m_Index(index), m_Field(field) {}              \
-    operator float();                                                          \
+    operator float() const;                                                    \
     Vector4IndexProxy &operator=(const float &f);                              \
                                                                                \
   private:                                                                     \
@@ -18,21 +18,24 @@
   };
 
 #define Vector4IndexProxyFloatOperator(Component, SwitchFunc)                  \
-  Component::Vector4IndexProxy::operator float() {                             \
+  Component::Vector4IndexProxy::operator float() const {                       \
     if (m_EntityID == 0)                                                       \
       return 0;                                                                \
-    float f;                                                                   \
+    Vector4 v;                                                                 \
     SwitchFunc;                                                                \
-    return f;                                                                  \
+    return (&v.X)[m_Index];                                                    \
   }
 
-#define Vector4IndexProxyEqualsOperator(Component, SwitchFunc)                 \
+#define Vector4IndexProxyEqualsOperator(Component, Getter, Setter)             \
   Component::Vector4IndexProxy &Component::Vector4IndexProxy::operator=(       \
       const float &f) {                                                        \
     if (m_EntityID == 0)                                                       \
       return *this;                                                            \
-    float fT = f;                                                              \
-    SwitchFunc return *this                                                    \
+    Vector4 v;                                                                 \
+    Getter;                                                                    \
+    (&v.X)[m_Index] = f;                                                       \
+    Setter;                                                                    \
+    return *this;                                                              \
   }
 
 #define Vector4ProxyDefinition()                                               \
@@ -51,7 +54,7 @@
     Vector4IndexProxy z() {                                                    \
       return Vector4IndexProxy(m_EntityID, 2, m_Field);                        \
     }                                                                          \
-    Vector4IndexProxy a() {                                                    \
+    Vector4IndexProxy w() {                                                    \
       return Vector4IndexProxy(m_EntityID, 3, m_Field);                        \
     }                                                                          \
                                                                                \
@@ -61,22 +64,22 @@
   };
 
 #define Vector4ProxyVector4Operator(Component, SwitchFunc)                     \
-  Component::Vector4Proxy::operator Vector4() {                                \
+  Component::Vector4Proxy::operator Vector4() const {                          \
     if (m_EntityID == 0)                                                       \
-      return 0;                                                                \
+      return Vector4(0.0f, 0.0f, 0.0f, 0.0f);                                  \
     Vector4 v;                                                                 \
     SwitchFunc;                                                                \
     return v;                                                                  \
   }
 
 #define Vector4ProxyEqualsOperator(Component, SwitchFunc)                      \
-  Component::Vector4IndexProxy &Component::Vector4Proxy::operator=(            \
+  Component::Vector4Proxy &Component::Vector4Proxy::operator=(                 \
       const Vector4 &v) {                                                      \
     if (m_EntityID == 0)                                                       \
       return *this;                                                            \
     Vector4 vT = v;                                                            \
     SwitchFunc;                                                                \
-    return *this                                                               \
+    return *this;                                                              \
   }
 
 #define Vector3IndexProxyDefinition()                                          \
@@ -85,7 +88,7 @@
     Vector3IndexProxy(const uint64_t &entityID, const int &index,              \
                       const Field &field)                                      \
         : m_EntityID(entityID), m_Index(index), m_Field(field) {}              \
-    operator float();                                                          \
+    operator float() const;                                                    \
     Vector3IndexProxy &operator=(const float &f);                              \
                                                                                \
   private:                                                                     \
@@ -95,21 +98,24 @@
   };
 
 #define Vector3IndexProxyFloatOperator(Component, SwitchFunc)                  \
-  Component::Vector3IndexProxy::operator float() {                             \
+  Component::Vector3IndexProxy::operator float() const {                       \
     if (m_EntityID == 0)                                                       \
       return 0;                                                                \
-    float f;                                                                   \
+    Vector3 v;                                                                 \
     SwitchFunc;                                                                \
-    return f;                                                                  \
+    return (&v.X)[m_Index];                                                    \
   }
 
-#define Vector3IndexProxyEqualsOperator(Component, SwitchFunc)                 \
+#define Vector3IndexProxyEqualsOperator(Component, Getter, Setter)             \
   Component::Vector3IndexProxy &Component::Vector3IndexProxy::operator=(       \
       const float &f) {                                                        \
     if (m_EntityID == 0)                                                       \
       return *this;                                                            \
-    float fT = f;                                                              \
-    SwitchFunc return *this                                                    \
+    Vector3 v;                                                                 \
+    Getter;                                                                    \
+    (&v.X)[m_Index] = f;                                                       \
+    Setter;                                                                    \
+    return *this;                                                              \
   }
 
 #define Vector3ProxyDefinition()                                               \
@@ -135,22 +141,22 @@
   };
 
 #define Vector3ProxyVector3Operator(Component, SwitchFunc)                     \
-  Component::Vector3Proxy::operator Vector3() {                                \
+  Component::Vector3Proxy::operator Vector3() const {                          \
     if (m_EntityID == 0)                                                       \
-      return 0;                                                                \
+      return Vector3(0, 0, 0);                                                 \
     Vector3 v;                                                                 \
     SwitchFunc;                                                                \
     return v;                                                                  \
   }
 
 #define Vector3ProxyEqualsOperator(Component, SwitchFunc)                      \
-  Component::Vector3IndexProxy &Component::Vector3Proxy::operator=(            \
+  Component::Vector3Proxy &Component::Vector3Proxy::operator=(                 \
       const Vector3 &v) {                                                      \
     if (m_EntityID == 0)                                                       \
       return *this;                                                            \
     Vector3 vT = v;                                                            \
     SwitchFunc;                                                                \
-    return *this                                                               \
+    return *this;                                                              \
   }
 
 #define Vector2IndexProxyDefinition()                                          \
@@ -159,7 +165,7 @@
     Vector2IndexProxy(const uint64_t &entityID, const int &index,              \
                       const Field &field)                                      \
         : m_EntityID(entityID), m_Index(index), m_Field(field) {}              \
-    operator float();                                                          \
+    operator float() const;                                                    \
     Vector2IndexProxy &operator=(const float &f);                              \
                                                                                \
   private:                                                                     \
@@ -169,21 +175,24 @@
   };
 
 #define Vector2IndexProxyFloatOperator(Component, SwitchFunc)                  \
-  Component::Vector2IndexProxy::operator float() {                             \
+  Component::Vector2IndexProxy::operator float() const {                       \
     if (m_EntityID == 0)                                                       \
       return 0;                                                                \
-    float f;                                                                   \
+    Vector2 v;                                                                 \
     SwitchFunc;                                                                \
-    return f;                                                                  \
+    return (&v.X)[m_Index];                                                    \
   }
 
-#define Vector2IndexProxyEqualsOperator(Component, SwitchFunc)                 \
+#define Vector2IndexProxyEqualsOperator(Component, Getter, Setter)             \
   Component::Vector2IndexProxy &Component::Vector2IndexProxy::operator=(       \
       const float &f) {                                                        \
     if (m_EntityID == 0)                                                       \
       return *this;                                                            \
-    float fT = f;                                                              \
-    SwitchFunc return *this                                                    \
+    Vector2 v;                                                                 \
+    Getter;                                                                    \
+    (&v.X)[m_Index] = f;                                                       \
+    Setter;                                                                    \
+    return *this;                                                              \
   }
 
 #define Vector2ProxyDefinition()                                               \
@@ -206,22 +215,22 @@
   };
 
 #define Vector2ProxyVector2Operator(Component, SwitchFunc)                     \
-  Component::Vector2Proxy::operator Vector2() {                                \
+  Component::Vector2Proxy::operator Vector2() const {                          \
     if (m_EntityID == 0)                                                       \
-      return 0;                                                                \
+      return Vector2(0.0f, 0.0f);                                              \
     Vector2 v;                                                                 \
     SwitchFunc;                                                                \
     return v;                                                                  \
   }
 
 #define Vector2ProxyEqualsOperator(Component, SwitchFunc)                      \
-  Component::Vector2IndexProxy &Component::Vector2Proxy::operator=(            \
+  Component::Vector2Proxy &Component::Vector2Proxy::operator=(                 \
       const Vector2 &v) {                                                      \
     if (m_EntityID == 0)                                                       \
       return *this;                                                            \
     Vector2 vT = v;                                                            \
     SwitchFunc;                                                                \
-    return *this                                                               \
+    return *this;                                                              \
   }
 
 #define FloatProxyDefinition()                                                 \
@@ -236,3 +245,21 @@
     uint64_t m_EntityID;                                                       \
     Field m_Field;                                                             \
   };
+
+#define FloatProxyFloatOperator(Component, SwitchFunc)                         \
+  Component::FloatProxy::operator float() const {                              \
+    if (m_EntityID == 0)                                                       \
+      return 0.0f;                                                             \
+    float f;                                                                   \
+    SwitchFunc;                                                                \
+    return f;                                                                  \
+  }
+
+#define FloatProxyEqualsOperator(Component, SwitchFunc)                        \
+  Component::FloatProxy &Component::FloatProxy::operator=(const float &f) {    \
+    if (m_EntityID == 0)                                                       \
+      return *this;                                                            \
+    float fT = f;                                                              \
+    SwitchFunc;                                                                \
+    return *this;                                                              \
+  }

@@ -1,66 +1,31 @@
 #pragma once
 
-#include "CatScriptCore/InternalCalls/InternalCalls.h"
-#include "CatScriptCore/Types/Types.h"
+#include "CatScriptCore/Scene/Component/ComponentHelper.h"
+#include <cstdint>
 
 namespace CatRuntime {
 struct Transform {
+protected:
+  uint64_t m_EntityID;
+
+private:
+  enum Field {
+    WORLD_POSITION, WORLD_ROTATION, WORLD_SCALE,
+    LOCAL_POSITION, LOCAL_ROTATION, LOCAL_SCALE
+  };
+
+  Vector3IndexProxyDefinition();
+  Vector3ProxyDefinition();
 public:
-  uint64_t id;
+  Transform(const uint64_t entityID) : m_EntityID(entityID) {}
 
-  struct FloatProxy {
-  public:
-    uint64_t id;
-    int index; // 0 = x, 1 = y, 2 = z
+  Vector3Proxy position() { return Vector3Proxy(m_EntityID, WORLD_POSITION); }
+  Vector3Proxy rotation() { return Vector3Proxy(m_EntityID, WORLD_ROTATION); }
+  Vector3Proxy scale()    { return Vector3Proxy(m_EntityID, WORLD_SCALE); }
 
-    operator float() const {
-      if (id == 0)
-        return 0;
-      Vector3 v;
-      Transform_GetPosition(id, &v);
-      return (&v.x)[index];
-    }
-
-    FloatProxy &operator=(float f) {
-      if (id == 0)
-        return *this;
-      Vector3 v;
-      Transform_GetPosition(id, &v);
-      (&v.x)[index] = f;
-      Transform_SetPosition(id, &v);
-      return *this;
-    }
-  };
-
-  struct Vector3Proxy {
-  public:
-    uint64_t id;
-    // Read whole vector
-    operator Vector3() const {
-      if (id == 0)
-        return {0, 0, 0};
-      Vector3 v;
-      Transform_GetPosition(id, &v);
-      return v;
-    }
-
-    // Write whole vector
-    Vector3Proxy &operator=(const Vector3 &v) {
-      if (id == 0)
-        return *this;
-      Vector3 vT = v;
-      Transform_SetPosition(id, &vT);
-      return *this;
-    }
-
-    // Component proxies
-    FloatProxy x() { return FloatProxy{id, 0}; }
-    FloatProxy y() { return FloatProxy{id, 1}; }
-    FloatProxy z() { return FloatProxy{id, 2}; }
-  };
-
-  // -------- Getter returns VectorProxy --------
-  Vector3Proxy position() { return Vector3Proxy{id}; }
+  Vector3Proxy local_position() { return Vector3Proxy(m_EntityID, LOCAL_POSITION); }
+  Vector3Proxy local_rotation() { return Vector3Proxy(m_EntityID, LOCAL_ROTATION); }
+  Vector3Proxy local_scale()    { return Vector3Proxy(m_EntityID, LOCAL_SCALE); }
 };
 
 } // namespace CatRuntime

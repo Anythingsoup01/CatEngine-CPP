@@ -262,11 +262,16 @@ void ScriptEngine::LoadBinaryClasses() {
 
 
   for (auto &[className, classObj] : capyClasses) {
+    if (classObj->Visibility == Capybara::MemberVisibility::Private || classObj->Visibility == Capybara::MemberVisibility::Protected)
+      continue;
     Ref<ScriptClass> scriptClass = CreateRef<ScriptClass>(className);
     uint32_t scriptHash = Hash::GenerateFNVHash(className);
 
     // 1. Populate scriptClass fields ordered/mapped by ByteOffset for execution/layout
-    for (auto &field : classObj->Fields) {
+    for (auto it = classObj->Fields.rbegin(); it != classObj->Fields.rend(); ++it) {
+      auto field = *it;
+      if (field.Visibility == Capybara::MemberVisibility::Private || field.Visibility == Capybara::MemberVisibility::Protected)
+        continue;
       DataType type = s_DataTypeLookup.at(field.TypeName);
       std::string name = field.Name;
       uint64_t fieldHash = Hash::GenerateFNVHash(field.Name);

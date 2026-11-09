@@ -1,46 +1,22 @@
 #pragma once
 
 #include "CatScriptCore/InternalCalls/InternalCalls.h"
+#include <cstdint>
 namespace CatRuntime {
 struct Tag {
 public:
-  uint64_t id;
+  Tag(const uint64_t &entityID) : m_EntityID(entityID) {}
 
-  operator std::string() const {
-    if (id == 0)
-      return std::string();
-    return Object_GetTag(id);
-  }
+  operator std::string() const;
 
-  bool operator==(const std::string &other) const {
-    if (id == 0)
-      return false;
-    std::string thisStr = Object_GetTag(id);
+  bool operator==(const std::string &other) const;
 
-    if (thisStr == other)
-      return true;
+  bool operator==(const char *other) const;
 
-    return false;
-  }
+  Tag &operator=(const std::string &other);
 
-  bool operator==(const char *other) const {
-    if (id == 0)
-      return false;
-    std::string thisStr = Object_GetTag(id);
-    std::string otherStr(other);
-    if (thisStr == otherStr)
-        return true;
-
-    return false;
-  }
-
-  Tag &operator=(const std::string &other) {
-    if (id == 0)
-      return *this;
-    Object_SetTag(id, other.c_str());
-    return *this;
-  }
-
+private:
+  uint64_t m_EntityID;
 };
 } // namespace CatRuntime
 

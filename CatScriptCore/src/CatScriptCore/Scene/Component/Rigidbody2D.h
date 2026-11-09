@@ -1,7 +1,5 @@
 #pragma once
 
-#include "InternalObjectData.h"
-
 #include "CatScriptCore/Types/Types.h"
 
 #include "CatScriptCore/InternalCalls/InternalCalls.h"

@@ -4,7 +4,11 @@
 namespace CatRuntime {
 
 struct Script {
-  uint64_t id;
+protected:
+  uint64_t m_EntityID;
+
+public:
+  Script(const uint64_t &entityID) : m_EntityID(entityID) {}
 };
 
 }

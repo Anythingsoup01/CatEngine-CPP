@@ -1,5 +1,6 @@
 #pragma once
 
+#include "CatScriptCore/Scene/Component/ComponentHelper.h"
 #include <cstdint>
 namespace CatRuntime {
 
@@ -14,17 +15,7 @@ private:
     ASPECT
   };
 
-  struct FloatProxy {
-  public:
-    FloatProxy(const uint64_t &entityID, const Field &field)
-      : m_EntityID(entityID), m_Field(field) {}
-
-    operator float() const;
-    FloatProxy &operator=(const float &f);
-  private:
-    uint64_t m_EntityID;
-    Field m_Field;
-  };
+  FloatProxyDefinition();
 
 public:
   Camera(const uint64_t &entityID)

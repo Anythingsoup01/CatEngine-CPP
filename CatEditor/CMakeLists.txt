@@ -2,8 +2,8 @@ add_executable(CatEditor)
 
 set_property(TARGET CatEditor PROPERTY CXX_STANDARD 20)
 target_sources(CatEditor PRIVATE
-src/CatEditor/Panels/SceneViewportPanel.cpp
 src/CatEditor/Entrypoint/CatEditorApp.cpp
+src/CatEditor/Panels/SceneViewportPanel.cpp
 src/CatEditor/EditorLayer.cpp
 )
 

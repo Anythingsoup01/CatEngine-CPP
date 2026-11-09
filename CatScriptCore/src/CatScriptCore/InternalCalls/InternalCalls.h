@@ -29,6 +29,20 @@ CE_ADD_INTERNAL_CALL(Object_SetLayer, void, uint64_t, const char *);
 CE_ADD_INTERNAL_CALL(Object_GetTag, const char *, uint64_t);
 CE_ADD_INTERNAL_CALL(Object_SetTag, void, uint64_t, const char *);
 
+// Camera Internal Calls
+CE_ADD_INTERNAL_CALL(Camera_GetSize, void, uint64_t, float *);
+CE_ADD_INTERNAL_CALL(Camera_SetSize, void, uint64_t, float *);
+CE_ADD_INTERNAL_CALL(Camera_GetFOV, void, uint64_t, float *);
+CE_ADD_INTERNAL_CALL(Camera_SetFOV, void, uint64_t, float *);
+CE_ADD_INTERNAL_CALL(Camera_GetNear, void, uint64_t, float *);
+CE_ADD_INTERNAL_CALL(Camera_SetNear, void, uint64_t, float *);
+CE_ADD_INTERNAL_CALL(Camera_GetAspect, void, uint64_t, float *);
+CE_ADD_INTERNAL_CALL(Camera_SetAspect, void, uint64_t, float *);
+CE_ADD_INTERNAL_CALL(Camera_GetFar, void, uint64_t, float *);
+CE_ADD_INTERNAL_CALL(Camera_SetFar, void, uint64_t, float *);
+CE_ADD_INTERNAL_CALL(Camera_SetOrthographic, void, uint64_t);
+CE_ADD_INTERNAL_CALL(Camera_SetPerspective, void, uint64_t);
+
 CE_ADD_INTERNAL_CALL(Rigidbody2D_ApplyForce, void, uint64_t, CatRuntime::Vector2 *,
                      CatRuntime::Vector2 *, bool);
 CE_ADD_INTERNAL_CALL(Rigidbody2D_ApplyForceToCenter, void, uint64_t, CatRuntime::Vector2 *,
@@ -45,8 +59,6 @@ CE_ADD_INTERNAL_CALL(BoxCollider2D_GetSize, void, uint64_t, CatRuntime::Vector2*
 CE_ADD_INTERNAL_CALL(BoxCollider2D_SetSize, void, uint64_t, CatRuntime::Vector2*)
 CE_ADD_INTERNAL_CALL(BoxCollider2D_GetRotation, void, uint64_t, float*)
 CE_ADD_INTERNAL_CALL(BoxCollider2D_SetRotation, void, uint64_t, float*)
-CE_ADD_INTERNAL_CALL(BoxCollider2D_GetShowColliderBounds, void, uint64_t, bool*)
-CE_ADD_INTERNAL_CALL(BoxCollider2D_SetShowColliderBounds, void, uint64_t, bool*)
 CE_ADD_INTERNAL_CALL(BoxCollider2D_GetDensity, void, uint64_t, float*)
 CE_ADD_INTERNAL_CALL(BoxCollider2D_SetDensity, void, uint64_t, float*)
 CE_ADD_INTERNAL_CALL(BoxCollider2D_GetFriction, void, uint64_t, float*)
@@ -55,6 +67,20 @@ CE_ADD_INTERNAL_CALL(BoxCollider2D_GetRestitution, void, uint64_t, float*)
 CE_ADD_INTERNAL_CALL(BoxCollider2D_SetRestitution, void, uint64_t, float*)
 CE_ADD_INTERNAL_CALL(BoxCollider2D_GetRestitutionThreshold, void, uint64_t, float*)
 CE_ADD_INTERNAL_CALL(BoxCollider2D_SetRestitutionThreshold, void, uint64_t, float*)
+
+// CircleCollider2D Internal Calls
+CE_ADD_INTERNAL_CALL(CircleCollider2D_GetOffset, void, uint64_t, CatRuntime::Vector2*)
+CE_ADD_INTERNAL_CALL(CircleCollider2D_SetOffset, void, uint64_t, CatRuntime::Vector2*)
+CE_ADD_INTERNAL_CALL(CircleCollider2D_GetRadius, void, uint64_t, float*)
+CE_ADD_INTERNAL_CALL(CircleCollider2D_SetRadius, void, uint64_t, float*)
+CE_ADD_INTERNAL_CALL(CircleCollider2D_GetDensity, void, uint64_t, float*)
+CE_ADD_INTERNAL_CALL(CircleCollider2D_SetDensity, void, uint64_t, float*)
+CE_ADD_INTERNAL_CALL(CircleCollider2D_GetFriction, void, uint64_t, float*)
+CE_ADD_INTERNAL_CALL(CircleCollider2D_SetFriction, void, uint64_t, float*)
+CE_ADD_INTERNAL_CALL(CircleCollider2D_GetRestitution, void, uint64_t, float*)
+CE_ADD_INTERNAL_CALL(CircleCollider2D_SetRestitution, void, uint64_t, float*)
+CE_ADD_INTERNAL_CALL(CircleCollider2D_GetRestitutionThreshold, void, uint64_t, float*)
+CE_ADD_INTERNAL_CALL(CircleCollider2D_SetRestitutionThreshold, void, uint64_t, float*)
 
 CE_ADD_INTERNAL_CALL(Transform_GetPosition, void, uint64_t, CatRuntime::Vector3 *);
 CE_ADD_INTERNAL_CALL(Transform_SetPosition, void, uint64_t, CatRuntime::Vector3 *);
@@ -70,11 +96,20 @@ CE_ADD_INTERNAL_CALL(Transform_SetLocalRotation, void, uint64_t, CatRuntime::Vec
 CE_ADD_INTERNAL_CALL(Transform_GetLocalScale, void, uint64_t, CatRuntime::Vector3 *);
 CE_ADD_INTERNAL_CALL(Transform_SetLocalScale, void, uint64_t, CatRuntime::Vector3 *);
 
+// Sprite Renderer Internal Calls
+CE_ADD_INTERNAL_CALL(SpriteRenderer_GetColor, void, uint64_t, CatRuntime::Vector4 *);
+CE_ADD_INTERNAL_CALL(SpriteRenderer_SetColor, void, uint64_t, CatRuntime::Vector4 *);
+CE_ADD_INTERNAL_CALL(SpriteRenderer_GetTextureID, void, uint64_t, uint64_t *);
+CE_ADD_INTERNAL_CALL(SpriteRenderer_SetTextureID, void, uint64_t, uint64_t *);
 
-CE_ADD_INTERNAL_CALL(Sprite_GetColor, void, uint64_t, CatRuntime::Vector4 *);
-CE_ADD_INTERNAL_CALL(Sprite_SetColor, void, uint64_t, CatRuntime::Vector4 *);
-CE_ADD_INTERNAL_CALL(Sprite_GetTextureID, void, uint64_t, uint64_t *);
-CE_ADD_INTERNAL_CALL(Sprite_SetTextureID, void, uint64_t, uint64_t *);
+// Circle Renderer Internal Calls
+CE_ADD_INTERNAL_CALL(CircleRenderer_GetColor, void, uint64_t, CatRuntime::Vector4 *);
+CE_ADD_INTERNAL_CALL(CircleRenderer_SetColor, void, uint64_t, CatRuntime::Vector4 *);
+CE_ADD_INTERNAL_CALL(CircleRenderer_GetThickness, void, uint64_t, float*)
+CE_ADD_INTERNAL_CALL(CircleRenderer_SetThickness, void, uint64_t, float*)
+CE_ADD_INTERNAL_CALL(CircleRenderer_GetFade, void, uint64_t, float*)
+CE_ADD_INTERNAL_CALL(CircleRenderer_SetFade, void, uint64_t, float*)
+
 
 // Declare the internal call
 
