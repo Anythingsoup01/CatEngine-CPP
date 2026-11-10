@@ -8,11 +8,14 @@
 #define Internal_Object_HasComponent(entityID, Type)                           \
   Object_HasComponent(entityID, #Type)
 
+
 namespace CatRuntime {
 
 // HAS COMPONENT OVERLOADS
 
-template <typename T> bool Object::HasComponent() { return false; }
+template <typename T> bool Object::HasComponent() {
+  return false;
+}
 
 #define X(Type)                                                                \
   template <> bool Object::HasComponent<Type>() {                              \
@@ -22,7 +25,9 @@ ENGINE_COMPONENT_LIST(X)
 #undef X
 
 // GET COMPONENT OVERLOADS
-template <typename T> T Object::GetComponent() { return T{0}; };
+template <typename T> T Object::GetComponent() {
+  return T{0};
+}
 
 #define X(Type)                                                                \
   template <> Type Object::GetComponent<Type>() {                              \
@@ -33,5 +38,9 @@ template <typename T> T Object::GetComponent() { return T{0}; };
   }
 ENGINE_COMPONENT_LIST(X)
 #undef X
+
+Object Object::FindObjectByName(const std::string &name) {
+  return Object_FindObjectByName(name.c_str());
+}
 
 } // namespace CatRuntime

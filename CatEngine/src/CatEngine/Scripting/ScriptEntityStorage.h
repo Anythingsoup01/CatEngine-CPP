@@ -9,6 +9,9 @@
 
 namespace CatEngine {
 
+class ScriptClass;
+class ScriptInstance;
+
 enum class DataType {
   Short,
   UShort,
@@ -95,6 +98,9 @@ struct ScriptFieldInstance {
 };
 
 // Key by script name hash, field instances keyed by field hash
-using ScriptFieldMap = std::unordered_map<uint64_t, std::unordered_map<uint64_t, ScriptFieldInstance>>;
+using FieldMap = std::unordered_map<uint64_t, ScriptFieldInstance>;
+using ScriptFieldMap = std::unordered_map<uint64_t, FieldMap>;
+using EntityClassMap = std::unordered_map<uint64_t, Ref<ScriptClass>>;
+using EntityScriptInstanceMap = std::unordered_map<uint64_t, Ref<ScriptInstance>>;
 
 } // namespace CatEngine

@@ -14,7 +14,7 @@
 #include "Required/InformationComponents.h"
 #include "Required/RelationshipComponent.h"
 
-#include "Scripting/ScriptComponent.h"
+#include "Scripting/ScriptComponentContainer.h"
 
 namespace CatEngine {
 
@@ -23,7 +23,7 @@ template <typename... Component> struct ComponentGroup {};
 using AllComponents = ComponentGroup<
     TagComponent, LayerComponent, RelationshipComponent, TransformComponent, CameraComponent,
     SpriteRendererComponent, CircleRendererComponent, BoxCollider2DComponent,
-    CircleCollider2DComponent, Rigidbody2DComponent, ScriptComponent>;
+    CircleCollider2DComponent, Rigidbody2DComponent, ScriptComponentContainer>;
 
 template <typename T> const char *ComponentToString() { return "NULL"; }
 

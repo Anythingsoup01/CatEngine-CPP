@@ -53,8 +53,8 @@ static std::unordered_map<std::string, DataType> s_DataTypeLookup = {
 struct ScriptEngineData {
   std::filesystem::path CoreLibraryPath;
 
-  std::unordered_map<uint64_t, Ref<ScriptClass>> EntityClasses;
-  std::unordered_map<UUID, Ref<ScriptInstance>> EntityInstances;
+  std::unordered_map<UUID, Ref<ScriptClass>> EntityClasses;
+  std::unordered_map<UUID, EntityScriptInstanceMap> EntityInstances;
   std::unordered_map<UUID, ScriptFieldMap> EntityScriptFields;
 
   Ref<Scene> SceneContext = nullptr;
@@ -125,74 +125,93 @@ bool ScriptEngine::ScriptClassExists(const std::string_view &className) {
 }
 
 void ScriptEngine::OnStartEntity(Entity e) {
+  auto &scc = e.GetComponent<ScriptComponentContainer>();
 
-  const auto &sc = e.GetComponent<ScriptComponent>();
+  for (auto &sc : scc.Scripts) {
+    if (ScriptEngine::ScriptClassExists(sc.ClassName.c_str())) {
+      UUID entityID = e.GetUUID();
 
-  if (ScriptEngine::ScriptClassExists(sc.ClassName.c_str())) {
-    UUID entityID = e.GetUUID();
+      Ref<ScriptInstance> instance = CreateRef<ScriptInstance>(s_ScriptData->EntityClasses[Hash::GenerateFNVHash(sc.ClassName)], e);
 
-    Ref<ScriptInstance> instance = CreateRef<ScriptInstance>(s_ScriptData->EntityClasses[Hash::GenerateFNVHash(sc.ClassName)], e);
+      if (!instance)
+        return;
 
-    if (!instance)
-      return;
+      s_ScriptData->EntityInstances[entityID][sc.ScriptID] = instance;
 
-    s_ScriptData->EntityInstances[entityID] = instance;
+      CE_API_INFO(e.GetName());
 
-    CE_API_INFO(e.GetName());
-
-    // Copy field value if we set it
-    if (s_ScriptData->EntityScriptFields.find(entityID) !=
+      // Copy field value if we set it
+      if (s_ScriptData->EntityScriptFields.find(entityID) !=
         s_ScriptData->EntityScriptFields.end()) {
-      const ScriptFieldMap &scriptFieldMap =
+        const ScriptFieldMap &scriptFieldMap =
           s_ScriptData->EntityScriptFields.at(entityID);
 
-      for (const auto &[entityID, scriptHash] : scriptFieldMap) {
-        for (const auto &[fieldHash, fieldInstance] : scriptHash) {
-          CE_API_WARN("Field Instance Name: {}", fieldInstance.Field.Name);
-          instance->SetFieldDataInternal(fieldInstance.Field.Name, fieldInstance.Data.Data, fieldInstance.Field.Size);
+        for (const auto &[entityID, scriptHash] : scriptFieldMap) {
+          for (const auto &[fieldHash, fieldInstance] : scriptHash) {
+            CE_API_WARN("Field Instance Name: {}", fieldInstance.Field.Name);
+            instance->SetFieldDataInternal(fieldInstance.Field.Name, fieldInstance.Data.Data, fieldInstance.Field.Size);
+          }
         }
       }
-    }
 
-    instance->InvokeStartMethod();
+      instance->InvokeStartMethod();
+    }
   }
 }
 
 void ScriptEngine::OnUpdateEntity(Entity e, float ts) {
+  auto &scc = e.GetComponent<ScriptComponentContainer>();
   UUID entityUUID = e.GetUUID();
+  for (auto &sc : scc.Scripts) {
+    auto &instances = s_ScriptData->EntityInstances;
+    if (instances.find(entityUUID) == instances.end()) {
+      CE_API_ERROR("Could not find script instance {}", (uint64_t)entityUUID);
+      continue;
+    }
 
-  if (s_ScriptData->EntityInstances.find(entityUUID) !=
-      s_ScriptData->EntityInstances.end()) {
-    Ref<ScriptInstance> instance = s_ScriptData->EntityInstances[entityUUID];
-    instance->InvokeUpdateMethod(ts);
-  } else {
-    CE_API_ERROR("Could not find script instance {}", (uint64_t)entityUUID);
+    auto entityInstances = instances.at(entityUUID);
+    for (auto &[scriptID, sc] : entityInstances) {
+      Ref<ScriptInstance> instance = entityInstances[scriptID];
+      instance->InvokeUpdateMethod(ts);
+    }
   }
 }
 
 void ScriptEngine::DispatchCollisionEvent(UUID uuidA, UUID uuidB, CollisionType type) {
-  Ref<ScriptInstance> scriptA, scriptB;
-  if (s_ScriptData->EntityInstances.find(uuidA) != s_ScriptData->EntityInstances.end())
-    scriptA = s_ScriptData->EntityInstances[uuidA];
+  auto &instances = s_ScriptData->EntityInstances;
+  EntityScriptInstanceMap entityA, entityB;
+  if (instances.find(uuidA) != instances.end())
+    entityA = instances[uuidA];
 
-  if (s_ScriptData->EntityInstances.find(uuidB) != s_ScriptData->EntityInstances.end())
-    scriptB = s_ScriptData->EntityInstances[uuidB];
+  if (instances.find(uuidB) != instances.end())
+    entityB = instances[uuidB];
 
-  switch (type) {
-  case CollisionType::Begin:
-    if (scriptA)
-      scriptA->InvokeOnCollisionEnter(uuidB);
-    if (scriptB)
-      scriptB->InvokeOnCollisionEnter(uuidA);
-    break;
-  case CollisionType::End:
-    if (scriptA)
-      scriptA->InvokeOnCollisionExit(uuidB);
-    if (scriptB)
-      scriptB->InvokeOnCollisionExit(uuidA);
-    break;
-  default:
-    break;
+  for (auto &[scriptID, script] : entityA) {
+    switch (type) {
+      case CollisionType::Begin:
+        script->InvokeOnCollisionEnter(uuidB);
+        break;
+      case CollisionType::End:
+        if (script)
+          script->InvokeOnCollisionExit(uuidB);
+        break;
+      default:
+        break;
+    }
+  }
+
+  for (auto &[scriptID, script] : entityB) {
+    switch (type) {
+      case CollisionType::Begin:
+        script->InvokeOnCollisionEnter(uuidA);
+        break;
+      case CollisionType::End:
+        if (script)
+          script->InvokeOnCollisionExit(uuidA);
+        break;
+      default:
+        break;
+    }
   }
 }
 
@@ -200,26 +219,36 @@ Ref<Scene> ScriptEngine::GetSceneContext() {
   return s_ScriptData->SceneContext;
 }
 
-Ref<ScriptInstance> ScriptEngine::GetEntityScriptInstance(UUID entityID) {
-  auto it = s_ScriptData->EntityInstances.find(entityID);
-  if (it == s_ScriptData->EntityInstances.end())
+Ref<ScriptInstance> ScriptEngine::GetEntityScriptInstance(const UUID &entityID, const UUID &scriptID) {
+  auto &instances = s_ScriptData->EntityInstances;
+  if (instances.find(entityID) == instances.end()) {
     return nullptr;
+  }
 
-  return it->second;
+  auto &entityScriptInstances = instances[entityID];
+  if (entityScriptInstances.find(scriptID) == entityScriptInstances.end()) {
+    return nullptr;
+  }
+
+  return entityScriptInstances[scriptID];
 }
 
-const ScriptFieldMap &
-ScriptEngine::GetInitializedFields(const UUID &entityID) const {
-  static ScriptFieldMap s_EmptyFieldMap = {};
-  if (s_ScriptData->EntityScriptFields.find(entityID) ==
-      s_ScriptData->EntityScriptFields.end())
+const FieldMap &ScriptEngine::GetInitializedFields(const UUID &entityID, const UUID &scriptID) const {
+  static FieldMap s_EmptyFieldMap = {};
+    auto &instances = s_ScriptData->EntityScriptFields;
+  if (instances.find(entityID) == instances.end()) {
     return s_EmptyFieldMap;
+  }
 
-  return s_ScriptData->EntityScriptFields.at(entityID);
+  auto &entityScriptInstances = instances[entityID];
+  if (entityScriptInstances.find(scriptID) == entityScriptInstances.end()) {
+    return s_EmptyFieldMap;
+  }
+
+  return entityScriptInstances[scriptID];
 }
 
-std::unordered_map<uint64_t, Ref<ScriptClass>> &
-ScriptEngine::GetScriptClasses() {
+std::unordered_map<UUID, Ref<ScriptClass>> &ScriptEngine::GetScriptClasses() {
   return s_ScriptData->EntityClasses;
 }
 
@@ -338,6 +367,18 @@ ScriptClass::ScriptClass(const std::string &className)
     : m_ClassName(className) {
   m_ClassObject = Capybara::Capybara::GetClass(className);
   CE_API_ASSERT(m_ClassObject, "Class is null!");
+
+  for (auto &method : m_ClassObject->Methods) {
+    if (method.Name == "Start") {
+      m_HasStart = true;
+    } else if (method.Name == "Update") {
+      m_HasUpdate = true;
+    } else if (method.Name == "OnCollisionEnter") {
+      m_HasOnCollisionEnter = true;
+    } else if (method.Name == "OnCollisionExit") {
+      m_HasOnCollisionExit = true;
+    }
+  }
 }
 
 Ref<Capybara::CapyObject::Instance> ScriptClass::Instantiate(UUID entityID) {
@@ -363,19 +404,23 @@ ScriptInstance::~ScriptInstance() {
 }
 
 void ScriptInstance::InvokeUpdateMethod(float ts) {
-  m_ScriptClass->InvokeMethod<void>("Update", m_Instance, ts);
+  if (m_ScriptClass->m_HasUpdate)
+    m_ScriptClass->InvokeMethod<void>("Update", m_Instance, ts);
 }
 
 void ScriptInstance::InvokeStartMethod() {
-  m_ScriptClass->InvokeMethod<void>("Start", m_Instance);
+  if (m_ScriptClass->m_HasStart)
+    m_ScriptClass->InvokeMethod<void>("Start", m_Instance);
 }
 
 void ScriptInstance::InvokeOnCollisionEnter(const UUID &other) {
-  m_ScriptClass->InvokeMethod<void>("OnCollisionEnter", m_Instance, (uint64_t)other.uuid());
+  if (m_ScriptClass->m_HasOnCollisionEnter)
+    m_ScriptClass->InvokeMethod<void>("OnCollisionEnter", m_Instance, (uint64_t)other.uuid());
 }
 
 void ScriptInstance::InvokeOnCollisionExit(const UUID &other) {
-  m_ScriptClass->InvokeMethod<void>("OnCollisionExit", m_Instance, (uint64_t)other.uuid());
+  if (m_ScriptClass->m_HasOnCollisionExit)
+    m_ScriptClass->InvokeMethod<void>("OnCollisionExit", m_Instance, (uint64_t)other.uuid());
 }
 
 } // namespace CatEngine

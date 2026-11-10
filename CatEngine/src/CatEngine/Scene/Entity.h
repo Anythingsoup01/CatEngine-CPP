@@ -1,8 +1,11 @@
 #pragma once
 
+#include "CatEngine/Core/Hash.h"
+#include "CatEngine/Scene/Components/Scripting/ScriptComponentContainer.h"
 #include "Components/Components.h"
 #include "Scene.h"
 
+#include <cstdint>
 #include <entt.hpp>
 
 namespace CatEngine {
@@ -20,6 +23,20 @@ public:
                                                   std::forward<Args>(args)...);
     m_Scene->OnComponentAdded<T>(*this, component);
     return component;
+  }
+
+  ScriptComponent &AddScriptComponent() {
+    if (!HasComponent<ScriptComponentContainer>()) {
+      AddComponent<ScriptComponentContainer>();
+    }
+
+    auto& container = GetComponent<ScriptComponentContainer>();
+
+    // Emplace the script component with its class name
+    ScriptComponent sc;
+    container.Scripts.push_back(sc);
+
+    return container.Scripts.at(container.Scripts.size() - 1);
   }
 
   template <typename T, typename... Args>
@@ -47,6 +64,18 @@ public:
     CE_API_ASSERT(HasComponent<T>(), "Entity does not have component!");
 
     m_Scene->m_Registry.remove<T>(m_EntityHandle);
+  }
+
+  void RemoveScriptComponent(const int &index) {
+    CE_API_ASSERT(HasComponent<ScriptComponentContainer>(), "Script Component Container doesn't exist!");
+    auto &scc = GetComponent<ScriptComponentContainer>();
+    int idx = 0;
+    for (auto it = scc.Scripts.begin(); it != scc.Scripts.end(); ++it) {
+      if (idx++ == index) {
+        scc.Scripts.erase(it);
+        break;
+      }
+    }
   }
 
   template <typename T> bool HasComponent() {
@@ -79,6 +108,18 @@ public:
     CE_API_ASSERT(HasComponent<T>(), "Entity does not have component!");
 
     return m_Scene->m_Registry.get<T>(m_EntityHandle);
+  }
+
+  ScriptComponent &GetScriptComponent(const UUID &scriptHash) {
+    CE_API_ASSERT(!HasComponent<ScriptComponentContainer>(), "Script Component Container doesn't exist!");
+    auto &scc = GetComponent<ScriptComponentContainer>();
+    for (auto it = scc.Scripts.begin(); it != scc.Scripts.end(); ++it) {
+      auto &script = *it;
+      if (scriptHash == script.ScriptID) {
+        return script;
+      }
+    }
+    CE_API_ASSERT(false, "ScriptComponentContainer has no script with hash!");
   }
 
   template <typename T> T &GetOrAddComponent() const {

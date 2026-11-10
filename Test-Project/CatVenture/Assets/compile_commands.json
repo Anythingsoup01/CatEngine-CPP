@@ -8,5 +8,15 @@
     "directory": "/home/anyth/Doge/Dev/CatEngine/Test-Project/CatVenture/Assets",
     "file": "/home/anyth/Doge/Dev/CatEngine/Test-Project/CatVenture/Assets/Scripts/GroundInteract.cpp",
     "command": "g++ -c /home/anyth/Doge/Dev/CatEngine/Test-Project/CatVenture/Assets/Scripts/GroundInteract.cpp -o /home/anyth/Doge/Dev/CatEngine/Test-Project/CatVenture/Assets/.capy/Scripts_GroundInteract.o -std=c++20 -fPIC -O2 -I/home/anyth/Doge/Dev/CatEngine/CatScriptCore/src"
+  },
+  {
+    "directory": "/home/anyth/Doge/Dev/CatEngine/Test-Project/CatVenture/Assets",
+    "file": "/home/anyth/Doge/Dev/CatEngine/Test-Project/CatVenture/Assets/Scripts/PlayerHealth.cpp",
+    "command": "g++ -c /home/anyth/Doge/Dev/CatEngine/Test-Project/CatVenture/Assets/Scripts/PlayerHealth.cpp -o /home/anyth/Doge/Dev/CatEngine/Test-Project/CatVenture/Assets/.capy/Scripts_PlayerHealth.o -std=c++20 -fPIC -O2 -I/home/anyth/Doge/Dev/CatEngine/CatScriptCore/src"
+  },
+  {
+    "directory": "/home/anyth/Doge/Dev/CatEngine/Test-Project/CatVenture/Assets",
+    "file": "/home/anyth/Doge/Dev/CatEngine/Test-Project/CatVenture/Assets/Scripts/EnemyController.cpp",
+    "command": "g++ -c /home/anyth/Doge/Dev/CatEngine/Test-Project/CatVenture/Assets/Scripts/EnemyController.cpp -o /home/anyth/Doge/Dev/CatEngine/Test-Project/CatVenture/Assets/.capy/Scripts_EnemyController.o -std=c++20 -fPIC -O2 -I/home/anyth/Doge/Dev/CatEngine/CatScriptCore/src"
   }
 ]

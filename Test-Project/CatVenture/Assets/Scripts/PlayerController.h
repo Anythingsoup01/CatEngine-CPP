@@ -14,7 +14,7 @@ public:
   void OnCollisionEnter(Object other);
   void OnCollisionExit(Object other);
 
-private:
+public:
   float m_PlayerTerminalVelocity = 25.0f;
   float m_PlayerSpeed = 10;
   float m_JumpForce = 25.0f;

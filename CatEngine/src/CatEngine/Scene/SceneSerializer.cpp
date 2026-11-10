@@ -1,5 +1,6 @@
 #include "SceneSerializer.h"
 #include "CatEngine/Scene/Components/Required/RelationshipComponent.h"
+#include "CatEngine/Scene/Components/Scripting/ScriptComponentContainer.h"
 #include "CatEngine/Scripting/ScriptEntityStorage.h"
 #include "cepch.h"
 
@@ -235,22 +236,22 @@ void SceneSerializer::SerializeEntity(YAML::Emitter &out, Entity entity) {
     out << YAML::EndMap; // CircleCollider2DComponent
   }
 
-  if (entity.HasComponent<ScriptComponent>()) {
-    auto &sc = entity.GetComponent<ScriptComponent>();
+  if (entity.HasComponent<ScriptComponentContainer>()) {
     auto &scriptEngine = ScriptEngine::GetMutable();
-    out << YAML::Key << "ScriptComponent" << YAML::Value;
-    out << YAML::BeginMap; // ScriptComponent
-    out << YAML::Key << "Scripts" << YAML::Value;
-    out << YAML::BeginSeq; // Scripts
-    const ScriptFieldMap &fieldMap =
-        scriptEngine.GetInitializedFields(entity.GetUUID());
-    for (auto &[scriptID, fields] : fieldMap) {
-      out << YAML::BeginMap; // Script
-      out << YAML::Key << "ScriptID" << YAML::Value << scriptID;
+    auto &container = entity.GetComponent<ScriptComponentContainer>();
+    out << YAML::Key << "ScriptComponentContainer" << YAML::Value;
+    out << YAML::BeginSeq;
+    for (auto &sc : container.Scripts) {
+      out << YAML::BeginMap; // ScriptComponent
+      out << YAML::Key << "ScriptComponent" << YAML::Value;
+      out << YAML::BeginMap; // ScriptComponent
+      out << YAML::Key << "ScriptID" << YAML::Value << sc.ScriptID;
       out << YAML::Key << "ClassName" << YAML::Value << sc.ClassName;
       out << YAML::Key << "Fields" << YAML::Value;
       out << YAML::BeginSeq;
-      for (auto &[fieldID, field] : fields) {
+      const FieldMap &fieldMap =
+        scriptEngine.GetInitializedFields(entity.GetUUID(), sc.ScriptID);
+      for (auto &[fieldID, field] : fieldMap) {
         out << YAML::BeginMap;
         out << YAML::Key << "FieldID" << YAML::Value << fieldID;
         out << YAML::Key << "FieldName" << YAML::Value << field.Field.Name;
@@ -303,11 +304,12 @@ void SceneSerializer::SerializeEntity(YAML::Emitter &out, Entity entity) {
         }
         out << YAML::EndMap; // Field
       }
-      out << YAML::EndSeq; // Field
-      out << YAML::EndMap; // Script
+      out << YAML::EndSeq; // Fields
+      out << YAML::EndMap; // ScriptComponent map
+      out << YAML::EndMap; // Sequence item map
     }
-    out << YAML::EndSeq; // Scripts
-    out << YAML::EndMap; // ScriptComponent
+    out << YAML::EndSeq; // ScriptComponentContainer
+
   }
 
   if (entity.HasComponent<RelationshipComponent>()) {
@@ -468,20 +470,22 @@ void SceneSerializer::DeserializeEntity(YAML::Node &entity, UUID parent) {
         circleCollider2D["RestitutionThreshold"].as<float>();
   }
 
-  auto scriptComponent = entity["ScriptComponent"];
-  if (scriptComponent) {
+  auto scriptComponentContainer = entity["ScriptComponentContainer"];
+  if (scriptComponentContainer) {
     auto scriptEngine = ScriptEngine::GetMutable();
-    auto scripts = scriptComponent["Scripts"];
-    if (scripts) {
-      for (auto script : scripts) {
-        uint64_t scriptID = script["ScriptID"].as<uint64_t>();
-        auto &sc = deserializedEntity.AddComponent<ScriptComponent>();
-        sc.ClassName = script["ClassName"].as<std::string>();
+    auto &scc = deserializedEntity.AddComponent<ScriptComponentContainer>();
+    for (auto scriptEntry : scriptComponentContainer) {
+      auto scriptComponent = scriptEntry["ScriptComponent"];
+      if (scriptComponent) {
+        uint64_t scriptID = scriptComponent["ScriptID"].as<uint64_t>();
+        std::string className = scriptComponent["ClassName"].as<std::string>();
+        ScriptComponent &sc = deserializedEntity.AddScriptComponent();
         sc.ScriptID = scriptID;
+        sc.ClassName = className;
 
         auto &fieldMap = scriptEngine.GetScriptFieldMap(uuid)[scriptID];
 
-        auto fieldsSeq = script["Fields"];
+        auto fieldsSeq = scriptComponent["Fields"];
         if (fieldsSeq) {
           for (auto field : fieldsSeq) {
             uint64_t fieldID = field["FieldID"].as<uint64_t>();
@@ -489,52 +493,52 @@ void SceneSerializer::DeserializeEntity(YAML::Node &entity, UUID parent) {
 
             sfi.Field.Name = field["FieldName"].as<std::string>();
             sfi.Field.Type =
-                StringToDataType(field["FieldType"].as<std::string>());
+              StringToDataType(field["FieldType"].as<std::string>());
             sfi.Field.Size = field["FieldSize"].as<uint64_t>();
 
             switch (sfi.Field.Type) {
-            case DataType::Float:
-              sfi.SetValue(field["Value"].as<float>());
-              break;
-            case DataType::Double:
-              sfi.SetValue(field["Value"].as<double>());
-              break;
-            case DataType::Bool:
-              sfi.SetValue(field["Value"].as<bool>());
-              break;
-            case DataType::Short:
-              sfi.SetValue(field["Value"].as<int16_t>());
-              break;
-            case DataType::UShort:
-              sfi.SetValue(field["Value"].as<uint16_t>());
-              break;
-            case DataType::Int:
-              sfi.SetValue(field["Value"].as<int32_t>());
-              break;
-            case DataType::UInt:
-              sfi.SetValue(field["Value"].as<uint32_t>());
-              break;
-            case DataType::Long:
-              sfi.SetValue(field["Value"].as<int64_t>());
-              break;
-            case DataType::ULong:
-              sfi.SetValue(field["Value"].as<uint64_t>());
-              break;
-            case DataType::Vector2:
-              sfi.SetValue(field["Value"].as<glm::vec2>());
-              break;
-            case DataType::Vector3:
-              sfi.SetValue(field["Value"].as<glm::vec3>());
-              break;
-            case DataType::Vector4:
-              sfi.SetValue(field["Value"].as<glm::vec4>());
-              break;
-            case DataType::Texture2D:
-            case DataType::Entity:
-              sfi.SetValue(field["Value"].as<uint64_t>());
-              break;
-            default:
-              break;
+              case DataType::Float:
+                sfi.SetValue(field["Value"].as<float>());
+                break;
+              case DataType::Double:
+                sfi.SetValue(field["Value"].as<double>());
+                break;
+              case DataType::Bool:
+                sfi.SetValue(field["Value"].as<bool>());
+                break;
+              case DataType::Short:
+                sfi.SetValue(field["Value"].as<int16_t>());
+                break;
+              case DataType::UShort:
+                sfi.SetValue(field["Value"].as<uint16_t>());
+                break;
+              case DataType::Int:
+                sfi.SetValue(field["Value"].as<int32_t>());
+                break;
+              case DataType::UInt:
+                sfi.SetValue(field["Value"].as<uint32_t>());
+                break;
+              case DataType::Long:
+                sfi.SetValue(field["Value"].as<int64_t>());
+                break;
+              case DataType::ULong:
+                sfi.SetValue(field["Value"].as<uint64_t>());
+                break;
+              case DataType::Vector2:
+                sfi.SetValue(field["Value"].as<glm::vec2>());
+                break;
+              case DataType::Vector3:
+                sfi.SetValue(field["Value"].as<glm::vec3>());
+                break;
+              case DataType::Vector4:
+                sfi.SetValue(field["Value"].as<glm::vec4>());
+                break;
+              case DataType::Texture2D:
+              case DataType::Entity:
+                sfi.SetValue(field["Value"].as<uint64_t>());
+                break;
+              default:
+                break;
             }
           }
         }

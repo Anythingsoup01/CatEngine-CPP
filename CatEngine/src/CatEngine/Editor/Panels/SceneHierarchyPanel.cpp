@@ -163,6 +163,8 @@ void SceneHierarchyPanel::OnImGuiRender(bool &isOpen) {
       DisplayAddScriptComponent("Script");
       ImGui::EndPopup();
     }
+      ImGui::Dummy(ImVec2{ImGui::GetContentRegionAvail().x, 10});
+
   }
   ImGui::End();
 }
@@ -392,6 +394,8 @@ void SceneHierarchyPanel::DrawComponents(Entity selection) {
   }
 
   DrawComponentsHelper(selection);
+
+  ImGui::Dummy(ImVec2{ImGui::GetContentRegionAvail().x, 50});
 }
 
 template <typename T>
@@ -424,11 +428,9 @@ void SceneHierarchyPanel::DisplayAddComponentEntries(
 }
 
 void SceneHierarchyPanel::DisplayAddScriptComponent(const std::string &name) {
-  if (!m_SelectionContext.HasComponent<ScriptComponent>()) {
-    if (ImGui::MenuItem(name.c_str())) {
-      m_SelectionContext.AddComponent<ScriptComponent>();
-      ImGui::CloseCurrentPopup();
-    }
+  if (ImGui::MenuItem(name.c_str())) {
+    m_SelectionContext.AddScriptComponent();
+    ImGui::CloseCurrentPopup();
   }
 }
 

@@ -21,6 +21,8 @@ CE_ADD_INTERNAL_CALL(Input_IsKeyPressed, bool, CatRuntime::KeyCode);
 CE_ADD_INTERNAL_CALL(Input_IsKeyReleased, bool, CatRuntime::KeyCode);
 
 CE_ADD_INTERNAL_CALL(Object_HasComponent, bool, uint64_t, const char *);
+CE_ADD_INTERNAL_CALL(Object_HasScript, bool, uint64_t, const char *);
+CE_ADD_INTERNAL_CALL(Object_GetScript, void *, uint64_t, const char *);
 CE_ADD_INTERNAL_CALL(Object_FindObjectByName, uint64_t, const char *);
 
 CE_ADD_INTERNAL_CALL(Object_GetLayer, const char *, uint64_t);

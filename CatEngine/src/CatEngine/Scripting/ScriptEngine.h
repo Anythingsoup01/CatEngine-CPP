@@ -40,13 +40,13 @@ public:
   void DispatchCollisionEvent(UUID entityA, UUID entityB, CollisionType type);
 
   Ref<Scene> GetSceneContext();
-  Ref<ScriptInstance> GetEntityScriptInstance(UUID entityID);
+  Ref<ScriptInstance> GetEntityScriptInstance(const UUID &entityID, const UUID &scriptID);
 
   Capybara::CapyObject::Instance *GetManagedInstance(UUID uuid);
 
-  const ScriptFieldMap &GetInitializedFields(const UUID &entityID) const;
+  const FieldMap &GetInitializedFields(const UUID &entityID, const UUID &scriptID) const;
 
-  std::unordered_map<uint64_t, Ref<ScriptClass>> &GetScriptClasses();
+  std::unordered_map<UUID, Ref<ScriptClass>> &GetScriptClasses();
   Ref<ScriptClass> GetScriptClass(const char *className);
   ScriptFieldMap &GetScriptFieldMap(Entity entity);
   ScriptFieldMap &GetScriptFieldMap(UUID entity);
@@ -93,11 +93,14 @@ public:
   }
 
 private:
-  const char *m_ClassNamespace;
   const std::string m_ClassName;
 
-  std::unordered_map<UUID, ScriptField> m_Fields;
+  bool m_HasStart = false;
+  bool m_HasUpdate = false;
+  bool m_HasOnCollisionEnter = false;
+  bool m_HasOnCollisionExit = false;
 
+  std::unordered_map<UUID, ScriptField> m_Fields;
   Ref<Capybara::CapyObject> m_ClassObject;
 
   friend class ScriptEngine;

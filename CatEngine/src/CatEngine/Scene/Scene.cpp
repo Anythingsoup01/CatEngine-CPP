@@ -1,7 +1,9 @@
+#include "CatEngine/Scene/Components/Scripting/ScriptComponentContainer.h"
+#include "cepch.h"
 #include "Scene.h"
+#include "CatEngine/Core/Hash.h"
 #include "CatEngine/Core/Log.h"
 #include "CatEngine/Physics/Physics2D.h"
-#include "cepch.h"
 
 #include "Components/Components.h"
 #include "Components/Required/RelationshipComponent.h"
@@ -104,7 +106,7 @@ void Scene::CopyTo(Ref<Scene> &target) {
   CopyComponent<BoxCollider2DComponent>(dstRegistry, srcRegistry, enttMap);
   CopyComponent<CircleCollider2DComponent>(dstRegistry, srcRegistry, enttMap);
   CopyComponent<Rigidbody2DComponent>(dstRegistry, srcRegistry, enttMap);
-  CopyComponent<ScriptComponent>(dstRegistry, srcRegistry, enttMap);
+  CopyComponent<ScriptComponentContainer>(dstRegistry, srcRegistry, enttMap);
 }
 
 void Scene::OnUpdateEditor(Time ts, EditorCamera &camera) {
@@ -172,7 +174,7 @@ void Scene::OnUpdateRuntime(Time time) {
   if (!m_IsPaused) {
     // Update Scripts
     {
-      auto view = m_Registry.view<ScriptComponent>();
+      auto view = m_Registry.view<ScriptComponentContainer>();
       for (auto e : view) {
         Entity entity = {e, this};
         ScriptEngine::GetMutable().OnUpdateEntity(entity, time.deltaTime());
@@ -293,7 +295,7 @@ void Scene::OnPhysics2DStop() {
 }
 
 void Scene::OnScriptStart() {
-  auto view = m_Registry.view<ScriptComponent>();
+  auto view = m_Registry.view<ScriptComponentContainer>();
   for (auto &e : view) {
     Entity entity = {e, this};
     ScriptEngine::GetMutable().OnStartEntity(entity);
@@ -338,7 +340,7 @@ Entity Scene::PasteEntity(Entity entity) {
   CopyComponentIfExists(AllComponents{}, newEntity, entity);
   return newEntity;
 }
-Entity Scene::FindEntityByName(std::string_view name) {
+Entity Scene::FindEntityByName(const std::string_view &name) {
   auto view = m_Registry.view<NameComponent>();
   for (auto entity : view) {
     const NameComponent &nameComponent = view.get<NameComponent>(entity);
@@ -624,10 +626,10 @@ template <>
 void Scene::OnComponentAdded<CircleCollider2DComponent>(
     Entity entity, CircleCollider2DComponent &component) {}
 template <>
-void Scene::OnComponentAdded<ScriptComponent>(Entity entity,
-                                              ScriptComponent &component) {
-  component.ScriptID = UUID();
+void Scene::OnComponentAdded<ScriptComponentContainer>(Entity entity,
+                                              ScriptComponentContainer &component) {
 }
+
 template <>
 void Scene::OnComponentAdded<IDComponent>(Entity entity,
                                           IDComponent &component) {}

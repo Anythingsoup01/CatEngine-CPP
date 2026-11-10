@@ -15,6 +15,8 @@
 #include <cstdint>
 #include <cstring>
 
+#include <cxxabi.h>
+
 namespace CatEngine {
 
 static std::unordered_map<std::string, std::function<bool(Entity)>>
@@ -47,6 +49,63 @@ static bool Object_HasComponent(UUID entityID, const char *componentType) {
                     s_EntityHasComponentFuncs.end(),
                 "Component not found: {}", componentType);
   return s_EntityHasComponentFuncs.at(componentType)(entity);
+}
+
+std::string GetCleanClassName(const std::string& mangledName) {
+  int status = 0;
+  // Demangle the symbol using the Itanium C++ ABI
+  char* demangled = abi::__cxa_demangle(mangledName.c_str(), nullptr, nullptr, &status);
+
+  if (status == 0 && demangled) {
+    std::string fullName(demangled);
+    std::free(demangled); // __cxa_demangle allocates memory with malloc, must be freed
+
+    // Find the last scope resolution operator "::" to strip namespaces
+    size_t lastColon = fullName.rfind("::");
+    if (lastColon != std::string::npos) {
+      return fullName.substr(lastColon + 2); // Returns "PlayerController"
+    }
+    return fullName;
+  }
+
+  // Fallback if demangling fails
+  return mangledName;
+}
+
+static bool Object_HasScript(UUID entityID, const char *scriptName) {
+  const Entity &entity = GetEntity(entityID);
+  if (!entity.HasComponent<ScriptComponentContainer>())
+    return false;
+
+  auto &scc = entity.GetComponent<ScriptComponentContainer>();
+
+  std::string demangledClassName = GetCleanClassName(scriptName);
+  for (auto &script : scc.Scripts) {
+    if (script.ClassName == demangledClassName) {
+      return true;
+    }
+  }
+  return false;
+}
+
+static void *Object_GetScript(UUID entityID, const char *scriptName) {
+  const Entity &entity = GetEntity(entityID);
+  if (!entity.HasComponent<ScriptComponentContainer>())
+    return nullptr;
+
+  auto &scc = entity.GetComponent<ScriptComponentContainer>();
+  std::string demangledClassName = GetCleanClassName(scriptName);
+  for (auto &script : scc.Scripts) {
+    if (script.ClassName == demangledClassName) {
+      auto scriptInstance = ScriptEngine::GetMutable().GetEntityScriptInstance(entityID, script.ScriptID);
+
+      if (!scriptInstance || !scriptInstance->GetManagedObject())
+        return nullptr;
+
+      return scriptInstance->GetManagedObject()->RawMemory.data();
+    }
+  }
+  return nullptr;
 }
 
 static uint64_t Object_FindObjectByName(const std::string &name) {
@@ -736,6 +795,8 @@ void ScriptGlue::RegisterFunctions() {
 #pragma region Object
 
   CE_ADD_INTERNAL_CALL(Object_HasComponent);
+  CE_ADD_INTERNAL_CALL(Object_HasScript);
+  CE_ADD_INTERNAL_CALL(Object_GetScript);
   CE_ADD_INTERNAL_CALL(Object_FindObjectByName);
   CE_ADD_INTERNAL_CALL(Object_GetLayer);
   CE_ADD_INTERNAL_CALL(Object_SetLayer);

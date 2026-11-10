@@ -2,6 +2,7 @@
 #include "CatScriptCore/Types/Vector.h"
 
 #include "CatScriptCore/Scene/Component/AllComponents.h"
+#include "PlayerHealth.h"
 
 namespace CatRuntime {
 
@@ -17,16 +18,16 @@ void PlayerController::Update(float ts) {
 
   if (m_Grounded) {
     if (Input::KeyPressed(KeyCode::A)) {
-      if (playerVelocity.x > -m_PlayerTerminalVelocity)
-        playerVelocity.x += -m_PlayerSpeed * m_SpeedScale;
+      if (playerVelocity.X > -m_PlayerTerminalVelocity)
+        playerVelocity.X += -m_PlayerSpeed * m_SpeedScale;
     }
     if (Input::KeyPressed(KeyCode::D)) {
-      if (playerVelocity.x < m_PlayerTerminalVelocity)
-        playerVelocity.x += m_PlayerSpeed * m_SpeedScale;
+      if (playerVelocity.X < m_PlayerTerminalVelocity)
+        playerVelocity.X += m_PlayerSpeed * m_SpeedScale;
     }
     if (Input::KeyPressed(KeyCode::Space)) {
       if (m_CanJump) {
-        playerVelocity.y = m_JumpForce;
+        playerVelocity.Y = m_JumpForce;
         m_CanJump = false;
       }
     }
@@ -43,21 +44,17 @@ void PlayerController::OnCollisionEnter(Object other) {
     m_CanJump = true;
   }
 
-  if (other.HasComponent<SpriteRenderer>()) {
-    auto sr = other.GetComponent<SpriteRenderer>();
-    sr.color() = Vector4{1, 1, 0, 1};
+  // TODO: Make it to where this can be a member
+  if (other.layer() == "Enemy") {
+    PlayerHealth *ph = GetScript<PlayerHealth>();
+    ph->DamagePlayer(50.0f);
   }
+
 }
 
 void PlayerController::OnCollisionExit(Object other) {
   if (other.layer() == "Ground" && !m_CanJump) {
     m_Grounded = false;
   }
-
-  if (other.HasComponent<SpriteRenderer>()) {
-    auto sr = other.GetComponent<SpriteRenderer>();
-    sr.color() = Vector4{1, 1, 1, 1};
-  }
-
 }
 } // namespace CatRuntime

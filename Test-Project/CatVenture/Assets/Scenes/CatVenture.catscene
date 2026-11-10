@@ -1,19 +1,19 @@
 Scene: SampleScene
 Entities:
-  - Entity: 14096084207158609928
+  - Entity: 11887291964845403532
     TagComponent:
       Tag: None
     LayerComponent:
-      Layer: Ground
+      Layer: Enemy
     NameComponent:
-      Name: Ground
+      Name: Enemy
     TransformComponent:
-      LocalPosition: [0, -5.40062332, 0]
+      LocalPosition: [6.77245331, -2.29089499, 0]
       LocalRotation: [0, 0, 0]
-      LocalScale: [30, 1, 1]
+      LocalScale: [1, 1, 1]
     SpriteRendererComponent:
-      Color: [1, 1, 1, 1]
-      Texture: 0
+      Color: [1, 0, 0, 1]
+      Texture: 7424101533985980934
       Tiling: 1
     Rigidbody2DComponent:
       BodyType: 0
@@ -27,39 +27,64 @@ Entities:
       Friction: 0.5
       Restitution: 0
       RestitutionThreshold: 0.5
-    ScriptComponent:
-      Scripts:
-        []
+    ScriptComponentContainer:
+      - ScriptComponent:
+          ScriptID: 4149576837
+          ClassName: EnemyController
+          Fields:
+            []
     RelationshipComponent:
       ParentID: 0
       Children:
         []
-  - Entity: 5114399343120810540
+  - Entity: 12398286286834867532
     TagComponent:
       Tag: None
     LayerComponent:
-      Layer: Default
+      Layer: Ground
+    NameComponent:
+      Name: Ground
+    TransformComponent:
+      LocalPosition: [0, -3.63838577, 0]
+      LocalRotation: [0, 0, 0]
+      LocalScale: [18.75, 1, 1]
+    SpriteRendererComponent:
+      Color: [0.202120751, 0.644859791, 0.0452004485, 1]
+      Texture: 2703688991424464864
+      Tiling: 1
+    Rigidbody2DComponent:
+      BodyType: 0
+      FixedRotation: false
+    BoxCollider2DComponent:
+      Offset: [0, 0]
+      Size: [0.5, 0.5]
+      Rotation: 0
+      ShowColliderBounds: false
+      Density: 1
+      Friction: 0.5
+      Restitution: 0
+      RestitutionThreshold: 0.5
+    ScriptComponentContainer:
+      []
+    RelationshipComponent:
+      ParentID: 0
+      Children:
+        []
+  - Entity: 14926076657723929888
+    TagComponent:
+      Tag: Player
+    LayerComponent:
+      Layer: Player
     NameComponent:
       Name: Player
     TransformComponent:
-      LocalPosition: [-2.5805912, 0, 0]
+      LocalPosition: [0, 1.11758709e-08, 0]
       LocalRotation: [0, 0, 0]
       LocalScale: [1, 1, 1]
     SpriteRendererComponent:
-      Color: [0.0332651138, 1, 0.0265282393, 1]
-      Texture: 7155916114788326522
-      Tiling: 3.9000001
-    CameraComponent:
-      Camera:
-        ProjectionType: 1
-        PerspectiveFOV: 0.785398185
-        PerspectiveNear: 0.00999999978
-        PerspectiveFar: 10000
-        OrthographicSize: 40
-        OrthographicNear: -1
-        OrthographicFar: 1
-      Primary: true
-      FixedAspectRatio: false
+      Color: [0.0209625289, 0.676090539, 0.897196293, 1]
+      Texture: 4325167878932619739
+      Tiling: 1
     Rigidbody2DComponent:
       BodyType: 2
       FixedRotation: true
@@ -72,17 +97,43 @@ Entities:
       Friction: 0.5
       Restitution: 0
       RestitutionThreshold: 0.5
-    ScriptComponent:
-      Scripts:
-        - ScriptID: 1101011320
+    ScriptComponentContainer:
+      - ScriptComponent:
+          ScriptID: 1101011320
           ClassName: PlayerController
           Fields:
-            - FieldID: 13916145
-              FieldName: m_PlayerSpeed
-              FieldType: Float
-              FieldSize: 4
-              Value: 0.100000001
+            []
+      - ScriptComponent:
+          ScriptID: 3391991794
+          ClassName: PlayerHealth
+          Fields:
+            []
     RelationshipComponent:
       ParentID: 0
       Children:
-        []
+        - Entity: 5465631767591689927
+          TagComponent:
+            Tag: None
+          LayerComponent:
+            Layer: Default
+          NameComponent:
+            Name: Camera
+          TransformComponent:
+            LocalPosition: [0, -1.49011612e-08, 0]
+            LocalRotation: [0, -0, 0]
+            LocalScale: [1, 1, 1]
+          CameraComponent:
+            Camera:
+              ProjectionType: 1
+              PerspectiveFOV: 0.785398185
+              PerspectiveNear: 0.00999999978
+              PerspectiveFar: 10000
+              OrthographicSize: 41
+              OrthographicNear: -1
+              OrthographicFar: 1
+            Primary: true
+            FixedAspectRatio: false
+          RelationshipComponent:
+            ParentID: 14926076657723929888
+            Children:
+              []
