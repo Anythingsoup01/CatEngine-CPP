@@ -188,7 +188,7 @@ void ScriptEngine::LoadRuntimeScripts() {
 
               void *data = otherInstance->GetManagedObject()->RawMemory.data();
               instance->SetFieldDataInternal(
-              fieldInstance.Field.Name, 
+              fieldInstance.Field.Name,
               &data,
               fieldInstance.Field.Size);
             }

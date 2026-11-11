@@ -333,6 +333,48 @@ bool ImGuiDraw::Combo(const std::string &label, int &selection,
   return triggered;
 }
 
+bool ImGuiDraw::Combo(const std::string &label, std::string &currString,
+                      const std::vector<std::string> &list) {
+  bool triggered = false;
+  ImGui::PushID(label.c_str());
+
+  if (ImGui::BeginTable("##", 2)) {
+
+    for (int i = 0; i < 2; i++) {
+      ImGui::TableSetupColumn(names[i].c_str(),
+                              ImGuiTableColumnFlags_WidthStretch);
+    }
+
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
+    ImGui::Text("%s", label.c_str());
+    ImGui::TableSetColumnIndex(1);
+    ImGui::PushItemWidth(-1.0f);
+    if (ImGui::BeginCombo("##", currString.c_str())) {
+      for (auto entry : list) {
+        const bool is_selected = (currString == entry);
+
+        if (ImGui::Selectable(entry.c_str(), &is_selected)) {
+          currString = entry;
+        }
+
+        if (is_selected)
+          ImGui::SetItemDefaultFocus();
+
+      }
+
+      triggered = true;
+      ImGui::EndCombo();
+    }
+    ImGui::PopItemWidth();
+    ImGui::EndTable();
+  }
+
+  ImGui::PopID();
+
+  return triggered;
+}
+
 bool ImGuiDraw::CheckBox(const std::string &label, bool &active) {
   bool triggered = false;
   ImGui::PushID(label.c_str());

@@ -565,32 +565,33 @@ void DrawScriptComponent(Entity selection) {
 
     const auto &entityClasses = scriptEngine.GetScriptClasses();
 
-    std::vector<const char *> classes = {""};
+    std::vector<std::string> classes = {"##EmptyScriptField"};
     for (auto &[_, scriptClass] : entityClasses) {
-      classes.push_back(scriptClass->GetClassName());
-    }
-
-    bool classChanged = false;
-
-    if (ImGuiDraw::Combo("Class", sc.SelectedScript, classes)) {
-      sc.ClassName =
-          sc.SelectedScript != 0 ? classes.at(sc.SelectedScript) : "";
-      classChanged = true;
-    }
-
-    if (!sc.Loaded && !sc.ClassName.empty()) {
-      int i = 0;
-      for (auto &[_, scriptClass] : entityClasses) {
-        i++;
-        std::string scriptName = scriptClass->GetClassName();
-        if (sc.ClassName == scriptName) {
-          sc.SelectedScript = i;
-        }
+      std::string className = scriptClass->GetClassName();
+      bool found = false;
+      for (auto &loadedClass : component.LoadedScriptNames) {
+        if (loadedClass == className)
+          found = true;
       }
+
+      if (!found)
+        classes.push_back(scriptClass->GetClassName());
     }
 
-    if (sc.ScriptID == 0 || classChanged) {
-      sc.ScriptID = Hash::GenerateFNVHash(sc.ClassName);
+    std::sort(classes.begin(), classes.end());
+
+    std::string prevClassName = sc.ClassName;
+    if (ImGuiDraw::Combo("Script", sc.ClassName, classes)) {
+
+      if (prevClassName != sc.ClassName) {
+        for (auto it = component.LoadedScriptNames.begin(); it != component.LoadedScriptNames.end(); it++) {
+          if (*it == prevClassName) {
+            component.LoadedScriptNames.erase(it);
+            component.LoadedScriptNames.push_back(sc.ClassName);
+          }
+        }
+        sc.ScriptID = sc.ClassName.empty() ? 0 : Hash::GenerateFNVHash(sc.ClassName);
+      }
     }
 
     sc.Loaded = true;

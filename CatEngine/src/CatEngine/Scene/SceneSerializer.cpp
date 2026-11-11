@@ -488,6 +488,8 @@ void SceneSerializer::DeserializeEntity(YAML::Node &entity, UUID parent) {
         sc.ScriptID = scriptID;
         sc.ClassName = className;
 
+        scc.LoadedScriptNames.push_back(className);
+
         auto &fieldMap = scriptEngine.GetScriptFieldMap(uuid)[scriptID];
 
         auto fieldsSeq = scriptComponent["Fields"];

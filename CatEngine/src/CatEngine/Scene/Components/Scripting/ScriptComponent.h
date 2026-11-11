@@ -8,12 +8,10 @@ namespace CatEngine {
 struct ScriptComponent {
   UUID ScriptID;
   std::string ClassName;
-  std::string MangledName;
-  int SelectedScript;
   bool Loaded = false;
 
   ScriptComponent(const UUID &id, const std::string &name)
-    : ScriptID(id), ClassName(name), SelectedScript(0) {}
+    : ScriptID(id), ClassName(name) {}
 
   ScriptComponent() = default;
   ScriptComponent(const ScriptComponent &) = default;
