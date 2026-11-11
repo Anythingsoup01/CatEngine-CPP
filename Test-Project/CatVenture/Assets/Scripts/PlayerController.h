@@ -2,6 +2,8 @@
 
 #include <CatScriptCore/ScriptInclude.h>
 
+#include "PlayerHealth.h"
+
 namespace CatRuntime {
 class __attribute__((visibility("default"))) PlayerController : public Object {
 public:
@@ -15,6 +17,7 @@ public:
   void OnCollisionExit(Object other);
 
 public:
+  PlayerHealth *m_PlayerHealth;
   float m_PlayerTerminalVelocity = 25.0f;
   float m_PlayerSpeed = 10;
   float m_JumpForce = 25.0f;

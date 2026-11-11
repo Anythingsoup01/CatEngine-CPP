@@ -2,7 +2,8 @@
 
 namespace CatRuntime {
 
-PlayerHealth::PlayerHealth() {}
+PlayerHealth::PlayerHealth() {
+}
 PlayerHealth::~PlayerHealth() {}
 
 void PlayerHealth::Start() {}

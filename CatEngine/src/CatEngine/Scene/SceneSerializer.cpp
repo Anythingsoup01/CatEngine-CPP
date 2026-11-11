@@ -18,6 +18,7 @@
 #include "yaml-cpp/emittermanip.h"
 
 namespace CatEngine {
+
 static std::string DataTypeToString(const DataType &type) {
   switch (type) {
   case DataType::Short:
@@ -49,7 +50,7 @@ static std::string DataTypeToString(const DataType &type) {
   case DataType::Texture2D:
     return "Texture2D";
   default:
-    return "null";
+    return "";
   }
 }
 
@@ -82,7 +83,7 @@ static DataType StringToDataType(const std::string &typeStr) {
     return DataType::Entity;
   if (typeStr == "Texture2D")
     return DataType::Texture2D;
-  return DataType::Bool;
+  return DataType::ScriptComponent;
 }
 static std::string GetNamedComponents(YAML::Node &node, std::string component,
                                       std::string targetItem) {
@@ -255,8 +256,11 @@ void SceneSerializer::SerializeEntity(YAML::Emitter &out, Entity entity) {
         out << YAML::BeginMap;
         out << YAML::Key << "FieldID" << YAML::Value << fieldID;
         out << YAML::Key << "FieldName" << YAML::Value << field.Field.Name;
-        out << YAML::Key << "FieldType" << YAML::Value
-            << DataTypeToString(field.Field.Type);
+        std::string fieldTypeStr = DataTypeToString(field.Field.Type);
+        if (fieldTypeStr.empty()) {
+          fieldTypeStr = field.Field.TypeName;
+        }
+        out << YAML::Key << "FieldType" << YAML::Value << fieldTypeStr;
         out << YAML::Key << "FieldSize" << YAML::Value << field.Field.Size;
         out << YAML::Key << "Value";
 
@@ -299,6 +303,7 @@ void SceneSerializer::SerializeEntity(YAML::Emitter &out, Entity entity) {
           break;
         case DataType::Entity:
         case DataType::Texture2D:
+        case DataType::ScriptComponent:
           out << YAML::Value << field.GetValue<uint64_t>();
           break;
         }
@@ -494,6 +499,7 @@ void SceneSerializer::DeserializeEntity(YAML::Node &entity, UUID parent) {
             sfi.Field.Name = field["FieldName"].as<std::string>();
             sfi.Field.Type =
               StringToDataType(field["FieldType"].as<std::string>());
+            sfi.Field.TypeName = field["FieldType"].as<std::string>();
             sfi.Field.Size = field["FieldSize"].as<uint64_t>();
 
             switch (sfi.Field.Type) {
@@ -533,8 +539,9 @@ void SceneSerializer::DeserializeEntity(YAML::Node &entity, UUID parent) {
               case DataType::Vector4:
                 sfi.SetValue(field["Value"].as<glm::vec4>());
                 break;
-              case DataType::Texture2D:
               case DataType::Entity:
+              case DataType::Texture2D:
+              case DataType::ScriptComponent:
                 sfi.SetValue(field["Value"].as<uint64_t>());
                 break;
               default:

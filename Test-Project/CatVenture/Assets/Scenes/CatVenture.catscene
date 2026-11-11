@@ -29,8 +29,8 @@ Entities:
       RestitutionThreshold: 0.5
     ScriptComponentContainer:
       - ScriptComponent:
-          ScriptID: 4149576837
-          ClassName: EnemyController
+          ScriptID: 3391991794
+          ClassName: PlayerHealth
           Fields:
             []
     RelationshipComponent:
@@ -99,15 +99,19 @@ Entities:
       RestitutionThreshold: 0.5
     ScriptComponentContainer:
       - ScriptComponent:
-          ScriptID: 1101011320
-          ClassName: PlayerController
-          Fields:
-            []
-      - ScriptComponent:
           ScriptID: 3391991794
           ClassName: PlayerHealth
           Fields:
             []
+      - ScriptComponent:
+          ScriptID: 1101011320
+          ClassName: PlayerController
+          Fields:
+            - FieldID: 490718930
+              FieldName: m_PlayerHealth
+              FieldType: PlayerHealth
+              FieldSize: 8
+              Value: 11887291964845403532
     RelationshipComponent:
       ParentID: 0
       Children:
@@ -119,7 +123,7 @@ Entities:
           NameComponent:
             Name: Camera
           TransformComponent:
-            LocalPosition: [0, -1.49011612e-08, 0]
+            LocalPosition: [0, 0, 0]
             LocalRotation: [0, -0, 0]
             LocalScale: [1, 1, 1]
           CameraComponent:

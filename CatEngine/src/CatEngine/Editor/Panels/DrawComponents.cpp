@@ -7,7 +7,9 @@
 #include "CatEngine/Scene/Components/3D/TransformComponent.h"
 #include "CatEngine/Scene/Components/Scripting/ScriptComponent.h"
 #include "CatEngine/Scene/Components/Scripting/ScriptComponentContainer.h"
+#include "CatEngine/Scene/Entity.h"
 #include "CatEngine/Scripting/ScriptEngine.h"
+#include "CatEngine/Scripting/ScriptEntityStorage.h"
 #include "imgui.h"
 #include "imgui_internal.h"
 #include <cstdint>
@@ -598,8 +600,8 @@ void DrawScriptComponent(Entity selection) {
     bool sceneRunning = context->IsRunning();
 
     if (sceneRunning) {
-      Ref<ScriptInstance> scriptInstance =
-          scriptEngine.GetEntityScriptInstance(selection.GetUUID(), sc.ScriptID);
+      Ref<ScriptInstance> scriptInstance = scriptEngine.GetEntityScriptInstance(
+          selection.GetUUID(), sc.ScriptID);
 
       if (!scriptInstance) {
         ImGui::TreePop();
@@ -702,6 +704,18 @@ void DrawScriptComponent(Entity selection) {
           ImGuiDraw::DataField(field.Name, labelName);
           break;
         }
+        case DataType::ScriptComponent:
+          uint64_t data = scriptInstance->GetFieldData<uint64_t>(field.Name);
+          std::string label = "";
+          std::string entityName = "";
+
+          entityName = context->GetEntityByUUID(data).GetName();
+          label = "(" + entityName + ") ";
+
+          label =
+              label.empty() ? "(empty) " : label + "(" + field.TypeName + ")";
+          ImGuiDraw::DataField(field.Name, label);
+          break;
         }
       }
       ImGui::TreePop();
@@ -880,7 +894,7 @@ void DrawScriptComponent(Entity selection) {
                 ? context->GetEntityByUUID(entityID).GetName()
                 : "";
         labelName = labelName.empty() ? "(empty)" : labelName;
-        labelName.append(" (Entity)");
+        labelName.append(" (" + field.TypeName + ")");
 
         ImGuiDraw::DataField(field.Name, labelName);
         if (ImGui::BeginDragDropTarget()) {
@@ -908,7 +922,7 @@ void DrawScriptComponent(Entity selection) {
                       .AssetName;
         }
         label = label.empty() ? "(empty)" : label;
-        label.append(" (Texture2D)");
+        label.append(" (" + field.TypeName + ")");
 
         ImGuiDraw::DataField(field.Name, label);
         if (ImGui::BeginDragDropTarget()) {
@@ -920,6 +934,94 @@ void DrawScriptComponent(Entity selection) {
                     droppedAssetID);
             if (asset && asset->GetType() == AssetType::Texture2D) {
               getOrCreateInstance().SetValue(droppedAssetID.uuid());
+            }
+          }
+          ImGui::EndDragDropTarget();
+        }
+        break;
+      }
+      case DataType::ScriptComponent: {
+        uint64_t currentEntityID =
+            hasInstance ? scriptInstanceMap[fieldID].GetValue<uint64_t>()
+                        : (!field.DefaultValue.empty()
+                               ? *(uint64_t *)field.DefaultValue.data()
+                               : 0);
+
+        std::string label = "";
+        std::string entityName = "";
+
+        if (currentEntityID != 0 && context->GetEntityByUUID(currentEntityID)) {
+          entityName = context->GetEntityByUUID(currentEntityID).GetName();
+          label = "(" + entityName + ") ";
+        }
+
+        label = label.empty() ? "(empty) " : label;
+        label.append("(" + field.TypeName + ")");
+
+        // 1. Peek at the active drag payload to see if it matches this script
+        // type
+        bool isValidDragTarget = false;
+        if (const ImGuiPayload *activePayload = ImGui::GetDragDropPayload()) {
+          if (activePayload->IsDataType("SCENE_HIERARCHY_ITEM") &&
+              activePayload->Data) {
+            UUID draggedID = *(UUID *)activePayload->Data;
+            Entity draggedEntity = context->GetEntityByUUID(draggedID);
+
+            if (draggedEntity &&
+                draggedEntity.HasComponent<ScriptComponentContainer>() &&
+                draggedEntity.GetUUID() != selection.GetUUID()) {
+              auto &scc =
+                  draggedEntity.GetComponent<ScriptComponentContainer>();
+              for (auto &script : scc.Scripts) {
+                // Check if the dragged entity has the exact script this field
+                // expects
+                if (script.ClassName == field.TypeName) {
+                  isValidDragTarget = true;
+                  break;
+                }
+              }
+            }
+          }
+        }
+
+        // 2. Apply visual highlight if a valid entity is currently being
+        // dragged over it
+        if (isValidDragTarget) {
+          // Push a subtle green/accent tint to indicate a valid drop target
+          ImGui::PushStyleColor(ImGuiCol_FrameBg,
+                                ImVec4(0.15f, 0.55f, 0.25f, 0.8f));
+        }
+
+        ImGuiDraw::DataField(field.Name, label);
+
+        if (isValidDragTarget) {
+          ImGui::PopStyleColor();
+        }
+
+        // 3. Handle the drop acceptance with type validation
+        if (ImGui::BeginDragDropTarget()) {
+          if (const ImGuiPayload *payload =
+                  ImGui::AcceptDragDropPayload("SCENE_HIERARCHY_ITEM")) {
+            UUID droppedEntityID = *(UUID *)payload->Data;
+            Entity droppedEntity = context->GetEntityByUUID(droppedEntityID);
+
+            if (droppedEntity) {
+              // Double-check the script match on drop
+              bool matchesScript = false;
+              if (droppedEntity.HasComponent<ScriptComponentContainer>()) {
+                auto &scc =
+                    droppedEntity.GetComponent<ScriptComponentContainer>();
+                for (auto &script : scc.Scripts) {
+                  if (script.ClassName == field.TypeName) {
+                    matchesScript = true;
+                    break;
+                  }
+                }
+              }
+
+              if (matchesScript) {
+                getOrCreateInstance().SetValue(droppedEntityID);
+              }
             }
           }
           ImGui::EndDragDropTarget();

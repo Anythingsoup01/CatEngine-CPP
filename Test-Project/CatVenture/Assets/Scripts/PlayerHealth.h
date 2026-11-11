@@ -1,7 +1,6 @@
 #pragma once
 
 #include "CatScriptCore/ScriptInclude.h"
-#include "PlayerController.h"
 
 namespace CatRuntime {
 

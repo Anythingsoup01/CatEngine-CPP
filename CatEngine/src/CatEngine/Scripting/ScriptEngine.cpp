@@ -124,36 +124,95 @@ bool ScriptEngine::ScriptClassExists(const std::string_view &className) {
          s_ScriptData->EntityClasses.end();
 }
 
-void ScriptEngine::OnStartEntity(Entity e) {
-  auto &scc = e.GetComponent<ScriptComponentContainer>();
+void ScriptEngine::LoadRuntimeScripts() {
+  auto view = s_ScriptData->SceneContext->GetReg().view<ScriptComponentContainer>();
 
-  for (auto &sc : scc.Scripts) {
-    if (ScriptEngine::ScriptClassExists(sc.ClassName.c_str())) {
-      UUID entityID = e.GetUUID();
+  // Instantiate All Scripts
+  for (auto entityID : view) {
+    Entity e = {entityID, s_ScriptData->SceneContext.get()};
+    auto &scc = e.GetComponent<ScriptComponentContainer>();
 
-      Ref<ScriptInstance> instance = CreateRef<ScriptInstance>(s_ScriptData->EntityClasses[Hash::GenerateFNVHash(sc.ClassName)], e);
+    for (auto &sc : scc.Scripts) {
+      if (!ScriptEngine::ScriptClassExists(sc.ClassName.c_str()))
+        continue;
 
-      if (!instance)
-        return;
+            UUID entUUID = e.GetUUID();
 
-      s_ScriptData->EntityInstances[entityID][sc.ScriptID] = instance;
+      // Create the script instance and register it immediately 
+      // so global lookups/registries can see that it exists in memory.
+      Ref<ScriptInstance> instance = CreateRef<ScriptInstance>(
+        s_ScriptData->EntityClasses[Hash::GenerateFNVHash(sc.ClassName)], e
+      );
 
-      CE_API_INFO(e.GetName());
+      if (!instance) continue;
 
-      // Copy field value if we set it
-      if (s_ScriptData->EntityScriptFields.find(entityID) !=
-        s_ScriptData->EntityScriptFields.end()) {
-        const ScriptFieldMap &scriptFieldMap =
-          s_ScriptData->EntityScriptFields.at(entityID);
+      s_ScriptData->EntityInstances[entUUID][sc.ScriptID] = instance;
+    }
+  }
 
-        for (const auto &[entityID, scriptHash] : scriptFieldMap) {
-          for (const auto &[fieldHash, fieldInstance] : scriptHash) {
-            CE_API_WARN("Field Instance Name: {}", fieldInstance.Field.Name);
-            instance->SetFieldDataInternal(fieldInstance.Field.Name, fieldInstance.Data.Data, fieldInstance.Field.Size);
+  for (auto entityID : view) {
+    Entity e = { entityID, s_ScriptData->SceneContext.get() };
+    auto &scc = e.GetComponent<ScriptComponentContainer>();
+    UUID entUUID = e.GetUUID();
+
+    if (s_ScriptData->EntityInstances.find(entUUID) == s_ScriptData->EntityInstances.end())
+      continue;
+
+    auto &scriptInstances = s_ScriptData->EntityInstances[entUUID];
+
+    for (auto &sc : scc.Scripts) {
+      if (scriptInstances.find(sc.ScriptID) == scriptInstances.end())
+        continue;
+
+      auto &instance = scriptInstances[sc.ScriptID];
+
+      // Copy saved field values into the instance memory
+      if (s_ScriptData->EntityScriptFields.find(entUUID) != s_ScriptData->EntityScriptFields.end()) {
+        const auto &scriptFieldMap = s_ScriptData->EntityScriptFields.at(entUUID);
+
+        if (scriptFieldMap.find(sc.ScriptID) != scriptFieldMap.end()) {
+          const auto &fieldMap = scriptFieldMap.at(sc.ScriptID);
+          for (const auto &[fieldHash, fieldInstance] : fieldMap) {
+            if (fieldInstance.Field.Type != DataType::ScriptComponent) {
+              instance->SetFieldDataInternal(
+                fieldInstance.Field.Name, 
+                fieldInstance.Data.Data, 
+                fieldInstance.Field.Size
+              );
+            } else {
+              uint64_t classHash = Hash::GenerateFNVHash(fieldInstance.Field.TypeName);
+              uint64_t entityID = *(uint64_t*)fieldInstance.Data.Data;
+              Ref<ScriptInstance> otherInstance = GetEntityScriptInstance(entityID, classHash);
+              if (!otherInstance)
+                continue;
+
+              void *data = otherInstance->GetManagedObject()->RawMemory.data();
+              instance->SetFieldDataInternal(
+              fieldInstance.Field.Name, 
+              &data,
+              fieldInstance.Field.Size);
+            }
           }
         }
       }
+    }
+  }
 
+  for (auto entityID : view) {
+    Entity e = { entityID, s_ScriptData->SceneContext.get() };
+    auto &scc = e.GetComponent<ScriptComponentContainer>();
+    UUID entUUID = e.GetUUID();
+
+    if (s_ScriptData->EntityInstances.find(entUUID) == s_ScriptData->EntityInstances.end())
+      continue;
+
+    auto &scriptInstances = s_ScriptData->EntityInstances[entUUID];
+
+    for (auto &sc : scc.Scripts) {
+      if (scriptInstances.find(sc.ScriptID) == scriptInstances.end())
+        continue;
+
+      auto &instance = scriptInstances[sc.ScriptID];
       instance->InvokeStartMethod();
     }
   }
@@ -301,11 +360,19 @@ void ScriptEngine::LoadBinaryClasses() {
       auto field = *it;
       if (field.Visibility == Capybara::MemberVisibility::Private || field.Visibility == Capybara::MemberVisibility::Protected)
         continue;
-      DataType type = s_DataTypeLookup.at(field.TypeName);
+      // Assume any data that isn't apart of the listed components is a script class name
+      DataType type = DataType::ScriptComponent;
+      if (s_DataTypeLookup.find(field.TypeName) != s_DataTypeLookup.end()) {
+        type = s_DataTypeLookup.at(field.TypeName);
+      }
       std::string name = field.Name;
+      if (field.TypeName.find('*') != std::string::npos) {
+        field.TypeName = field.TypeName.substr(0, field.TypeName.find('*'));
+      }
+      
       uint64_t fieldHash = Hash::GenerateFNVHash(field.Name);
 
-      scriptClass->m_Fields[fieldHash] = {name, type, field.SizeInBytes, field.DefaultValue};
+      scriptClass->m_Fields[fieldHash] = {name, type, field.TypeName, field.SizeInBytes, field.DefaultValue};
     }
 
     s_ScriptData->EntityClasses.emplace(scriptHash, scriptClass);

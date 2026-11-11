@@ -34,7 +34,8 @@ public:
 
   bool ScriptClassExists(const std::string_view &className);
 
-  void OnStartEntity(Entity e);
+  void LoadRuntimeScripts();
+
   void OnUpdateEntity(Entity e, float ts);
 
   void DispatchCollisionEvent(UUID entityA, UUID entityB, CollisionType type);

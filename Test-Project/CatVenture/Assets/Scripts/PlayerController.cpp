@@ -11,6 +11,7 @@ PlayerController::PlayerController() {}
 PlayerController::~PlayerController() {}
 
 void PlayerController::Start() {
+  m_PlayerHealth->DamagePlayer(100);
 }
 
 void PlayerController::Update(float ts) {
