@@ -168,6 +168,10 @@ public:
     return parentEntity.GetWorldTransform() * tc.GetLocalTransform();
   }
 
+  void SetSceneContext(Ref<Scene> scene) {
+    m_Scene = scene.get();
+  }
+
   operator bool() const { return m_EntityHandle != entt::null; }
   operator uint32_t() const { return (uint32_t)m_EntityHandle; }
   operator entt::entity() const { return m_EntityHandle; }
@@ -175,7 +179,9 @@ public:
   UUID GetUUID() { return GetComponent<IDComponent>().ID; }
   const std::string &GetName() {
     static std::string nullScene = "<null scene>";
-    return m_Scene ? GetComponent<NameComponent>().Name : nullScene;
+    if (!m_Scene)
+      return nullScene;
+    return GetComponent<NameComponent>().Name;
   }
 
   bool operator==(const Entity &other) const {

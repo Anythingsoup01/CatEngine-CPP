@@ -45,6 +45,8 @@ static std::string DataTypeToString(const DataType &type) {
     return "Vector3";
   case DataType::Vector4:
     return "Vector4";
+  case DataType::DynamicVector:
+    return "DynamicVector";
   case DataType::Entity:
     return "Entity";
   case DataType::Texture2D:
@@ -79,6 +81,8 @@ static DataType StringToDataType(const std::string &typeStr) {
     return DataType::Vector3;
   if (typeStr == "Vector4")
     return DataType::Vector4;
+  if (typeStr == "DynamicVector")
+    return DataType::DynamicVector;
   if (typeStr == "Entity")
     return DataType::Entity;
   if (typeStr == "Texture2D")
@@ -503,6 +507,12 @@ void SceneSerializer::DeserializeEntity(YAML::Node &entity, UUID parent) {
               StringToDataType(field["FieldType"].as<std::string>());
             sfi.Field.TypeName = field["FieldType"].as<std::string>();
             sfi.Field.Size = field["FieldSize"].as<uint64_t>();
+
+            if (sfi.Field.IsVector) {
+
+            } else {
+              sfi.TrivialData.Allocate(sfi.Field.Size);
+            }
 
             switch (sfi.Field.Type) {
               case DataType::Float:

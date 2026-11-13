@@ -45,6 +45,8 @@ static std::unordered_map<std::string, DataType> s_DataTypeLookup = {
     {"Vector3", DataType::Vector3},
     {"Vector4", DataType::Vector4},
 
+    {"vector", DataType::DynamicVector},
+
     {"Object", DataType::Entity},
 
     {"Texture2D", DataType::Texture2D},
@@ -125,7 +127,8 @@ bool ScriptEngine::ScriptClassExists(const std::string_view &className) {
 }
 
 void ScriptEngine::LoadRuntimeScripts() {
-  auto view = s_ScriptData->SceneContext->GetReg().view<ScriptComponentContainer>();
+  auto view =
+      s_ScriptData->SceneContext->GetReg().view<ScriptComponentContainer>();
 
   // Instantiate All Scripts
   for (auto entityID : view) {
@@ -136,26 +139,27 @@ void ScriptEngine::LoadRuntimeScripts() {
       if (!ScriptEngine::ScriptClassExists(sc.ClassName.c_str()))
         continue;
 
-            UUID entUUID = e.GetUUID();
+      UUID entUUID = e.GetUUID();
 
-      // Create the script instance and register it immediately 
+      // Create the script instance and register it immediately
       // so global lookups/registries can see that it exists in memory.
       Ref<ScriptInstance> instance = CreateRef<ScriptInstance>(
-        s_ScriptData->EntityClasses[Hash::GenerateFNVHash(sc.ClassName)], e
-      );
+          s_ScriptData->EntityClasses[Hash::GenerateFNVHash(sc.ClassName)], e);
 
-      if (!instance) continue;
+      if (!instance)
+        continue;
 
       s_ScriptData->EntityInstances[entUUID][sc.ScriptID] = instance;
     }
   }
 
   for (auto entityID : view) {
-    Entity e = { entityID, s_ScriptData->SceneContext.get() };
+    Entity e = {entityID, s_ScriptData->SceneContext.get()};
     auto &scc = e.GetComponent<ScriptComponentContainer>();
     UUID entUUID = e.GetUUID();
 
-    if (s_ScriptData->EntityInstances.find(entUUID) == s_ScriptData->EntityInstances.end())
+    if (s_ScriptData->EntityInstances.find(entUUID) ==
+        s_ScriptData->EntityInstances.end())
       continue;
 
     auto &scriptInstances = s_ScriptData->EntityInstances[entUUID];
@@ -167,43 +171,83 @@ void ScriptEngine::LoadRuntimeScripts() {
       auto &instance = scriptInstances[sc.ScriptID];
 
       // Copy saved field values into the instance memory
-      if (s_ScriptData->EntityScriptFields.find(entUUID) != s_ScriptData->EntityScriptFields.end()) {
-        const auto &scriptFieldMap = s_ScriptData->EntityScriptFields.at(entUUID);
+      if (s_ScriptData->EntityScriptFields.find(entUUID) !=
+          s_ScriptData->EntityScriptFields.end()) {
+        auto &scriptFieldMap =
+            s_ScriptData->EntityScriptFields.at(entUUID);
 
         if (scriptFieldMap.find(sc.ScriptID) != scriptFieldMap.end()) {
-          const auto &fieldMap = scriptFieldMap.at(sc.ScriptID);
-          for (const auto &[fieldHash, fieldInstance] : fieldMap) {
+          auto &fieldMap = scriptFieldMap.at(sc.ScriptID);
+          for (auto &[fieldHash, fieldInstance] : fieldMap) {
+            if (fieldInstance.Field.IsVector) {
+              // Pass the editor's serialized VectorBuffer blob into the
+              // instance initializer
+              if (fieldInstance.Field.ElementType == DataType::ScriptComponent) {
+                // 1. Copy the VectorData object so we don't corrupt s_ScriptData->EntityScriptFields
+                auto runtimeVectorData = fieldInstance.VectorData;
+
+                for (size_t i = 0; i < runtimeVectorData.GetCount(); i++) {
+                  void *elementPtr = runtimeVectorData.GetElementPointer(i, fieldInstance.Field.ElementSize);
+                  if (!elementPtr)
+                    continue;
+
+                  // Read the persistent Entity ID from our local copy
+                  uint64_t targetEntityID = *reinterpret_cast<uint64_t *>(elementPtr);
+                  if (targetEntityID == 0)
+                    continue;
+
+                  uint64_t classHash = Hash::GenerateFNVHash(fieldInstance.Field.ElementTypeName);
+                  Ref<ScriptInstance> otherInstance = GetEntityScriptInstance(targetEntityID, classHash);
+
+                  if (!otherInstance)
+                    continue;
+
+                  // Write the runtime pointer into our local copy's slot
+                  void **slotPtr = reinterpret_cast<void **>(elementPtr);
+                  *slotPtr = otherInstance->GetManagedObject()->RawMemory.data();
+                }
+
+                // 2. Pass the modified runtime copy to the instance initializer
+                instance->m_Instance->InitializeVectorField(
+                  fieldInstance.Field.Name,
+                  instance->m_ScriptClass->m_ClassObject.get(),
+                  runtimeVectorData.Data,
+                  fieldInstance.Field.ElementSize
+                );
+                continue;
+              }
+            }
             if (fieldInstance.Field.Type != DataType::ScriptComponent) {
               instance->SetFieldDataInternal(
-                fieldInstance.Field.Name, 
-                fieldInstance.Data.Data, 
-                fieldInstance.Field.Size
-              );
+                  fieldInstance.Field.Name,
+                  (void *)fieldInstance.TrivialData.Data,
+                  fieldInstance.Field.Size);
             } else {
-              uint64_t classHash = Hash::GenerateFNVHash(fieldInstance.Field.TypeName);
-              uint64_t entityID = *(uint64_t*)fieldInstance.Data.Data;
-              Ref<ScriptInstance> otherInstance = GetEntityScriptInstance(entityID, classHash);
+              uint64_t classHash =
+                  Hash::GenerateFNVHash(fieldInstance.Field.TypeName);
+              uint64_t targetEntityID =
+                  *(uint64_t *)fieldInstance.TrivialData.Data;
+              Ref<ScriptInstance> otherInstance =
+                  GetEntityScriptInstance(targetEntityID, classHash);
               if (!otherInstance)
                 continue;
 
               void *data = otherInstance->GetManagedObject()->RawMemory.data();
-              instance->SetFieldDataInternal(
-              fieldInstance.Field.Name,
-              &data,
-              fieldInstance.Field.Size);
+              instance->SetFieldDataInternal(fieldInstance.Field.Name, data,
+                                             fieldInstance.Field.Size);
             }
           }
         }
       }
     }
   }
-
   for (auto entityID : view) {
-    Entity e = { entityID, s_ScriptData->SceneContext.get() };
+    Entity e = {entityID, s_ScriptData->SceneContext.get()};
     auto &scc = e.GetComponent<ScriptComponentContainer>();
     UUID entUUID = e.GetUUID();
 
-    if (s_ScriptData->EntityInstances.find(entUUID) == s_ScriptData->EntityInstances.end())
+    if (s_ScriptData->EntityInstances.find(entUUID) ==
+        s_ScriptData->EntityInstances.end())
       continue;
 
     auto &scriptInstances = s_ScriptData->EntityInstances[entUUID];
@@ -236,7 +280,8 @@ void ScriptEngine::OnUpdateEntity(Entity e, float ts) {
   }
 }
 
-void ScriptEngine::DispatchCollisionEvent(UUID uuidA, UUID uuidB, CollisionType type) {
+void ScriptEngine::DispatchCollisionEvent(UUID uuidA, UUID uuidB,
+                                          CollisionType type) {
   auto &instances = s_ScriptData->EntityInstances;
   EntityScriptInstanceMap entityA, entityB;
   if (instances.find(uuidA) != instances.end())
@@ -247,29 +292,29 @@ void ScriptEngine::DispatchCollisionEvent(UUID uuidA, UUID uuidB, CollisionType 
 
   for (auto &[scriptID, script] : entityA) {
     switch (type) {
-      case CollisionType::Begin:
-        script->InvokeOnCollisionEnter(uuidB);
-        break;
-      case CollisionType::End:
-        if (script)
-          script->InvokeOnCollisionExit(uuidB);
-        break;
-      default:
-        break;
+    case CollisionType::Begin:
+      script->InvokeOnCollisionEnter(uuidB);
+      break;
+    case CollisionType::End:
+      if (script)
+        script->InvokeOnCollisionExit(uuidB);
+      break;
+    default:
+      break;
     }
   }
 
   for (auto &[scriptID, script] : entityB) {
     switch (type) {
-      case CollisionType::Begin:
-        script->InvokeOnCollisionEnter(uuidA);
-        break;
-      case CollisionType::End:
-        if (script)
-          script->InvokeOnCollisionExit(uuidA);
-        break;
-      default:
-        break;
+    case CollisionType::Begin:
+      script->InvokeOnCollisionEnter(uuidA);
+      break;
+    case CollisionType::End:
+      if (script)
+        script->InvokeOnCollisionExit(uuidA);
+      break;
+    default:
+      break;
     }
   }
 }
@@ -278,7 +323,9 @@ Ref<Scene> ScriptEngine::GetSceneContext() {
   return s_ScriptData->SceneContext;
 }
 
-Ref<ScriptInstance> ScriptEngine::GetEntityScriptInstance(const UUID &entityID, const UUID &scriptID) {
+Ref<ScriptInstance>
+ScriptEngine::GetEntityScriptInstance(const UUID &entityID,
+                                      const UUID &scriptID) {
   auto &instances = s_ScriptData->EntityInstances;
   if (instances.find(entityID) == instances.end()) {
     return nullptr;
@@ -292,9 +339,10 @@ Ref<ScriptInstance> ScriptEngine::GetEntityScriptInstance(const UUID &entityID, 
   return entityScriptInstances[scriptID];
 }
 
-const FieldMap &ScriptEngine::GetInitializedFields(const UUID &entityID, const UUID &scriptID) const {
+const FieldMap &ScriptEngine::GetInitializedFields(const UUID &entityID,
+                                                   const UUID &scriptID) const {
   static FieldMap s_EmptyFieldMap = {};
-    auto &instances = s_ScriptData->EntityScriptFields;
+  auto &instances = s_ScriptData->EntityScriptFields;
   if (instances.find(entityID) == instances.end()) {
     return s_EmptyFieldMap;
   }
@@ -334,59 +382,108 @@ void ScriptEngine::CapyInit() {
   Capybara::Capybara::Init();
 
   Capybara::Jit::SetBuildDirectory(Project::GetAssetDirectory() / ".capy");
-  Capybara::Capybara::SetExternalLibrary(Application::Get().GetMainPath() / "build/CatScriptCore/libCatScriptCore.so", Application::Get().GetMainPath() / "CatScriptCore/src");
+  Capybara::Capybara::SetExternalLibrary(
+      Application::Get().GetMainPath() /
+          "build/CatScriptCore/libCatScriptCore.so",
+      Application::Get().GetMainPath() / "CatScriptCore/src");
   Capybara::Jit::Init(Project::GetAssetDirectory());
-  Capybara::Capybara::LoadLibrary(Project::GetAssetDirectory() / ".capy/CapyRuntimeLib.so");
-
+  Capybara::Capybara::LoadLibrary(Project::GetAssetDirectory() /
+                                  ".capy/CapyRuntimeLib.so");
 }
 
 void ScriptEngine::CapyShutdown() { Capybara::Capybara::Shutdown(); }
 
 void ScriptEngine::LoadBinaryClasses() {
   s_ScriptData->EntityClasses.clear();
-  Capybara::Capybara::ReloadLibrary(Project::GetAssetDirectory() / ".capy/CapyRuntimeLib.so");
+  Capybara::Capybara::ReloadLibrary(Project::GetAssetDirectory() /
+                                    ".capy/CapyRuntimeLib.so");
 
   const auto &capyClasses = Capybara::Capybara::GetClasses();
 
-
   for (auto &[className, classObj] : capyClasses) {
-    if (classObj->Visibility == Capybara::MemberVisibility::Private || classObj->Visibility == Capybara::MemberVisibility::Protected)
+    if (classObj->Visibility == Capybara::MemberVisibility::Private ||
+        classObj->Visibility == Capybara::MemberVisibility::Protected)
       continue;
     Ref<ScriptClass> scriptClass = CreateRef<ScriptClass>(className);
     uint32_t scriptHash = Hash::GenerateFNVHash(className);
 
-    // 1. Populate scriptClass fields ordered/mapped by ByteOffset for execution/layout
-    for (auto it = classObj->Fields.rbegin(); it != classObj->Fields.rend(); ++it) {
+    // 1. Populate scriptClass fields ordered/mapped by ByteOffset for
+    // execution/layout
+    for (auto it = classObj->Fields.rbegin(); it != classObj->Fields.rend();
+         ++it) {
       auto field = *it;
-      if (field.Visibility == Capybara::MemberVisibility::Private || field.Visibility == Capybara::MemberVisibility::Protected)
+      if (field.Visibility == Capybara::MemberVisibility::Private ||
+          field.Visibility == Capybara::MemberVisibility::Protected)
         continue;
-      // Assume any data that isn't apart of the listed components is a script class name
+      // Assume any data that isn't apart of the listed components is a script
+      // class name
       DataType type = DataType::ScriptComponent;
       if (s_DataTypeLookup.find(field.TypeName) != s_DataTypeLookup.end()) {
         type = s_DataTypeLookup.at(field.TypeName);
       }
+
+      DataType elementType = DataType::ScriptComponent;
+      if (field.IsVector && (s_DataTypeLookup.find(field.ElementTypeName) !=
+                             s_DataTypeLookup.end())) {
+        elementType = s_DataTypeLookup.at(field.ElementTypeName);
+      }
+
       std::string name = field.Name;
+      auto trimWhitespace = [](std::string &str) {
+        size_t first = str.find_first_not_of(" \t\n\r");
+        if (first == std::string::npos) {
+          str.clear();
+          return;
+        }
+        size_t last = str.find_last_not_of(" \t\n\r");
+        str = str.substr(first, (last - first + 1));
+      };
+
+      // 1. Clean field.TypeName
       if (field.TypeName.find('*') != std::string::npos) {
         field.TypeName = field.TypeName.substr(0, field.TypeName.find('*'));
+        trimWhitespace(field.TypeName);
       }
-      
+
+      // 2. Clean field.ElementTypeName
+      if (!field.ElementTypeName.empty() &&
+          field.ElementTypeName.find('*') != std::string::npos) {
+        field.ElementTypeName =
+            field.ElementTypeName.substr(0, field.ElementTypeName.find('*'));
+        trimWhitespace(field.ElementTypeName);
+      }
+
       uint64_t fieldHash = Hash::GenerateFNVHash(field.Name);
 
-      scriptClass->m_Fields[fieldHash] = {name, type, field.TypeName, field.SizeInBytes, field.DefaultValue};
+      ScriptField f = {name,
+                       type,
+                       field.TypeName,
+                       field.SizeInBytes,
+                       field.IsVector,
+                       elementType,
+                       field.ElementTypeName,
+                       field.ElementSizeInBytes,
+                       field.ElementCount,
+                       field.DefaultValue};
+
+      scriptClass->m_Fields[fieldHash] = f;
     }
 
     s_ScriptData->EntityClasses.emplace(scriptHash, scriptClass);
   }
   // 2. Clean up and synchronize entity field instances across all entities
-  for (auto entityIt = s_ScriptData->EntityScriptFields.begin(); entityIt != s_ScriptData->EntityScriptFields.end(); ) {
+  for (auto entityIt = s_ScriptData->EntityScriptFields.begin();
+       entityIt != s_ScriptData->EntityScriptFields.end();) {
     auto &[entityUUID, scriptFieldMap] = *entityIt;
 
-    for (auto scriptIt = scriptFieldMap.begin(); scriptIt != scriptFieldMap.end(); ) {
+    for (auto scriptIt = scriptFieldMap.begin();
+         scriptIt != scriptFieldMap.end();) {
       uint64_t scriptHash = scriptIt->first;
       auto &fieldInstanceMap = scriptIt->second;
 
       // If the script class no longer exists at all, drop its field entries
-      if (s_ScriptData->EntityClasses.find(scriptHash) == s_ScriptData->EntityClasses.end()) {
+      if (s_ScriptData->EntityClasses.find(scriptHash) ==
+          s_ScriptData->EntityClasses.end()) {
         scriptIt = scriptFieldMap.erase(scriptIt);
         continue;
       }
@@ -399,11 +496,14 @@ void ScriptEngine::LoadBinaryClasses() {
         validFieldHashes.insert(fieldID);
       }
 
-      // Prune any stored field instance that no longer exists in the compiled code
-      for (auto fieldIt = fieldInstanceMap.begin(); fieldIt != fieldInstanceMap.end(); ) {
+      // Prune any stored field instance that no longer exists in the compiled
+      // code
+      for (auto fieldIt = fieldInstanceMap.begin();
+           fieldIt != fieldInstanceMap.end();) {
         uint64_t fieldHash = fieldIt->first;
         if (validFieldHashes.find(fieldHash) == validFieldHashes.end()) {
-          fieldIt = fieldInstanceMap.erase(fieldIt); // Field was deleted or renamed!
+          fieldIt =
+              fieldInstanceMap.erase(fieldIt); // Field was deleted or renamed!
         } else {
           ++fieldIt;
         }
@@ -482,12 +582,14 @@ void ScriptInstance::InvokeStartMethod() {
 
 void ScriptInstance::InvokeOnCollisionEnter(const UUID &other) {
   if (m_ScriptClass->m_HasOnCollisionEnter)
-    m_ScriptClass->InvokeMethod<void>("OnCollisionEnter", m_Instance, (uint64_t)other.uuid());
+    m_ScriptClass->InvokeMethod<void>("OnCollisionEnter", m_Instance,
+                                      (uint64_t)other.uuid());
 }
 
 void ScriptInstance::InvokeOnCollisionExit(const UUID &other) {
   if (m_ScriptClass->m_HasOnCollisionExit)
-    m_ScriptClass->InvokeMethod<void>("OnCollisionExit", m_Instance, (uint64_t)other.uuid());
+    m_ScriptClass->InvokeMethod<void>("OnCollisionExit", m_Instance,
+                                      (uint64_t)other.uuid());
 }
 
 } // namespace CatEngine

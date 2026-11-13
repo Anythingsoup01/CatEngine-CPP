@@ -1,11 +1,12 @@
 #pragma once
+#include "CatEngine/Core/Buffer.h"
 #include "cepch.h"
 
 #include "CatEngine/Core/UUID.h"
 #include "ScriptEntityStorage.h"
 
-#include "CatEngine/Scene/Entity.h"
 #include "Capybara/Core/ReflectionTypes.h"
+#include "CatEngine/Scene/Entity.h"
 #include <cstdint>
 #include <unordered_map>
 
@@ -41,11 +42,13 @@ public:
   void DispatchCollisionEvent(UUID entityA, UUID entityB, CollisionType type);
 
   Ref<Scene> GetSceneContext();
-  Ref<ScriptInstance> GetEntityScriptInstance(const UUID &entityID, const UUID &scriptID);
+  Ref<ScriptInstance> GetEntityScriptInstance(const UUID &entityID,
+                                              const UUID &scriptID);
 
   Capybara::CapyObject::Instance *GetManagedInstance(UUID uuid);
 
-  const FieldMap &GetInitializedFields(const UUID &entityID, const UUID &scriptID) const;
+  const FieldMap &GetInitializedFields(const UUID &entityID,
+                                       const UUID &scriptID) const;
 
   std::unordered_map<UUID, Ref<ScriptClass>> &GetScriptClasses();
   Ref<ScriptClass> GetScriptClass(const char *className);
@@ -60,8 +63,10 @@ private:
 
   Ref<Capybara::CapyObject> InstantiateClass(const std::string_view &className);
   void LoadBinaryClasses();
+
 private:
   static inline ScriptEngine *s_Instance;
+
 private:
   friend class ScriptGlue;
   friend class Application;
@@ -83,8 +88,11 @@ public:
   Ref<Capybara::CapyObject::Instance> Instantiate(UUID entityID);
 
   template <typename Ret, typename... Args>
-  Ret InvokeMethod(const std::string &methodName, Ref<Capybara::CapyObject::Instance> instance, Args &&...args) {
-    return instance->Invoke<Ret>(methodName, m_ClassObject.get(), std::forward<Args>(args)...);
+  Ret InvokeMethod(const std::string &methodName,
+                   Ref<Capybara::CapyObject::Instance> instance,
+                   Args &&...args) {
+    return instance->Invoke<Ret>(methodName, m_ClassObject.get(),
+                                 std::forward<Args>(args)...);
   }
 
   const char *GetClassName() const { return m_ClassName.c_str(); }
@@ -139,10 +147,16 @@ public:
     SetFieldDataInternal(name, value);
   }
 
+  VectorBuffer GetVectorFieldData(const std::string &name) {
+    VectorBuffer out;
+    GetVectorFieldDataInternal(name, &out);
+    return out;
+  }
+
   Ref<Capybara::CapyObject::Instance> GetManagedObject() { return m_Instance; }
 
 private:
-  template<typename T>
+  template <typename T>
   bool GetFieldDataInternal(const std::string &name, T *buffer) {
     m_Instance->GetField(name, m_ScriptClass->m_ClassObject.get(), buffer);
     if (!buffer)
@@ -151,7 +165,7 @@ private:
     return true;
   }
 
-  template<typename T>
+  template <typename T>
   bool SetFieldDataInternal(const std::string &name, T &value) {
     if (m_Instance->SetField(name, value, m_ScriptClass->m_ClassObject.get())) {
       return true;
@@ -160,16 +174,30 @@ private:
     return false;
   }
 
-  bool GetFieldDataInternal(const std::string &name, void *buffer, const uint64_t &size) {
-    m_Instance->GetFieldVoid(name, m_ScriptClass->m_ClassObject.get(), buffer, size);
+  bool GetFieldDataInternal(const std::string &name, void *buffer,
+                            const uint64_t &size) {
+    m_Instance->GetFieldVoid(name, m_ScriptClass->m_ClassObject.get(), buffer,
+                             size);
     if (!buffer)
       return false;
 
     return true;
   }
 
-  bool SetFieldDataInternal(const std::string &name, void *value, const uint64_t &size) {
-    if (m_Instance->SetFieldVoid(name, m_ScriptClass->m_ClassObject.get(), value, size)) {
+  bool SetFieldDataInternal(const std::string &name, void *value,
+                            const uint64_t &size) {
+    if (m_Instance->SetFieldVoid(name, m_ScriptClass->m_ClassObject.get(),
+                                 value, size)) {
+      return true;
+    }
+
+    return false;
+  }
+
+  bool GetVectorFieldDataInternal(const std::string &name, VectorBuffer *out) {
+    std::vector<uint8_t> tmp;
+    if (m_Instance->GetFieldVector(name, m_ScriptClass->m_ClassObject.get(), &tmp)) {
+      *out = VectorBuffer(tmp);
       return true;
     }
 
@@ -186,5 +214,4 @@ private:
   friend class ScriptEngine;
   friend struct ScriptFieldInstance;
 };
-
-}
+} // namespace CatEngine

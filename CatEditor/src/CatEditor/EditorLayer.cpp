@@ -715,14 +715,14 @@ void EditorLayer::OnScenePlay() {
   m_RuntimeScene = CreateRef<Scene>();
 
   m_EditorScene->CopyTo(m_RuntimeScene);
-
-  m_PanelManager->SetSceneContext(m_RuntimeScene);
-
-  m_SceneViewportPanel.SetContext(m_RuntimeScene);
-  m_SceneCameraPanel.SetContext(m_RuntimeScene);
-  ScriptEngine::GetMutable().SetSceneContext(m_RuntimeScene);
   m_RuntimeScene->OnRuntimeStart();
   m_CurrentScene = m_RuntimeScene;
+
+  m_PanelManager->SetSceneContext(m_CurrentScene);
+
+  m_SceneViewportPanel.SetContext(m_CurrentScene);
+  m_SceneCameraPanel.SetContext(m_CurrentScene);
+  ScriptEngine::GetMutable().SetSceneContext(m_CurrentScene);
 
   if (m_IsScenePaused)
     m_CurrentScene->OnPauseStart();

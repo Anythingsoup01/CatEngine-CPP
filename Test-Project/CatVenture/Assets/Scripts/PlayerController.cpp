@@ -11,7 +11,10 @@ PlayerController::PlayerController() {}
 PlayerController::~PlayerController() {}
 
 void PlayerController::Start() {
-  m_PlayerHealth->DamagePlayer(100);
+  for (auto ph : m_PlayerHealths) {
+    if (ph)
+      ph->DamagePlayer(100000);
+  }
 }
 
 void PlayerController::Update(float ts) {
@@ -43,12 +46,6 @@ void PlayerController::OnCollisionEnter(Object other) {
   if (other.layer() == "Ground" && !m_CanJump) {
     m_Grounded = true;
     m_CanJump = true;
-  }
-
-  // TODO: Make it to where this can be a member
-  if (other.layer() == "Enemy") {
-    PlayerHealth *ph = GetScript<PlayerHealth>();
-    ph->DamagePlayer(50.0f);
   }
 
 }

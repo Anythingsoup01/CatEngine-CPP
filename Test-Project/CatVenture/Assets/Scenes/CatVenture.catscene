@@ -107,8 +107,8 @@ Entities:
           ScriptID: 1101011320
           ClassName: PlayerController
           Fields:
-            - FieldID: 490718930
-              FieldName: m_PlayerHealth
+            - FieldID: 925478655
+              FieldName: m_PH
               FieldType: PlayerHealth
               FieldSize: 8
               Value: 11887291964845403532

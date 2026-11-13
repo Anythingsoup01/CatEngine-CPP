@@ -17,7 +17,8 @@ public:
   void OnCollisionExit(Object other);
 
 public:
-  PlayerHealth *m_PlayerHealth;
+  std::vector<PlayerHealth *> m_PlayerHealths;
+  PlayerHealth *m_PH;
   float m_PlayerTerminalVelocity = 25.0f;
   float m_PlayerSpeed = 10;
   float m_JumpForce = 25.0f;
