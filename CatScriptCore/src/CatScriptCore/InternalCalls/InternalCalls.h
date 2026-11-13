@@ -112,6 +112,8 @@ CE_ADD_INTERNAL_CALL(CircleRenderer_SetThickness, void, uint64_t, float*)
 CE_ADD_INTERNAL_CALL(CircleRenderer_GetFade, void, uint64_t, float*)
 CE_ADD_INTERNAL_CALL(CircleRenderer_SetFade, void, uint64_t, float*)
 
+// Editor Commands
+CE_ADD_INTERNAL_CALL(Editor_ConsoleLog, void, int, const char *);
 
 // Declare the internal call
 

@@ -1,4 +1,5 @@
 #include "PlayerHealth.h"
+#include "CatScriptCore/Scene/Editor/Console.h"
 
 namespace CatRuntime {
 
@@ -13,7 +14,7 @@ void PlayerHealth::DamagePlayer(const float &dmg) {
   m_Health -= dmg;
   if (m_Health <= 0) {
     m_Health = 0;
-    std::cout << "GAME OVER!\n";
+    Console::Log("GAME OVER!");
   }
 }
 

@@ -1,7 +1,7 @@
 #include "PlayerController.h"
+#include "CatScriptCore/Scene/Editor/Console.h"
 #include "CatScriptCore/Types/Vector.h"
 
-#include "CatScriptCore/Scene/Component/AllComponents.h"
 #include "PlayerHealth.h"
 
 namespace CatRuntime {
@@ -12,9 +12,12 @@ PlayerController::~PlayerController() {}
 
 void PlayerController::Start() {
   for (auto ph : m_PlayerHealths) {
-    if (ph)
+    if (ph) {
       ph->DamagePlayer(100000);
+      Console::Log("Damaged Player For 100000");
+    }
   }
+
 }
 
 void PlayerController::Update(float ts) {

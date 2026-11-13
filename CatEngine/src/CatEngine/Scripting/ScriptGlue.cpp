@@ -1,4 +1,6 @@
 #include "ScriptGlue.h"
+#include "CatEngine/Editor/PanelManager.h"
+#include "CatEngine/Editor/Panels/ConsolePanel.h"
 #include "cepch.h"
 
 #include "CatEngine/Core/Input.h"
@@ -762,6 +764,34 @@ static void CircleRenderer_SetFade(UUID entityID, float *fade) {
 
 #pragma endregion
 
+#pragma region Editor Commands
+
+static void Editor_ConsoleLog(int logLevel, const char *message) {
+  auto console = PanelManager::Get().GetPanel<ConsolePanel>("ConsolePanel");
+  switch (logLevel) {
+    case 1: // Trace (Green)
+      console->WriteTrace(message);
+      break;
+    case 2: // Log (White)
+      console->WriteLog(message);
+      break;
+    case 3: // Warning (Yellow)
+      console->WriteWarning(message);
+      break;
+    case 4: // Error (Red)
+      console->WriteError(message);
+      break;
+    case 5: // Critical (Dark Red text with Red background)
+      console->WriteCritical(message);
+      break;
+    default:
+      console->WriteLog(message);
+  }
+}
+
+
+#pragma endregion
+
 template <typename... Component> static void RegisterComponent() {
 
   (
@@ -895,6 +925,10 @@ void ScriptGlue::RegisterFunctions() {
   CE_ADD_INTERNAL_CALL(CircleRenderer_SetThickness);
   CE_ADD_INTERNAL_CALL(CircleRenderer_GetFade);
   CE_ADD_INTERNAL_CALL(CircleRenderer_SetFade);
+#pragma endregion
+
+#pragma region Editor Commands
+  CE_ADD_INTERNAL_CALL(Editor_ConsoleLog);
 #pragma endregion
 
 }

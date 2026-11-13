@@ -4,6 +4,7 @@ set_property(TARGET CatScriptCore PROPERTY CXX_STANDARD 20)
 target_sources(CatScriptCore PRIVATE
 src/CatScriptCore/InternalCalls/InternalCalls.cpp
 src/CatScriptCore/Input/Input.cpp
+src/CatScriptCore/Scene/Editor/Console.cpp
 src/CatScriptCore/Scene/Component/Rigidbody2D.cpp
 src/CatScriptCore/Scene/Component/SpriteRenderer.cpp
 src/CatScriptCore/Scene/Component/Tag.cpp

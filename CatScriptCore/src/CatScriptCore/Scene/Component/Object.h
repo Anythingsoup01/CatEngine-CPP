@@ -3,6 +3,7 @@
 #include "Layer.h"
 #include "Tag.h"
 #include "Transform.h"
+
 #include <cstdint>
 
 namespace CatRuntime {
@@ -25,8 +26,6 @@ public:
 
   template <typename T> bool HasComponent();
   template <typename T> T GetComponent();
-
-
 public:
 
   template <typename T>

@@ -1,4 +1,6 @@
 #include "ScriptEngine.h"
+#include "CatEngine/Editor/PanelManager.h"
+#include "CatEngine/Editor/Panels/ConsolePanel.h"
 #include "CatEngine/Scripting/ScriptEntityStorage.h"
 #include "cepch.h"
 
@@ -173,8 +175,7 @@ void ScriptEngine::LoadRuntimeScripts() {
       // Copy saved field values into the instance memory
       if (s_ScriptData->EntityScriptFields.find(entUUID) !=
           s_ScriptData->EntityScriptFields.end()) {
-        auto &scriptFieldMap =
-            s_ScriptData->EntityScriptFields.at(entUUID);
+        auto &scriptFieldMap = s_ScriptData->EntityScriptFields.at(entUUID);
 
         if (scriptFieldMap.find(sc.ScriptID) != scriptFieldMap.end()) {
           auto &fieldMap = scriptFieldMap.at(sc.ScriptID);
@@ -182,38 +183,43 @@ void ScriptEngine::LoadRuntimeScripts() {
             if (fieldInstance.Field.IsVector) {
               // Pass the editor's serialized VectorBuffer blob into the
               // instance initializer
-              if (fieldInstance.Field.ElementType == DataType::ScriptComponent) {
-                // 1. Copy the VectorData object so we don't corrupt s_ScriptData->EntityScriptFields
+              if (fieldInstance.Field.ElementType ==
+                  DataType::ScriptComponent) {
+                // 1. Copy the VectorData object so we don't corrupt
+                // s_ScriptData->EntityScriptFields
                 auto runtimeVectorData = fieldInstance.VectorData;
 
                 for (size_t i = 0; i < runtimeVectorData.GetCount(); i++) {
-                  void *elementPtr = runtimeVectorData.GetElementPointer(i, fieldInstance.Field.ElementSize);
+                  void *elementPtr = runtimeVectorData.GetElementPointer(
+                      i, fieldInstance.Field.ElementSize);
                   if (!elementPtr)
                     continue;
 
                   // Read the persistent Entity ID from our local copy
-                  uint64_t targetEntityID = *reinterpret_cast<uint64_t *>(elementPtr);
+                  uint64_t targetEntityID =
+                      *reinterpret_cast<uint64_t *>(elementPtr);
                   if (targetEntityID == 0)
                     continue;
 
-                  uint64_t classHash = Hash::GenerateFNVHash(fieldInstance.Field.ElementTypeName);
-                  Ref<ScriptInstance> otherInstance = GetEntityScriptInstance(targetEntityID, classHash);
+                  uint64_t classHash = Hash::GenerateFNVHash(
+                      fieldInstance.Field.ElementTypeName);
+                  Ref<ScriptInstance> otherInstance =
+                      GetEntityScriptInstance(targetEntityID, classHash);
 
                   if (!otherInstance)
                     continue;
 
                   // Write the runtime pointer into our local copy's slot
                   void **slotPtr = reinterpret_cast<void **>(elementPtr);
-                  *slotPtr = otherInstance->GetManagedObject()->RawMemory.data();
+                  *slotPtr =
+                      otherInstance->GetManagedObject()->RawMemory.data();
                 }
 
                 // 2. Pass the modified runtime copy to the instance initializer
                 instance->m_Instance->InitializeVectorField(
-                  fieldInstance.Field.Name,
-                  instance->m_ScriptClass->m_ClassObject.get(),
-                  runtimeVectorData.Data,
-                  fieldInstance.Field.ElementSize
-                );
+                    fieldInstance.Field.Name,
+                    instance->m_ScriptClass->m_ClassObject.get(),
+                    runtimeVectorData.Data, fieldInstance.Field.ElementSize);
                 continue;
               }
             }
@@ -268,6 +274,10 @@ void ScriptEngine::OnUpdateEntity(Entity e, float ts) {
   for (auto &sc : scc.Scripts) {
     auto &instances = s_ScriptData->EntityInstances;
     if (instances.find(entityUUID) == instances.end()) {
+      PanelManager::Get()
+          .GetPanel<ConsolePanel>("ConsolePanel")
+          ->WriteCritical("Failed to find script instance " +
+                          std::to_string(entityUUID));
       CE_API_ERROR("Could not find script instance {}", (uint64_t)entityUUID);
       continue;
     }

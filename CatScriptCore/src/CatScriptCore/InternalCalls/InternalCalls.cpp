@@ -93,3 +93,5 @@ CE_INITIALIZE_INTERNAL_CALL(CircleRenderer_SetThickness);
 CE_INITIALIZE_INTERNAL_CALL(CircleRenderer_GetFade);
 CE_INITIALIZE_INTERNAL_CALL(CircleRenderer_SetFade);
 
+// Editor Commands
+CE_INITIALIZE_INTERNAL_CALL(Editor_ConsoleLog);

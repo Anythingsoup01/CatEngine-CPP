@@ -1,5 +1,6 @@
 #include "EditorLayer.h"
 
+#include "CatEngine/Editor/Panels/ConsolePanel.h"
 #include "CatEngine/Editor/Panels/InpectorPanel.h"
 #include "CatEngine/Scene/Entity.h"
 #include "imgui.h"
@@ -52,6 +53,7 @@ void EditorLayer::OnAttach() {
   m_PanelManager->AddPanel<InspectorPanel>("InspectorPanel", true);
   m_PanelManager->AddPanel<AssetBrowserPanel>("AssetBrowserPanel", true);
   m_PanelManager->AddPanel<ContentBrowserPanel>("ContentBrowserPanel", true);
+  m_PanelManager->AddPanel<ConsolePanel>("ConsolePanel", true);
 
   auto commandLineArgs = Application::Get().GetSpecification().CommandlineArgs;
   if (commandLineArgs.Count > 1) {
@@ -139,17 +141,6 @@ void EditorLayer::OnImGuiDraw() {
     }
     io.FontGlobalScale = 1.25f;
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0, 0});
-
-    ImGui::Begin("Console");
-    {
-      Renderer2D::Statistics stats = Renderer2D::GetStats();
-      ImGui::Text("Draw Calls: %i", stats.DrawCalls);
-      ImGui::Text("Rendered Quads: %i", stats.QuadCount);
-      ImGui::Text("Ts: %f", m_DeltaTime);
-      ImGui::Text("Rough FPS: %f", 1.0f / m_DeltaTime);
-      Renderer2D::ResetStats();
-    }
-    ImGui::End();
 
     UI_MenuBar();
     UI_Viewport();
