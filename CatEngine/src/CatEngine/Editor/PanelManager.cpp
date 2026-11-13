@@ -8,41 +8,39 @@
 
 namespace CatEngine {
 
-PanelManager::~PanelManager() {
-  for (auto &map : m_Panels)
-    map.clear();
+PanelManager::PanelManager() {
+  s_Instance = this;
 }
 
-PanelData *PanelManager::GetPanelData(uint32_t panelID) {
-  for (auto &panelMap : m_Panels) {
-    if (panelMap.find(panelID) == panelMap.end())
-      continue;
+PanelManager::~PanelManager() { m_Panels.clear(); }
 
-    return &panelMap.at(panelID);
+PanelData &PanelManager::GetPanelData(const std::string &panelID) {
+  for (auto &panel : m_Panels) {
+    if (panelID == panel.ID)
+      return panel;
   }
+  static PanelData s_NullPanelData{"NULL_PANEL", nullptr, false};
 
-  return nullptr;
+  return s_NullPanelData;
 }
 
-const PanelData *PanelManager::GetPanelData(uint32_t panelID) const {
-  for (auto &panelMap : m_Panels) {
-    if (panelMap.find(panelID) == panelMap.end())
-      continue;
-
-    return &panelMap.at(panelID);
+const PanelData &PanelManager::GetPanelData(const std::string &panelID) const {
+  for (auto &panel : m_Panels) {
+    if (panelID == panel.ID)
+      return panel;
   }
+  static PanelData s_NullPanelData{"NULL_PANEL", nullptr, false};
 
-  return nullptr;
+  return s_NullPanelData;
 }
 
-void PanelManager::RemovePanel(const char *strID) {
-  uint32_t id = Hash::GenerateFNVHash(strID);
-
-  for (auto &panelMap : m_Panels) {
-    if (panelMap.find(id) == panelMap.end())
+void PanelManager::RemovePanel(const std::string &strID) {
+  for (auto it = m_Panels.begin(); it != m_Panels.end(); it++) {
+    auto &panel = *it;
+    if (panel.ID != strID)
       continue;
 
-    panelMap.erase(id);
+    m_Panels.erase(it);
     return;
   }
 
@@ -50,32 +48,28 @@ void PanelManager::RemovePanel(const char *strID) {
 }
 
 void PanelManager::OnImGuiRender() {
-  for (auto panelMap : m_Panels) {
-    for (auto &[id, panelData] : panelMap) {
-      bool closedThisFrame = false;
+  for (auto panel : m_Panels) {
+    bool closedThisFrame = false;
 
-      if (panelData.IsOpen) {
-        panelData.Panel->OnImGuiRender(panelData.IsOpen);
-        closedThisFrame = !panelData.IsOpen;
-      }
-
-      if (closedThisFrame)
-        Serialize();
+    if (panel.IsOpen) {
+      panel.Panel->OnImGuiRender(panel.IsOpen);
+      closedThisFrame = !panel.IsOpen;
     }
+
+    if (closedThisFrame)
+      Serialize();
   }
 }
 
 void PanelManager::OnEvent(Event &e) {
-  for (auto &panelMap : m_Panels) {
-    for (auto &[id, panelData] : panelMap)
-      panelData.Panel->OnEvent(e);
+  for (auto &panel : m_Panels) {
+    panel.Panel->OnEvent(e);
   }
 }
 
 void PanelManager::SetSceneContext(const Ref<Scene> &context) {
-  for (auto &panelMap : m_Panels) {
-    for (auto &[id, panelData] : panelMap)
-      panelData.Panel->SetSceneContext(context);
+  for (auto &panel : m_Panels) {
+    panel.Panel->SetSceneContext(context);
   }
 }
 
@@ -84,15 +78,11 @@ void PanelManager::Serialize() const {
   out << YAML::BeginMap;
 
   out << YAML::Key << "Panels" << YAML::Value << YAML::BeginSeq;
-  {
-    for (size_t category = 0; category < m_Panels.size(); category++) {
-      for (const auto &[panelID, panel] : m_Panels[category]) {
-        out << YAML::BeginMap;
-        out << YAML::Key << "ID" << YAML::Value << panelID;
-        out << YAML::Key << "IsOpen" << YAML::Value << panel.IsOpen;
-        out << YAML::EndMap;
-      }
-    }
+  for (const auto &panel : m_Panels) {
+    out << YAML::BeginMap;
+    out << YAML::Key << "ID" << YAML::Value << panel.ID;
+    out << YAML::Key << "IsOpen" << YAML::Value << panel.IsOpen;
+    out << YAML::EndMap;
   }
   out << YAML::EndSeq;
 
@@ -124,12 +114,12 @@ void PanelManager::Deserialize() {
   }
 
   for (auto panelNode : data["Panels"]) {
-    PanelData *panelData = GetPanelData(panelNode["ID"].as<uint32_t>(0));
+    PanelData panelData = GetPanelData(panelNode["ID"].as<std::string>());
 
-    if (panelData == nullptr)
+    if (panelData.ID == "NULL_PANEL")
       continue;
 
-    panelData->IsOpen = panelNode["IsOpen"].as<bool>(panelData->IsOpen);
+    panelData.IsOpen = panelNode["IsOpen"].as<bool>();
   }
 }
 

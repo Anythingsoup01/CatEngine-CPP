@@ -3,94 +3,85 @@
 #include "CatEngine/Core/Hash.h"
 
 #include "EditorPanel.h"
+#include <cstdint>
 
-namespace CatEngine
-{
-    struct PanelData
-    {
-        const char* ID = "";
-        Ref<EditorPanel> Panel = nullptr;
-        bool IsOpen = false;
-    };
+namespace CatEngine {
+struct PanelData {
+  std::string ID = "";
+  Ref<EditorPanel> Panel = nullptr;
+  bool IsOpen = false;
+};
 
-    using PanelDataMap = std::unordered_map<uint32_t, PanelData>;
+class PanelManager {
+public:
+  PanelManager();
+  ~PanelManager();
 
-    enum class PanelCategory
-    {
-        Edit, View, _COUNT
-    };
+  PanelData &GetPanelData(const std::string &panelID);
+  const PanelData &GetPanelData(const std::string &panelID) const;
 
-    class PanelManager
-    {
-    public:
-        PanelManager() = default;
-        ~PanelManager();
+  void RemovePanel(const std::string &panelID);
 
-        PanelData* GetPanelData(uint32_t panelID);
-        const PanelData* GetPanelData(uint32_t panelID) const;
+  void OnImGuiRender();
 
-        void RemovePanel(const char* strID);
+  void OnEvent(Event &e);
 
-        void OnImGuiRender();
+  void SetSceneContext(const Ref<Scene> &context);
 
-        void OnEvent(Event& e);
+  void Serialize() const;
+  void Deserialize();
 
-        void SetSceneContext(const Ref<Scene>& context);
+  static PanelManager &Get() { return *s_Instance; }
 
-        void Serialize() const;
-        void Deserialize();
+  template <typename TPanel>
+  Ref<TPanel> AddPanel(const PanelData &panelData) {
+    static_assert(
+        std::is_base_of<EditorPanel, TPanel>::value,
+        "PanelManager::AddPanel requires TPanel to inherit from EditorPanel");
 
-        PanelDataMap& GetPanels(PanelCategory category) { return m_Panels[(size_t)category]; }
-        const PanelDataMap& GetPanels(PanelCategory category) const { return m_Panels[(size_t)category]; }
 
-    public:
+    // Instead of returning null or breaking, we just return the already existing panel
+    // that way we can have multiple instances of the same panel.
+    // Though as of right now they will be exactly the same,
+    // I plan to make it to where they can be locked, allowing the user
+    // to see specific entities only
+    for (auto &panel : m_Panels) {
+      if (panel.ID == panelData.ID) {
+        return (Ref<TPanel> &)panel.Panel;
+      }
+    }
 
-        template<typename TPanel>
-        Ref<TPanel> AddPanel(PanelCategory category, const PanelData& panelData)
-        {
-            static_assert(std::is_base_of<EditorPanel, TPanel>::value, "PanelManager::AddPanel requires TPanel to inherit from EditorPanel");
+    m_Panels.push_back(panelData);
+    return (Ref<TPanel> &)panelData.Panel;
+  }
 
-            auto& panelMap = m_Panels[(size_t)category];
+  template <typename TPanel, typename... TArgs>
+  Ref<TPanel> AddPanel(const char *strID,
+                       bool isOpenByDefault, TArgs &&...args) {
+    return AddPanel<TPanel>(
+        PanelData{strID, CreateRef<TPanel>(std::forward<TArgs>(args)...),
+                  isOpenByDefault});
+  }
 
-            uint32_t id = Hash::GenerateFNVHash(panelData.ID);
-            if (panelMap.find(id) != panelMap.end())
-            {
-                CE_API_ERROR("A panel with ID '{}' already exists!", panelData.ID);
-                return nullptr;
-            }
+  template <typename TPanel> Ref<TPanel> GetPanel(const std::string &strID) {
+    static_assert(
+        std::is_base_of<EditorPanel, TPanel>::value,
+        "PanelManager::AddPanel requires TPanel to inherit from EditorPanel");
 
-            panelMap[id] = panelData;
-            return (Ref<TPanel>&)panelData.Panel;
-        }
+    uint32_t id = Hash::GenerateFNVHash(strID);
 
-		template<typename TPanel, typename... TArgs>
-		Ref<TPanel> AddPanel(PanelCategory category, const char* strID, bool isOpenByDefault, TArgs&&... args)
-		{
-			return AddPanel<TPanel>(category, PanelData{ strID, CreateRef<TPanel>(std::forward<TArgs>(args)...), isOpenByDefault });
-		}
+    for (auto &panel : m_Panels) {
+      if (panel.ID == strID) {
+        return (Ref<TPanel> &)panel.Panel;
+      }
+    }
 
-        template<typename TPanel>
-		Ref<TPanel> GetPanel(const char* strID)
-		{
-			static_assert(std::is_base_of<EditorPanel, TPanel>::value, "PanelManager::AddPanel requires TPanel to inherit from EditorPanel");
+    CE_API_ERROR("Couldn't find panel with id '{0}'", strID.c_str());
+    return nullptr;
+  }
 
-			uint32_t id = Hash::GenerateFNVHash(strID);
-
-			for (const auto& panelMap : m_Panels)
-			{
-				if (panelMap.find(id) == panelMap.end())
-					continue;
-
-				return (Ref<TPanel>&)panelMap.at(id).Panel;
-			}
-
-			CE_API_ERROR("Couldn't find panel with id '{0}'", strID);
-			return nullptr;
-		}
-
-    private:
-        std::array<PanelDataMap, (size_t)PanelCategory::_COUNT> m_Panels;
-
-    };
-}
-
+private:
+  std::vector<PanelData> m_Panels;
+  static inline PanelManager *s_Instance;
+};
+} // namespace CatEngine

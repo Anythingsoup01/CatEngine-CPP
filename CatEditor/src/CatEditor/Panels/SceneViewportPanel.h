@@ -3,47 +3,50 @@
 #include "CatEngine/Renderer/Framebuffer.h"
 #include "CatEngine/Scene/Scene.h"
 
-namespace CatEngine
-{
-    class SceneViewportPanel
-    {
-    public:
-        SceneViewportPanel() = default;
-        SceneViewportPanel(const FramebufferSpecification& spec);
+namespace CatEngine {
+class SceneViewportPanel {
+public:
+  SceneViewportPanel() = default;
+  SceneViewportPanel(const FramebufferSpecification &spec);
 
-        void BindFramebuffer() { m_Framebuffer->Bind(); }
-        void UnbindFramebuffer() { m_Framebuffer->Unbind(); }
+  void BindFramebuffer() { m_Framebuffer->Bind(); }
+  void UnbindFramebuffer() { m_Framebuffer->Unbind(); }
 
-        void ClearFramebufferAttachment(uint32_t attachmentIndex, int value) { m_Framebuffer->ClearAttachment(attachmentIndex, value); }
+  void ClearFramebufferAttachment(uint32_t attachmentIndex, int value) {
+    m_Framebuffer->ClearAttachment(attachmentIndex, value);
+  }
 
-        void SetContext(const Ref<Scene>& scene) { m_Scene = scene; }
+  void SetContext(const Ref<Scene> &scene) { m_Scene = scene; }
 
-        void OnImGuiRender();
+  void OnImGuiRender();
 
-        bool FramebufferResized();
-        
-        void SetActive(bool active) { m_IsActive = active; }
-        const bool IsActive() const { return m_IsActive; }
+  bool FramebufferResized();
 
-        const bool IsFocused() const { return m_PanelFocused; }
-        const bool IsHovered() const { return m_PanelHovered; }
+  void SetActive(bool active) { m_IsActive = active; }
+  const bool IsActive() const { return m_IsActive; }
 
-        uint32_t GetWidth() { return m_PanelWidth; }
-        uint32_t GetHeight() { return m_PanelHeight; }
+  const bool IsFocused() const { return m_PanelFocused; }
+  const bool IsHovered() const { return m_PanelHovered; }
 
-        int ReadPixelData(uint32_t attachmentIndex, int x, int y) { return m_Framebuffer->ReadPixel(attachmentIndex, x, y); }
+  uint32_t GetWidth() { return m_PanelWidth; }
+  uint32_t GetHeight() { return m_PanelHeight; }
 
-        const glm::vec2* GetPanelBounds() { return m_PanelBounds; }
-    private:
-        Ref<Framebuffer> m_Framebuffer;
-        Ref<Scene> m_Scene;
+  int ReadPixelData(uint32_t attachmentIndex, int x, int y) {
+    return m_Framebuffer->ReadPixel(attachmentIndex, x, y);
+  }
 
-        bool m_IsActive = true;
+  const glm::vec2 *GetPanelBounds() { return m_PanelBounds; }
 
-        bool m_PanelFocused, m_PanelHovered;
+private:
+  Ref<Framebuffer> m_Framebuffer;
+  Ref<Scene> m_Scene;
 
-        uint32_t m_PanelWidth = 0, m_PanelHeight = 0;
+  bool m_IsActive = true;
 
-        glm::vec2 m_PanelBounds[2];
-    };
-}
+  bool m_PanelFocused, m_PanelHovered;
+
+  uint32_t m_PanelWidth = 0, m_PanelHeight = 0;
+
+  glm::vec2 m_PanelBounds[2];
+};
+} // namespace CatEngine

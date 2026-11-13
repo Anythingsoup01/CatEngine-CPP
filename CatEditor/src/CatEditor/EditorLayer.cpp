@@ -1,5 +1,6 @@
 #include "EditorLayer.h"
 
+#include "CatEngine/Editor/Panels/InpectorPanel.h"
 #include "CatEngine/Scene/Entity.h"
 #include "imgui.h"
 #include <imgui_internal.h>
@@ -47,12 +48,10 @@ void EditorLayer::OnAttach() {
   m_CurrentScene = m_EditorScene;
   m_PanelManager = CreateScope<PanelManager>();
 
-  m_PanelManager->AddPanel<SceneHierarchyPanel>(PanelCategory::View,
-                                                "SceneHierarchyPanel", true);
-  m_PanelManager->AddPanel<AssetBrowserPanel>(PanelCategory::View,
-                                              "AssetBrowserPanel", true);
-  m_PanelManager->AddPanel<ContentBrowserPanel>(PanelCategory::View,
-                                                "ContentBrowserPanel", true);
+  m_PanelManager->AddPanel<SceneHierarchyPanel>("SceneHierarchyPanel", true);
+  m_PanelManager->AddPanel<InspectorPanel>("InspectorPanel", true);
+  m_PanelManager->AddPanel<AssetBrowserPanel>("AssetBrowserPanel", true);
+  m_PanelManager->AddPanel<ContentBrowserPanel>("ContentBrowserPanel", true);
 
   auto commandLineArgs = Application::Get().GetSpecification().CommandlineArgs;
   if (commandLineArgs.Count > 1) {
@@ -944,8 +943,8 @@ bool EditorLayer::OnMouseButtonPressed(MouseButtonPressedEvent &e) {
              Input::IsKeyPressed(KeyCode::RightAlt);
   if (Input::IsMouseButtonPressed(MouseCode::ButtonLeft)) {
     if (m_SceneViewportPanel.IsHovered() && !ImGuizmo::IsOver() && !alt)
-      m_PanelManager->GetPanel<SceneHierarchyPanel>("SceneHierarchyPanel")
-          ->SetSelectedEntity(m_HoveredEntity);
+      m_PanelManager->GetPanel<InspectorPanel>("InspectorPanel")
+          ->SetEntitySelectionContext(m_HoveredEntity);
   }
 
   return false;

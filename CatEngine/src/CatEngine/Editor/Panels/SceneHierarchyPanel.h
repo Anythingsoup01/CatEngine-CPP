@@ -23,23 +23,10 @@ public:
 
 private:
   void DrawEntityNode(Entity entity);
-  void DrawComponents(Entity selection);
-
-  template <typename T>
-  void DisplayAddComponentEntry(const std::string &entryName);
-
-  template <typename T, typename O>
-  void DisplayAddComponentEntries(const std::string &entryOneName,
-                                  const std::string &entryTwoName);
-
-  void DisplayAddScriptComponent(const std::string &name);
-
 private:
   Ref<Scene> m_Context;
   Entity m_SelectionContext;
   Entity m_PreviousSelection;
-
-
 };
 
 } // namespace CatEngine

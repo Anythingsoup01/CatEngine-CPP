@@ -111,12 +111,6 @@ Entities:
           ScriptID: 1101011320
           ClassName: PlayerController
           Fields:
-            - FieldID: 925478655
-              FieldName: m_PH
-              FieldType: PlayerHealth
-              FieldSize: 8
-              IsVector: false
-              Value: 11887291964845403532
             - FieldID: 3621418461
               FieldName: m_PlayerHealths
               FieldType: DynamicVector
@@ -126,6 +120,12 @@ Entities:
               ElementType: PlayerHealth
               Value:
                 - 12398286286834867532
+            - FieldID: 925478655
+              FieldName: m_PH
+              FieldType: PlayerHealth
+              FieldSize: 8
+              IsVector: false
+              Value: 11887291964845403532
     RelationshipComponent:
       ParentID: 0
       Children:

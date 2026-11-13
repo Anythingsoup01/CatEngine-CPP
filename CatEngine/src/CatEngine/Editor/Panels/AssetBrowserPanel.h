@@ -4,45 +4,43 @@
 
 #include "CatEngine/Editor/EditorPanel.h"
 
-namespace CatEngine
-{
-	class AssetBrowserPanel : public EditorPanel
-	{
-	public:
-		AssetBrowserPanel();
+namespace CatEngine {
+class AssetBrowserPanel : public EditorPanel {
+public:
+  AssetBrowserPanel();
 
-		virtual void OnImGuiRender(bool& isOpen) override;
-        virtual void OnEvent(Event& e) override {};
+  virtual void OnImGuiRender(bool &isOpen) override;
+  virtual void OnEvent(Event &e) override {};
 
-        void ResetAssetDirectory();
+  void ResetAssetDirectory();
 
-        void SetSelectionHandle(const AssetHandle& handle = 0) { m_SelectionContext = handle; }
+  void SetSelectionHandle(const AssetHandle &handle = 0) {
+    m_SelectionContext = handle;
+  }
 
-	private:
-        static void RefreshAssetTree();
+private:
+  static void RefreshAssetTree();
 
-        void DrawAsset(const AssetHandle& handle);
-    private:
-        static inline AssetBrowserPanel* s_Instance = nullptr;
+  void DrawAsset(const AssetHandle &handle);
 
-        struct TreeNode
-        {
-            std::filesystem::path Path;
-            AssetHandle Handle = 0;
+private:
+  struct TreeNode {
+    std::filesystem::path Path;
+    AssetHandle Handle = 0;
 
-            std::unordered_map<std::filesystem::path, uint32_t> Children;
-            uint32_t Parent = (uint32_t)-1;
+    std::unordered_map<std::filesystem::path, uint32_t> Children;
+    uint32_t Parent = (uint32_t)-1;
 
-            TreeNode(const std::filesystem::path& path, AssetHandle handle)
-                : Path(path), Handle(handle) {}
-        };
-        static inline std::vector<TreeNode> m_TreeNodes;
+    TreeNode(const std::filesystem::path &path, AssetHandle handle)
+        : Path(path), Handle(handle) {}
+  };
+  static inline std::vector<TreeNode> m_TreeNodes;
 
-        std::filesystem::path m_CurrentDirectory;
+  std::filesystem::path m_CurrentDirectory;
 
-        AssetHandle m_SelectionContext = 0;
-        AssetHandle m_PreviousSelection = 0;
+  AssetHandle m_SelectionContext = 0;
+  AssetHandle m_PreviousSelection = 0;
 
-        friend class ContentBrowserPanel;
-	};
-}
+  friend class ContentBrowserPanel;
+};
+} // namespace CatEngine
