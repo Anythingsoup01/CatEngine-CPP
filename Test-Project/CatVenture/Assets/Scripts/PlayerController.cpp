@@ -47,7 +47,6 @@ void PlayerController::OnCollisionEnter(Object other) {
     m_Grounded = true;
     m_CanJump = true;
   }
-
 }
 
 void PlayerController::OnCollisionExit(Object other) {

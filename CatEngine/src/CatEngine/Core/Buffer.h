@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <stdint.h>
 
@@ -83,9 +84,8 @@ private:
 
 struct VectorBuffer {
   std::vector<uint8_t> Data;
-  void *PointerValue = nullptr;
 
-  VectorBuffer() = default;
+  VectorBuffer(): Data(sizeof(uint64_t)) {}
 
   // Initialize with a pre-existing raw byte blob [count][elements...]
   VectorBuffer(const std::vector<uint8_t> &data) : Data(data) {}
@@ -149,6 +149,26 @@ struct VectorBuffer {
       Data.resize(newSize, 0);
       // Increment the count header
       *reinterpret_cast<size_t *>(Data.data()) = currentCount + 1;
+    }
+  }
+
+  void PushBack(uint32_t elementSize, const void* value) {
+    size_t currentCount = GetCount();
+    size_t oldSize = Data.size();
+    size_t newSize = (oldSize == 0) ? (sizeof(size_t) + elementSize) : (oldSize + elementSize);
+
+    // Resize the buffer to accommodate the new element
+    Data.resize(newSize, 0);
+
+    // Update the count header at the beginning of the buffer
+    *reinterpret_cast<size_t *>(Data.data()) = currentCount + 1;
+
+    // Calculate pointer to the new element's slot at the end of the vector
+    void* elementPtr = Data.data() + oldSize;
+
+    // Copy the value data into the element slot if provided
+    if (value) {
+      std::memcpy(elementPtr, value, elementSize);
     }
   }
 

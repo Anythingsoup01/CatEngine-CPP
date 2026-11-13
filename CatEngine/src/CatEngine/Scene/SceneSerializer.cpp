@@ -1,4 +1,5 @@
 #include "SceneSerializer.h"
+#include "CatEngine/Core/Buffer.h"
 #include "CatEngine/Scene/Components/Required/RelationshipComponent.h"
 #include "CatEngine/Scene/Components/Scripting/ScriptComponentContainer.h"
 #include "CatEngine/Scripting/ScriptEntityStorage.h"
@@ -99,6 +100,59 @@ static std::string GetNamedComponents(YAML::Node &node, std::string component,
 }
 
 SceneSerializer::SceneSerializer(const Ref<Scene> &scene) : m_Scene(scene) {}
+
+void SceneSerializer::SerializeEntityScriptVector(YAML::Emitter &out,
+                                                  const DataType &elementType,
+                                                  const void *elementPtr) {
+  if (!elementPtr)
+    return;
+
+  switch (elementType) {
+  case DataType::Short:
+    out << *reinterpret_cast<const int16_t *>(elementPtr);
+    break;
+  case DataType::UShort:
+    out << *reinterpret_cast<const uint16_t *>(elementPtr);
+    break;
+  case DataType::Int:
+    out << *reinterpret_cast<const int32_t *>(elementPtr);
+    break;
+  case DataType::UInt:
+    out << *reinterpret_cast<const uint32_t *>(elementPtr);
+    break;
+  case DataType::Long:
+    out << *reinterpret_cast<const int64_t *>(elementPtr);
+    break;
+  case DataType::ULong:
+    out << *reinterpret_cast<const uint64_t *>(elementPtr);
+    break;
+  case DataType::Float:
+    out << *reinterpret_cast<const float *>(elementPtr);
+    break;
+  case DataType::Double:
+    out << *reinterpret_cast<const double *>(elementPtr);
+    break;
+  case DataType::Bool:
+    out << *reinterpret_cast<const bool *>(elementPtr);
+    break;
+  case DataType::Vector2:
+    out << *reinterpret_cast<const glm::vec2 *>(elementPtr);
+    break;
+  case DataType::Vector3:
+    out << *reinterpret_cast<const glm::vec3 *>(elementPtr);
+    break;
+  case DataType::Vector4:
+    out << *reinterpret_cast<const glm::vec4 *>(elementPtr);
+    break;
+  case DataType::Entity:
+  case DataType::Texture2D:
+  case DataType::ScriptComponent:
+    out << *reinterpret_cast<const uint64_t *>(elementPtr);
+    break;
+  default:
+    break;
+  }
+}
 
 void SceneSerializer::SerializeEntity(YAML::Emitter &out, Entity entity) {
   CE_PROFILE_FUNCTION();
@@ -245,19 +299,19 @@ void SceneSerializer::SerializeEntity(YAML::Emitter &out, Entity entity) {
     auto &scriptEngine = ScriptEngine::GetMutable();
     auto &container = entity.GetComponent<ScriptComponentContainer>();
     out << YAML::Key << "ScriptComponentContainer" << YAML::Value;
-    out << YAML::BeginSeq;
+    out << YAML::BeginSeq; // ScriptComponentContainer Start
     for (auto &sc : container.Scripts) {
-      out << YAML::BeginMap; // ScriptComponent
+      out << YAML::BeginMap; // ScriptComponent Start
       out << YAML::Key << "ScriptComponent" << YAML::Value;
-      out << YAML::BeginMap; // ScriptComponent
+      out << YAML::BeginMap; // ScriptComponent Start
       out << YAML::Key << "ScriptID" << YAML::Value << sc.ScriptID;
       out << YAML::Key << "ClassName" << YAML::Value << sc.ClassName;
       out << YAML::Key << "Fields" << YAML::Value;
-      out << YAML::BeginSeq;
+      out << YAML::BeginSeq; // Fields Start
       const FieldMap &fieldMap =
-        scriptEngine.GetInitializedFields(entity.GetUUID(), sc.ScriptID);
+          scriptEngine.GetInitializedFields(entity.GetUUID(), sc.ScriptID);
       for (auto &[fieldID, field] : fieldMap) {
-        out << YAML::BeginMap;
+        out << YAML::BeginMap; // Field Map Start
         out << YAML::Key << "FieldID" << YAML::Value << fieldID;
         out << YAML::Key << "FieldName" << YAML::Value << field.Field.Name;
         std::string fieldTypeStr = DataTypeToString(field.Field.Type);
@@ -266,59 +320,79 @@ void SceneSerializer::SerializeEntity(YAML::Emitter &out, Entity entity) {
         }
         out << YAML::Key << "FieldType" << YAML::Value << fieldTypeStr;
         out << YAML::Key << "FieldSize" << YAML::Value << field.Field.Size;
-        out << YAML::Key << "Value";
+        out << YAML::Key << "IsVector" << YAML::Value << field.Field.IsVector;
 
-        switch (field.Field.Type) {
-        case DataType::Short:
-          out << YAML::Value << field.GetValue<int16_t>();
-          break;
-        case DataType::UShort:
-          out << YAML::Value << field.GetValue<uint16_t>();
-          break;
-        case DataType::Int:
-          out << YAML::Value << field.GetValue<int32_t>();
-          break;
-        case DataType::UInt:
-          out << YAML::Value << field.GetValue<uint32_t>();
-          break;
-        case DataType::Long:
-          out << YAML::Value << field.GetValue<int64_t>();
-          break;
-        case DataType::ULong:
-          out << YAML::Value << field.GetValue<uint64_t>();
-          break;
-        case DataType::Float:
-          out << YAML::Value << field.GetValue<float>();
-          break;
-        case DataType::Double:
-          out << YAML::Value << field.GetValue<double>();
-          break;
-        case DataType::Bool:
-          out << YAML::Value << field.GetValue<bool>();
-          break;
-        case DataType::Vector2:
-          out << YAML::Value << field.GetValue<glm::vec2>();
-          break;
-        case DataType::Vector3:
-          out << YAML::Value << field.GetValue<glm::vec3>();
-          break;
-        case DataType::Vector4:
-          out << YAML::Value << field.GetValue<glm::vec4>();
-          break;
-        case DataType::Entity:
-        case DataType::Texture2D:
-        case DataType::ScriptComponent:
-          out << YAML::Value << field.GetValue<uint64_t>();
-          break;
+        if (field.Field.IsVector) {
+          out << YAML::Key << "ElementSize" << YAML::Value
+              << field.Field.ElementSize;
+          std::string fieldTypeStr = DataTypeToString(field.Field.ElementType);
+          if (fieldTypeStr.empty()) {
+            fieldTypeStr = field.Field.ElementTypeName;
+          }
+          out << YAML::Key << "ElementType" << YAML::Value << fieldTypeStr;
+          out << YAML::Key << "Value" << YAML::Value;
+          out << YAML::BeginSeq; // Field Vector Start
+          for (size_t i = 0; i < field.VectorData.GetCount(); i++) {
+            const void *elementPtr =
+                field.VectorData.GetElementPointer(i, field.Field.ElementSize);
+            // Directly serialize the element value without wrapping in a map
+            SerializeEntityScriptVector(out, field.Field.ElementType,
+                                        elementPtr);
+          }
+          out << YAML::EndSeq; // Field Vector End
+        } else {
+          out << YAML::Key << "Value";
+          switch (field.Field.Type) {
+          case DataType::Short:
+            out << YAML::Value << field.GetValue<int16_t>();
+            break;
+          case DataType::UShort:
+            out << YAML::Value << field.GetValue<uint16_t>();
+            break;
+          case DataType::Int:
+            out << YAML::Value << field.GetValue<int32_t>();
+            break;
+          case DataType::UInt:
+            out << YAML::Value << field.GetValue<uint32_t>();
+            break;
+          case DataType::Long:
+            out << YAML::Value << field.GetValue<int64_t>();
+            break;
+          case DataType::ULong:
+            out << YAML::Value << field.GetValue<uint64_t>();
+            break;
+          case DataType::Float:
+            out << YAML::Value << field.GetValue<float>();
+            break;
+          case DataType::Double:
+            out << YAML::Value << field.GetValue<double>();
+            break;
+          case DataType::Bool:
+            out << YAML::Value << field.GetValue<bool>();
+            break;
+          case DataType::Vector2:
+            out << YAML::Value << field.GetValue<glm::vec2>();
+            break;
+          case DataType::Vector3:
+            out << YAML::Value << field.GetValue<glm::vec3>();
+            break;
+          case DataType::Vector4:
+            out << YAML::Value << field.GetValue<glm::vec4>();
+            break;
+          case DataType::Entity:
+          case DataType::Texture2D:
+          case DataType::ScriptComponent:
+            out << YAML::Value << field.GetValue<uint64_t>();
+            break;
+          }
         }
-        out << YAML::EndMap; // Field
+        out << YAML::EndMap; // Field Map End
       }
-      out << YAML::EndSeq; // Fields
-      out << YAML::EndMap; // ScriptComponent map
-      out << YAML::EndMap; // Sequence item map
+      out << YAML::EndSeq; // Fields End
+      out << YAML::EndMap; // ScriptComponent End
+      out << YAML::EndMap; // Script Component End
     }
-    out << YAML::EndSeq; // ScriptComponentContainer
-
+    out << YAML::EndSeq; // ScriptComponentContainer end
   }
 
   if (entity.HasComponent<RelationshipComponent>()) {
@@ -365,6 +439,92 @@ void SceneSerializer::SerializeRuntime(const std::string &filepath) {
   CE_PROFILE_FUNCTION();
 
   CE_API_ASSERT(false, "Not Implemented Yet");
+}
+
+void SceneSerializer::DeserializeEntityScriptVector(
+    YAML::Node &vectorNode, DataType elementType, size_t elementSize,
+    VectorBuffer &outVectorData) {
+  if (!vectorNode.IsSequence())
+    return;
+
+  size_t count = vectorNode.size();
+  // Note: Ensure your VectorData class has a resize/allocation method if count
+  // differs, or that outVectorData is pre-allocated to match the YAML sequence
+  // size. e.g., outVectorData.Resize(count, elementSize);
+
+  for (const auto &element : vectorNode) {
+    switch (elementType) {
+    case DataType::Short: {
+      int16_t value = element.as<int16_t>();
+      outVectorData.PushBack(sizeof(int16_t), &value);
+      break;
+    }
+    case DataType::UShort: {
+      uint16_t value = element.as<uint16_t>();
+      outVectorData.PushBack(sizeof(uint16_t), &value);
+      break;
+    }
+    case DataType::Int: {
+      int32_t value = element.as<int32_t>();
+      outVectorData.PushBack(sizeof(int32_t), &value);
+      break;
+    }
+    case DataType::UInt: {
+      uint32_t value = element.as<uint32_t>();
+      outVectorData.PushBack(sizeof(uint32_t), &value);
+      break;
+    }
+    case DataType::Long: {
+      int64_t value = element.as<int64_t>();
+      outVectorData.PushBack(sizeof(int64_t), &value);
+      break;
+    }
+    case DataType::ULong: {
+      uint64_t value = element.as<uint64_t>();
+      outVectorData.PushBack(sizeof(uint64_t), &value);
+      break;
+    }
+    case DataType::Float: {
+      float value = element.as<float>();
+      outVectorData.PushBack(sizeof(float), &value);
+      break;
+    }
+    case DataType::Double: {
+      double value = element.as<double>();
+      outVectorData.PushBack(sizeof(double), &value);
+      break;
+    }
+    case DataType::Bool: {
+      bool value = element.as<bool>();
+      outVectorData.PushBack(sizeof(bool), &value);
+      break;
+    }
+    case DataType::Vector2: {
+      glm::vec2 value = element.as<glm::vec2>();
+      outVectorData.PushBack(sizeof(glm::vec2), &value);
+      break;
+    }
+    case DataType::Vector3: {
+      glm::vec3 value = element.as<glm::vec3>();
+      outVectorData.PushBack(sizeof(glm::vec3), &value);
+      break;
+    }
+    case DataType::Vector4: {
+      glm::vec4 value = element.as<glm::vec4>();
+      outVectorData.PushBack(sizeof(glm::vec4), &value);
+      break;
+    }
+    case DataType::Entity:
+    case DataType::Texture2D:
+    case DataType::ScriptComponent: {
+      uint64_t value = element.as<uint64_t>();
+      outVectorData.PushBack(sizeof(uint64_t), &value);
+      break;
+    }
+    default:
+      break;
+    }
+  }
 }
 
 void SceneSerializer::DeserializeEntity(YAML::Node &entity, UUID parent) {
@@ -504,17 +664,29 @@ void SceneSerializer::DeserializeEntity(YAML::Node &entity, UUID parent) {
 
             sfi.Field.Name = field["FieldName"].as<std::string>();
             sfi.Field.Type =
-              StringToDataType(field["FieldType"].as<std::string>());
+                StringToDataType(field["FieldType"].as<std::string>());
             sfi.Field.TypeName = field["FieldType"].as<std::string>();
             sfi.Field.Size = field["FieldSize"].as<uint64_t>();
 
-            if (sfi.Field.IsVector) {
+            sfi.Field.IsVector = field["IsVector"].as<bool>();
 
+            if (sfi.Field.IsVector) {
+              sfi.Field.ElementSize = field["ElementSize"].as<uint64_t>();
+              sfi.Field.ElementType =
+                  StringToDataType(field["ElementType"].as<std::string>());
+              sfi.Field.ElementTypeName =
+                  field["ElementType"].as<std::string>();
+              auto valueSeq = field["Value"];
+              if (valueSeq && valueSeq.IsSequence()) {
+                // Deserialize each element into the vector buffer
+                DeserializeEntityScriptVector(valueSeq, sfi.Field.ElementType,
+                                              sfi.Field.ElementSize,
+                                              sfi.VectorData);
+              }
             } else {
               sfi.TrivialData.Allocate(sfi.Field.Size);
-            }
 
-            switch (sfi.Field.Type) {
+              switch (sfi.Field.Type) {
               case DataType::Float:
                 sfi.SetValue(field["Value"].as<float>());
                 break;
@@ -558,6 +730,7 @@ void SceneSerializer::DeserializeEntity(YAML::Node &entity, UUID parent) {
                 break;
               default:
                 break;
+              }
             }
           }
         }

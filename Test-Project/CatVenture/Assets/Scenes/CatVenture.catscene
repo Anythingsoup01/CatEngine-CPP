@@ -65,7 +65,11 @@ Entities:
       Restitution: 0
       RestitutionThreshold: 0.5
     ScriptComponentContainer:
-      []
+      - ScriptComponent:
+          ScriptID: 3391991794
+          ClassName: PlayerHealth
+          Fields:
+            []
     RelationshipComponent:
       ParentID: 0
       Children:
@@ -111,11 +115,21 @@ Entities:
               FieldName: m_PH
               FieldType: PlayerHealth
               FieldSize: 8
+              IsVector: false
               Value: 11887291964845403532
+            - FieldID: 3621418461
+              FieldName: m_PlayerHealths
+              FieldType: DynamicVector
+              FieldSize: 24
+              IsVector: true
+              ElementSize: 8
+              ElementType: PlayerHealth
+              Value:
+                - 12398286286834867532
     RelationshipComponent:
       ParentID: 0
       Children:
-        - Entity: 5465631767591689927
+        - Entity: 14114550039018255131
           TagComponent:
             Tag: None
           LayerComponent:
@@ -123,7 +137,7 @@ Entities:
           NameComponent:
             Name: Camera
           TransformComponent:
-            LocalPosition: [0, 0, 0]
+            LocalPosition: [0, -1.11758709e-08, 0]
             LocalRotation: [0, -0, 0]
             LocalScale: [1, 1, 1]
           CameraComponent:
@@ -132,7 +146,7 @@ Entities:
               PerspectiveFOV: 0.785398185
               PerspectiveNear: 0.00999999978
               PerspectiveFar: 10000
-              OrthographicSize: 41
+              OrthographicSize: 22
               OrthographicNear: -1
               OrthographicFar: 1
             Primary: true
