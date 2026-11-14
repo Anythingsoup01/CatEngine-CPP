@@ -168,6 +168,27 @@ public:
     return parentEntity.GetWorldTransform() * tc.GetLocalTransform();
   }
 
+  bool IsChild(const UUID &entityID) {
+    if (!HasComponent<RelationshipComponent>())
+      return false;
+
+    auto& rc = GetComponent<RelationshipComponent>();
+
+    // Check direct children
+    for (UUID childUUID : rc.Children) {
+      if (childUUID == entityID)
+        return true;
+
+      // Recursively check deeper descendants
+      Entity childEntity = m_Scene->GetEntityByUUID(childUUID);
+      if (childEntity && childEntity.IsChild(entityID)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   void SetSceneContext(Ref<Scene> scene) {
     m_Scene = scene.get();
   }

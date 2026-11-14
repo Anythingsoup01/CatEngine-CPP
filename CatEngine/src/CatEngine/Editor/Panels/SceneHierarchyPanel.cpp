@@ -122,6 +122,9 @@ void SceneHierarchyPanel::OnImGuiRender(bool &isOpen) {
 }
 
 void SceneHierarchyPanel::DrawEntityNode(Entity entity) {
+  if (!entity || !m_Context->GetReg().valid(entity))
+        return;
+
   ImGui::PushID(std::to_string(entity.GetUUID()).c_str());
   const char *name = "Unnamed Entity";
   name = entity.GetComponent<NameComponent>().Name.c_str();
@@ -229,6 +232,7 @@ void SceneHierarchyPanel::DrawEntityNode(Entity entity) {
   if (ImGui::IsMouseDoubleClicked(0) && ImGui::IsItemHovered()) {
     Ref<InspectorPanel> inspector = PanelManager::Get().GetPanel<InspectorPanel>("InspectorPanel");
     inspector->SetEntitySelectionContext(entity);
+    m_SelectionContext = entity;
   }
 
   bool entityDeleted = false;

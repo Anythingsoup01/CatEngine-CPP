@@ -11,6 +11,11 @@ namespace CatEngine {
 InspectorPanel::InspectorPanel(const Ref<Scene> &context)
     : m_Context(context) {}
 
+void InspectorPanel::SetSceneContext(const Ref<Scene> &context) {
+  m_EntitySelection = {};
+  m_Context = context;
+}
+
 void InspectorPanel::OnImGuiRender(bool &isOpen) {
   ImGui::Begin("Inspector");
   if (m_EntitySelection || m_AssetSelection) {
@@ -32,6 +37,8 @@ void InspectorPanel::OnImGuiRender(bool &isOpen) {
       float lineHeight =
           GImGui->Font->LegacySize + GImGui->Style.FramePadding.y * 2.0f;
 
+      float buttonSize = contentRegionAvailable.x / 2.f;
+      ImGui::SetCursorPosX(buttonSize - (buttonSize / 2.f));
       if (ImGui::Button("Add Component",
                         ImVec2{contentRegionAvailable.x / 2.f, lineHeight}))
         ImGui::OpenPopup("AddComponent");

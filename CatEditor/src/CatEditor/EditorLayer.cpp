@@ -308,7 +308,7 @@ void EditorLayer::OnUpdateEditor(Time deltaTime) {
       int pixelData = m_SceneViewportPanel.ReadPixelData(1, mouseX, mouseY);
       m_HoveredEntity = pixelData == -1 ? Entity()
                                         : Entity((entt::entity)pixelData,
-                                                 m_EditorScene.get());
+                                                 m_CurrentScene.get());
     }
 
     OnOverlayRender();
@@ -382,7 +382,7 @@ void EditorLayer::OnUpdateSimulation(Time deltaTime) {
       int pixelData = m_SceneViewportPanel.ReadPixelData(1, mouseX, mouseY);
       m_HoveredEntity = pixelData == -1 ? Entity()
                                         : Entity((entt::entity)pixelData,
-                                                 m_EditorScene.get());
+                                                 m_CurrentScene.get());
     }
     m_SceneViewportPanel.UnbindFramebuffer();
 
@@ -733,7 +733,7 @@ void EditorLayer::OnSceneStop() {
   CE_PROFILE_FUNCTION();
 
   m_SceneState = SceneState::Edit;
-  m_RuntimeScene->OnRuntimeStop();
+  m_CurrentScene->OnRuntimeStop();
 
   m_RuntimeScene = nullptr;
 
@@ -933,9 +933,11 @@ bool EditorLayer::OnMouseButtonPressed(MouseButtonPressedEvent &e) {
   bool alt = Input::IsKeyPressed(KeyCode::LeftAlt) ||
              Input::IsKeyPressed(KeyCode::RightAlt);
   if (Input::IsMouseButtonPressed(MouseCode::ButtonLeft)) {
-    if (m_SceneViewportPanel.IsHovered() && !ImGuizmo::IsOver() && !alt)
+    if (m_SceneViewportPanel.IsHovered() && !ImGuizmo::IsOver() && !alt) {
       m_PanelManager->GetPanel<InspectorPanel>("InspectorPanel")
           ->SetEntitySelectionContext(m_HoveredEntity);
+      m_PanelManager->GetPanel<SceneHierarchyPanel>("SceneHierarchyPanel")->SetSelectedEntity(m_HoveredEntity);
+    }
   }
 
   return false;

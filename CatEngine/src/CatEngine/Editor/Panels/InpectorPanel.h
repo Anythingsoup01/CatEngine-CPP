@@ -13,7 +13,7 @@ public:
   InspectorPanel() = default;
   InspectorPanel(const Ref<Scene> &context);
 
-  virtual void SetSceneContext(const Ref<Scene> &context) override { m_Context = context; }
+  virtual void SetSceneContext(const Ref<Scene> &context) override;
   Ref<Scene> GetSceneContext() { return m_Context; }
 
   virtual void OnImGuiRender(bool &isOpen) override;

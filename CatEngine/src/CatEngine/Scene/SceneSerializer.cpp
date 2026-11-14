@@ -421,8 +421,8 @@ void SceneSerializer::Serialize(const std::string &filepath) {
   out << YAML::BeginMap;
   out << YAML::Key << "Scene" << YAML::Value << "SampleScene";
   out << YAML::Key << "Entities" << YAML::Value << YAML::BeginSeq;
-  for (auto entityID : m_Scene->GetReg().view<RelationshipComponent>()) {
-    Entity entity = {entityID, m_Scene.get()};
+  for (auto entityID : m_Scene->GetRootEntities()) {
+    Entity entity = m_Scene->GetEntityByUUID(entityID);
     if (!entity)
       return;
 

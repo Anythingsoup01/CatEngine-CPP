@@ -74,6 +74,15 @@ static void CopyComponentIfExists(ComponentGroup<Component...>, Entity dst,
   CopyComponentIfExists<Component...>(dst, src);
 }
 
+template <typename T>
+static void CopyComponentIfExistsForEntity(entt::registry &dstRegistry, entt::registry &srcRegistry,
+                                           entt::entity srcEntity, entt::entity destEntity) {
+    if (srcRegistry.any_of<T>(srcEntity)) {
+        auto &srcComponent = srcRegistry.get<T>(srcEntity);
+        dstRegistry.emplace_or_replace<T>(destEntity, srcComponent);
+    }
+}
+
 void Scene::CopyTo(Ref<Scene> &target) {
   CE_PROFILE_FUNCTION();
 
@@ -83,30 +92,43 @@ void Scene::CopyTo(Ref<Scene> &target) {
   auto &srcRegistry = m_Registry;
   auto &dstRegistry = target->m_Registry;
 
-  std::unordered_map<UUID, entt::entity> enttMap;
-
-  // 1) Create empty entities with the same UUID
+  // 1) Gather source entities into a vector to lock in their exact creation/editor order
+  std::vector<entt::entity> orderedSourceEntities;
   auto idView = srcRegistry.view<IDComponent>();
   for (auto e : idView) {
-    UUID uuid = srcRegistry.get<IDComponent>(e).ID;
-    auto name = srcRegistry.get<NameComponent>(e).Name;
-    UUID parent = srcRegistry.get<RelationshipComponent>(e).Parent;
+    orderedSourceEntities.push_back(e);
+  }
+
+  std::reverse(orderedSourceEntities.begin(), orderedSourceEntities.end());
+
+  std::unordered_map<UUID, entt::entity> enttMap;
+
+  // 2) Create empty entities in the target registry in the exact same sequence
+  for (auto srcEntity : orderedSourceEntities) {
+    UUID uuid = srcRegistry.get<IDComponent>(srcEntity).ID;
+    auto name = srcRegistry.get<NameComponent>(srcEntity).Name;
+    UUID parent = srcRegistry.get<RelationshipComponent>(srcEntity).Parent;
 
     enttMap[uuid] = target->CreateEntityWithUUID(uuid, name, parent);
   }
 
   target->RegisterParents();
 
-  CopyComponent<TagComponent>(dstRegistry, srcRegistry, enttMap);
-  CopyComponent<LayerComponent>(dstRegistry, srcRegistry, enttMap);
-  CopyComponent<TransformComponent>(dstRegistry, srcRegistry, enttMap);
-  CopyComponent<CameraComponent>(dstRegistry, srcRegistry, enttMap);
-  CopyComponent<SpriteRendererComponent>(dstRegistry, srcRegistry, enttMap);
-  CopyComponent<CircleRendererComponent>(dstRegistry, srcRegistry, enttMap);
-  CopyComponent<BoxCollider2DComponent>(dstRegistry, srcRegistry, enttMap);
-  CopyComponent<CircleCollider2DComponent>(dstRegistry, srcRegistry, enttMap);
-  CopyComponent<Rigidbody2DComponent>(dstRegistry, srcRegistry, enttMap);
-  CopyComponent<ScriptComponentContainer>(dstRegistry, srcRegistry, enttMap);
+  // 3) Copy components per entity, preserving the vector's exact iteration order
+  for (auto srcEntity : orderedSourceEntities) {
+    entt::entity destEntity = enttMap.at(srcRegistry.get<IDComponent>(srcEntity).ID);
+
+    CopyComponentIfExistsForEntity<TagComponent>(dstRegistry, srcRegistry, srcEntity, destEntity);
+    CopyComponentIfExistsForEntity<LayerComponent>(dstRegistry, srcRegistry, srcEntity, destEntity);
+    CopyComponentIfExistsForEntity<TransformComponent>(dstRegistry, srcRegistry, srcEntity, destEntity);
+    CopyComponentIfExistsForEntity<CameraComponent>(dstRegistry, srcRegistry, srcEntity, destEntity);
+    CopyComponentIfExistsForEntity<SpriteRendererComponent>(dstRegistry, srcRegistry, srcEntity, destEntity);
+    CopyComponentIfExistsForEntity<CircleRendererComponent>(dstRegistry, srcRegistry, srcEntity, destEntity);
+    CopyComponentIfExistsForEntity<BoxCollider2DComponent>(dstRegistry, srcRegistry, srcEntity, destEntity);
+    CopyComponentIfExistsForEntity<CircleCollider2DComponent>(dstRegistry, srcRegistry, srcEntity, destEntity);
+    CopyComponentIfExistsForEntity<Rigidbody2DComponent>(dstRegistry, srcRegistry, srcEntity, destEntity);
+    CopyComponentIfExistsForEntity<ScriptComponentContainer>(dstRegistry, srcRegistry, srcEntity, destEntity);
+  }
 }
 
 void Scene::OnUpdateEditor(Time ts, EditorCamera &camera) {
@@ -236,8 +258,9 @@ void Scene::OnViewportResize(uint32_t width, uint32_t height) {
 }
 
 void Scene::ShutdownRuntime() {
-  if (!m_IsRunning)
+  if (!m_IsRunning) {
     return;
+  }
   m_IsRunning = false;
   ScriptEngine::GetMutable().OnRuntimeStop();
 
@@ -474,6 +497,11 @@ void Scene::ReparentEntity(Entity entity, Entity newParent) {
 
   glm::mat4 oldWorldTransform = entity.GetWorldTransform();
 
+  if (newParent && entity.IsChild(newParent.GetUUID())) {
+    return;
+  }
+
+
   // 1. Detach from old parent or root list
   if (rc.Parent != 0) {
     Entity oldParent = GetEntityByUUID(rc.Parent);
@@ -483,11 +511,6 @@ void Scene::ReparentEntity(Entity entity, Entity newParent) {
         std::remove(oldChildren.begin(), oldChildren.end(), entity.GetUUID()),
         oldChildren.end());
   } else {
-    for (auto child : rc.Children) {
-      if (child.uuid() == newParent.GetUUID()) {
-        return;
-      }
-    }
     // Remove from root entities list if you track root entities separately
     m_RootEntities.erase(std::remove(m_RootEntities.begin(),
                                      m_RootEntities.end(), entity.GetUUID()),
@@ -602,7 +625,16 @@ void Scene::MoveEntityAfter(Entity entityToMove, Entity targetEntity) {
 
 void Scene::RegisterParents() {
   auto view = m_Registry.view<IDComponent, RelationshipComponent>();
+
+  // 1) Gather entities into a vector and reverse to match the forward sequence order
+  std::vector<entt::entity> orderedEntities;
   for (auto entity : view) {
+    orderedEntities.push_back(entity);
+  }
+  std::reverse(orderedEntities.begin(), orderedEntities.end());
+
+  // 2) Process parent/child relationships in the correct order
+  for (auto entity : orderedEntities) {
     auto [id, relation] = view.get<IDComponent, RelationshipComponent>(entity);
 
     if (relation.Parent != 0) {

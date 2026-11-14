@@ -18,6 +18,8 @@ void PlayerController::Start() {
     }
   }
 
+  Console::Critical("FUCKKKKKKKKKKKKKKKKKKK");
+
 }
 
 void PlayerController::Update(float ts) {

@@ -8,7 +8,7 @@ Entities:
     NameComponent:
       Name: Enemy
     TransformComponent:
-      LocalPosition: [6.77245331, -2.29089499, 0]
+      LocalPosition: [6.77245331, -3.3900001, 0]
       LocalRotation: [0, 0, 0]
       LocalScale: [1, 1, 1]
     SpriteRendererComponent:
@@ -45,7 +45,7 @@ Entities:
     NameComponent:
       Name: Ground
     TransformComponent:
-      LocalPosition: [0, -3.63838577, 0]
+      LocalPosition: [0, -9.64000034, 0]
       LocalRotation: [0, 0, 0]
       LocalScale: [18.75, 1, 1]
     SpriteRendererComponent:
@@ -111,6 +111,12 @@ Entities:
           ScriptID: 1101011320
           ClassName: PlayerController
           Fields:
+            - FieldID: 925478655
+              FieldName: m_PH
+              FieldType: PlayerHealth
+              FieldSize: 8
+              IsVector: false
+              Value: 11887291964845403532
             - FieldID: 3621418461
               FieldName: m_PlayerHealths
               FieldType: DynamicVector
@@ -120,12 +126,6 @@ Entities:
               ElementType: PlayerHealth
               Value:
                 - 12398286286834867532
-            - FieldID: 925478655
-              FieldName: m_PH
-              FieldType: PlayerHealth
-              FieldSize: 8
-              IsVector: false
-              Value: 11887291964845403532
     RelationshipComponent:
       ParentID: 0
       Children:
@@ -151,6 +151,64 @@ Entities:
               OrthographicFar: 1
             Primary: true
             FixedAspectRatio: false
+          RelationshipComponent:
+            ParentID: 14926076657723929888
+            Children:
+              - Entity: 3691972814306535282
+                TagComponent:
+                  Tag: None
+                LayerComponent:
+                  Layer: Default
+                NameComponent:
+                  Name: GameObject
+                TransformComponent:
+                  LocalPosition: [0, 0, 0]
+                  LocalRotation: [0, -0, 0]
+                  LocalScale: [1, 1, 1]
+                RelationshipComponent:
+                  ParentID: 14114550039018255131
+                  Children:
+                    []
+              - Entity: 7936411674567328261
+                TagComponent:
+                  Tag: None
+                LayerComponent:
+                  Layer: Default
+                NameComponent:
+                  Name: Test
+                TransformComponent:
+                  LocalPosition: [0, 0, 0]
+                  LocalRotation: [0, -0, 0]
+                  LocalScale: [1, 1, 1]
+                RelationshipComponent:
+                  ParentID: 14114550039018255131
+                  Children:
+                    - Entity: 16875129183056832815
+                      TagComponent:
+                        Tag: None
+                      LayerComponent:
+                        Layer: Default
+                      NameComponent:
+                        Name: GameObject
+                      TransformComponent:
+                        LocalPosition: [0, 0, 0]
+                        LocalRotation: [0, -0, 0]
+                        LocalScale: [1, 1, 1]
+                      RelationshipComponent:
+                        ParentID: 7936411674567328261
+                        Children:
+                          []
+        - Entity: 1543243063756871876
+          TagComponent:
+            Tag: None
+          LayerComponent:
+            Layer: Default
+          NameComponent:
+            Name: GameObject
+          TransformComponent:
+            LocalPosition: [0, -1.11758709e-08, 0]
+            LocalRotation: [0, -0, 0]
+            LocalScale: [1, 1, 1]
           RelationshipComponent:
             ParentID: 14926076657723929888
             Children:
