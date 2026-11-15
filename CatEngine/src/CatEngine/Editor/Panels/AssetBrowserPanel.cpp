@@ -90,6 +90,10 @@ void AssetBrowserPanel::OnImGuiRender(bool &isOpen) {
       if (strncmp(filenameString.c_str(), ".", 1) == 0)
         continue;
 
+      // Hide raw save files
+      if (path.extension() == ".catscene" || path.extension() == ".catprefab")
+        continue;
+
       ImGui::PushID(filenameString.c_str());
       if (path.extension() == ".catsceneasset" ||
           path.extension() == ".cattextureasset" ||
