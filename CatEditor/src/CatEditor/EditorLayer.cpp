@@ -16,7 +16,6 @@
 #include "CatEngine/Scripting/ScriptEngine.h"
 
 #include "CatEngine/AssetManager/AssetManager.h"
-#include "CatEngine/AssetManager/TextureImporter.h"
 
 #include "CatEngine/Editor/Panels/AssetBrowserPanel.h"
 #include "CatEngine/Editor/Panels/ContentBrowserPanel.h"
@@ -52,7 +51,6 @@ void EditorLayer::OnAttach() {
   m_PanelManager->AddPanel<SceneHierarchyPanel>("SceneHierarchyPanel", true);
   m_PanelManager->AddPanel<InspectorPanel>("InspectorPanel", true);
   m_PanelManager->AddPanel<AssetBrowserPanel>("AssetBrowserPanel", true);
-  m_PanelManager->AddPanel<ContentBrowserPanel>("ContentBrowserPanel", true);
   m_PanelManager->AddPanel<ConsolePanel>("ConsolePanel", true);
 
   auto commandLineArgs = Application::Get().GetSpecification().CommandlineArgs;
@@ -635,7 +633,7 @@ void EditorLayer::OpenScene(AssetHandle handle) {
 
   std::filesystem::path savePath =
       Project::GetAssetDirectory() /
-      Project::GetActive()->GetEditorAssetManager()->GetFilePath(handle);
+      Project::GetActive()->GetEditorAssetManager()->GetSourceFilePath(handle);
 
   m_EditorScenePath = savePath;
   m_CurrentSceneHandle = handle;
@@ -688,8 +686,6 @@ void EditorLayer::OpenProject(const std::filesystem::path &filePath) {
     if (AssetManager::IsAssetHandleValid(startScenePath))
       OpenScene(startScenePath);
     ScriptEngine::GetMutable().Init();
-    m_PanelManager->GetPanel<ContentBrowserPanel>("ContentBrowserPanel")
-        ->ResetAssetDirectory();
     m_PanelManager->GetPanel<AssetBrowserPanel>("AssetBrowserPanel")
         ->ResetAssetDirectory();
   }

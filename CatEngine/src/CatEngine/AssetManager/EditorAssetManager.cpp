@@ -1,9 +1,13 @@
 #include "EditorAssetManager.h"
+#include "CatEngine/AssetManager/Asset.h"
+#include "CatEngine/Editor/PanelManager.h"
+#include "CatEngine/Editor/Panels/ConsolePanel.h"
 #include "cepch.h"
 
 #include "AssetImporter.h"
 
 #include "CatEngine/Project/Project.h"
+#include <cstdint>
 #include <yaml-cpp/yaml.h>
 
 #include "CatEngine/Core/Formatter.h"
@@ -22,6 +26,7 @@ static std::unordered_map<std::filesystem::path, AssetType>
         {".png", AssetType::Texture2D},
         {".jpg", AssetType::Texture2D},
         {".jpeg", AssetType::Texture2D},
+        {".catprefab", AssetType::Prefab},
 };
 
 static AssetType
@@ -71,14 +76,45 @@ AssetType EditorAssetManager::GetAssetType(AssetHandle handle) const {
 
   return m_AssetRegistry.at(handle).Type;
 }
+AssetHandle EditorAssetManager::GetAssetHandle(const uint32_t &fileHash) const {
+  if (!m_AssetRegistryFileMap.contains(fileHash))
+    return {0};
 
-AssetHandle
-EditorAssetManager::ImportAsset(const std::filesystem::path &filePath) {
+  return m_AssetRegistryFileMap.at(fileHash);
+}
+Asset::MetaData EditorAssetManager::GetAssetMetaData(const uint32_t &fileHash) const {
+  if (!m_AssetRegistryFileMap.contains(fileHash))
+    return {};
+
+  return m_AssetRegistry.at(m_AssetRegistryFileMap.at(fileHash));
+}
+
+AssetHandle EditorAssetManager::ImportAsset(const std::filesystem::path &filePath) {
   AssetHandle handle;
   Asset::MetaData metaData;
 
-  metaData.FilePath = filePath;
+  metaData.SourceFilePath = filePath;
   metaData.Type = GetAssetTypeFromFileExtension(filePath);
+
+  std::filesystem::path assetPath = filePath;
+  switch (metaData.Type) {
+    case AssetType::Scene: {
+      assetPath.replace_extension(".catsceneasset");
+      break;
+    }
+    case AssetType::Texture2D: {
+      assetPath.replace_extension(".cattextureasset");
+      break;
+    }
+    case AssetType::Prefab: {
+      assetPath.replace_extension(".catprefabasset");
+      break;
+    }
+    default:
+      break;
+  }
+
+  metaData.FilePath = assetPath;
 
   Ref<Asset> asset = AssetImporter::ImportAsset(handle, metaData);
   if (asset) {
@@ -115,75 +151,94 @@ EditorAssetManager::GetMetaData(AssetHandle handle) const {
   return m_AssetRegistry.at(handle);
 }
 
-const std::filesystem::path &
-EditorAssetManager::GetFilePath(AssetHandle handle) const {
+const std::filesystem::path &EditorAssetManager::GetFilePath(AssetHandle handle) const {
   return GetMetaData(handle).FilePath;
 }
 
+const std::filesystem::path &EditorAssetManager::GetSourceFilePath(AssetHandle handle) const {
+  return GetMetaData(handle).SourceFilePath;
+}
+
+bool EditorAssetManager::IsAssetExtension(const std::string &extension) {
+  if (extension == ".catsceneasset") {
+    return true;
+  }
+  if (extension == ".cattextureasset") {
+    return true;
+  }
+  if (extension == ".catprefabasset") {
+    return true;
+  }
+
+  return false;
+}
+
 void EditorAssetManager::SerializeAssetRegistry() {
-  auto path = Project::GetAssetRegistryPath();
-
-  std::ofstream fout(path);
-  if (!fout.is_open()) {
-    CE_API_ASSERT(false, "No Asset Registry Found!");
-    return;
-  }
-
-  YAML::Emitter out;
-  out << YAML::BeginMap; // Root
-  out << YAML::Key << "AssetRegistry" << YAML::Value;
-
-  out << YAML::BeginSeq;
   for (const auto &[handle, metaData] : m_AssetRegistry) {
-    out << YAML::BeginMap; // Asset
+    std::filesystem::path path = Project::GetAssetDirectory() / metaData.FilePath;
+    std::ofstream fout(path);
+
+    YAML::Emitter out;
+    out << YAML::BeginMap; // Root Begin
+
     out << YAML::Key << "Handle" << YAML::Value << handle;
-    std::string filePathStr = metaData.FilePath.generic_string();
     out << YAML::Key << "Name" << YAML::Value << metaData.AssetName;
-    out << YAML::Key << "FilePath" << YAML::Value << filePathStr;
-    out << YAML::Key << "Type" << YAML::Value
-        << AssetTypeToString(metaData.Type);
+    out << YAML::Key << "FilePath" << YAML::Value << metaData.FilePath.generic_string();
+    out << YAML::Key << "SourceFilePath" << YAML::Value << metaData.SourceFilePath.generic_string();
+    out << YAML::Key << "Type" << YAML::Value << AssetTypeToString(metaData.Type);
     if (metaData.Type == AssetType::Texture2D) {
-      out << YAML::Key << "MinFilter" << YAML::Value
-          << TextureParameterToString(metaData.TextureMinFilter);
-      out << YAML::Key << "MagFilter" << YAML::Value
-          << TextureParameterToString(metaData.TextureMagFilter);
-      out << YAML::Key << "WrapOption" << YAML::Value
-          << TextureWrapParameterToString(metaData.TextureWrap);
-      out << YAML::Key << "ImageFormat" << YAML::Value
-          << ImageFormatToString(metaData.TextureFormat);
+      out << YAML::Key << "MinFilter" << YAML::Value << TextureParameterToString(metaData.TextureMinFilter);
+      out << YAML::Key << "MagFilter" << YAML::Value << TextureParameterToString(metaData.TextureMagFilter);
+      out << YAML::Key << "WrapOption" << YAML::Value << TextureWrapParameterToString(metaData.TextureWrap);
+      out << YAML::Key << "ImageFormat" << YAML::Value << ImageFormatToString(metaData.TextureFormat);
     }
-    out << YAML::EndMap;
+
+
+
+    out << YAML::EndMap; // Root End
+    fout << out.c_str();
   }
-  out << YAML::EndSeq;
-
-  out << YAML::EndMap; // Root
-
-  fout << out.c_str();
 }
 
 bool EditorAssetManager::DeserializeAssetRegistry() {
-  YAML::Node data = YAML::LoadFile(Project::GetAssetRegistryPath());
+  std::vector<std::filesystem::path> assetPaths;
+  for (const std::filesystem::directory_entry& entry :
+      std::filesystem::recursive_directory_iterator(Project::GetAssetDirectory())) {
+    if (!entry.is_regular_file() || !IsAssetExtension(entry.path().extension())) {
+      continue;
+    }
+    assetPaths.push_back(entry.path());
+  }
 
-  auto registryNode = data["AssetRegistry"];
-  if (!registryNode)
-    return false;
+  for (auto &path : assetPaths) {
+    YAML::Node data;
+    try {
+      data = YAML::LoadFile(path);
+    } catch (YAML::ParserException ex) {
+      Ref<ConsolePanel> console = PanelManager::Get().GetPanel<ConsolePanel>("ConsolePanel");
+      console->WriteError("Failed to load asset file: " + path.string());
+      continue;
+    }
 
-  for (const auto &node : registryNode) {
-    AssetHandle handle = node["Handle"].as<AssetHandle>();
+    AssetHandle handle = data["Handle"].as<AssetHandle>();
     Asset::MetaData &metaData = m_AssetRegistry[handle];
-    metaData.AssetName = node["Name"].as<std::string>();
-    metaData.FilePath = node["FilePath"].as<std::string>();
-    metaData.Type = StringToAssetType(node["Type"].as<std::string>());
+    metaData.AssetName = data["Name"].as<std::string>();
+    metaData.FilePath = data["FilePath"].as<std::string>();
+    metaData.SourceFilePath = data["SourceFilePath"].as<std::string>();
+    metaData.Type = StringToAssetType(data["Type"].as<std::string>());
     if (metaData.Type == AssetType::Texture2D) {
       metaData.TextureMinFilter =
-          StringToTextureParameter(node["MinFilter"].as<std::string>());
+          StringToTextureParameter(data["MinFilter"].as<std::string>());
       metaData.TextureMagFilter =
-          StringToTextureParameter(node["MagFilter"].as<std::string>());
+          StringToTextureParameter(data["MagFilter"].as<std::string>());
       metaData.TextureWrap =
-          StringToTextureWrapParameter(node["WrapOption"].as<std::string>());
+          StringToTextureWrapParameter(data["WrapOption"].as<std::string>());
       metaData.TextureFormat =
-          StringToImageFormat(node["ImageFormat"].as<std::string>());
+          StringToImageFormat(data["ImageFormat"].as<std::string>());
     }
+
+    uint32_t pathHash = Hash::GenerateFNVHash(path.generic_string());
+    m_AssetRegistryFileMap[pathHash] = handle;
   }
 
   return true;

@@ -29,11 +29,12 @@ src/CatEngine/Editor/Panels/DrawComponents.cpp
 src/CatEngine/ImGui/ImGuiBuild.cpp
 src/CatEngine/ImGui/ImGuiLayer.cpp
 src/CatEngine/AssetManager/AssetImporter.cpp
+src/CatEngine/AssetManager/Importers/PrefabImporter.cpp
+src/CatEngine/AssetManager/Importers/TextureImporter.cpp
+src/CatEngine/AssetManager/Importers/SceneImporter.cpp
 src/CatEngine/AssetManager/RuntimeAssetManager.cpp
-src/CatEngine/AssetManager/TextureImporter.cpp
 src/CatEngine/AssetManager/AssetManagerBase.cpp
 src/CatEngine/AssetManager/EditorAssetManager.cpp
-src/CatEngine/AssetManager/SceneImporter.cpp
 src/CatEngine/AssetManager/AssetManager.cpp
 src/CatEngine/Platform/OpenGL/OpenGLVertexArray.cpp
 src/CatEngine/Platform/OpenGL/OpenGLBuffer.cpp
@@ -52,6 +53,7 @@ src/CatEngine/Project/Project.cpp
 src/CatEngine/Project/ProjectSerializer.cpp
 src/CatEngine/Scene/Scene.cpp
 src/CatEngine/Scene/SceneSerializer.cpp
+src/CatEngine/Scene/PrefabSerializer.cpp
 src/CatEngine/Scene/Components/Components.cpp
 src/CatEngine/Scene/SceneCamera.cpp
 src/CatEngine/Scene/ContactListener.cpp

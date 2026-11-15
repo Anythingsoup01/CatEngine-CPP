@@ -26,6 +26,9 @@ public:
 
   template <typename T> bool HasComponent();
   template <typename T> T GetComponent();
+
+  operator bool() { return m_EntityID != 0; }
+
 public:
 
   template <typename T>

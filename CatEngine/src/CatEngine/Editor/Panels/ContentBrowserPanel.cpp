@@ -1,11 +1,9 @@
-#include "ContentBrowserPanel.h"
 #include "cepch.h"
+#include "ContentBrowserPanel.h"
 #include <imgui.h>
 
 #include "CatEngine/Core/System.h"
 
-#include "CatEngine/AssetManager/AssetManager.h"
-#include "CatEngine/AssetManager/TextureImporter.h"
 
 #include "AssetBrowserPanel.h"
 

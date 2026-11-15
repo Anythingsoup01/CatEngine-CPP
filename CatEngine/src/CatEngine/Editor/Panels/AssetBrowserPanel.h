@@ -9,6 +9,9 @@ class AssetBrowserPanel : public EditorPanel {
 public:
   AssetBrowserPanel();
 
+  Ref<Scene> GetSceneContext() { return m_SceneContext; }
+  virtual void SetSceneContext(const Ref<Scene> &context) override;
+
   virtual void OnImGuiRender(bool &isOpen) override;
   virtual void OnEvent(Event &e) override {};
 
@@ -35,7 +38,8 @@ private:
         : Path(path), Handle(handle) {}
   };
   static inline std::vector<TreeNode> m_TreeNodes;
-
+private:
+  Ref<Scene> m_SceneContext;
   std::filesystem::path m_CurrentDirectory;
 
   AssetHandle m_SelectionContext = 0;

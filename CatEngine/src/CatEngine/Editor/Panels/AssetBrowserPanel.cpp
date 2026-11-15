@@ -1,17 +1,16 @@
 #include "AssetBrowserPanel.h"
+#include "CatEngine/AssetManager/Asset.h"
 #include "CatEngine/Editor/PanelManager.h"
 #include "CatEngine/Editor/Panels/InpectorPanel.h"
+#include "CatEngine/Scene/Prefab.h"
+#include "CatEngine/Scene/PrefabSerializer.h"
 #include "cepch.h"
+#include <cstring>
 #include <imgui.h>
-
-#include "CatEngine/AssetManager/AssetManager.h"
-#include "CatEngine/AssetManager/TextureImporter.h"
 
 #include "CatEngine/Core/Application.h"
 
 #include "CatEngine/Editor/IconManager.h"
-
-#include "CatEngine/Editor/ImGui/CEImGui.h"
 
 const size_t MAX_FILE_PATH_LEN = 4096;
 
@@ -25,114 +24,159 @@ AssetBrowserPanel::AssetBrowserPanel()
   m_TreeNodes.push_back(TreeNode(".", 0));
 }
 
+void AssetBrowserPanel::SetSceneContext(const Ref<Scene> &context) {
+  m_SelectionContext = 0;
+  m_SceneContext = context;
+}
+
 void AssetBrowserPanel::OnImGuiRender(bool &isOpen) {
-  ImGui::Begin("Assets", &isOpen);
-  if (m_CurrentDirectory != Project::GetAssetDirectory()) {
-    if (ImGui::Button("<-")) {
-      m_CurrentDirectory = m_CurrentDirectory.parent_path();
-    }
-  }
-  static float padding = 5.f;
-  static float thumbnailSize = 75.f;
-  float cellSize = thumbnailSize + padding;
+  if (ImGui::Begin("Assets", &isOpen)) {
+    std::filesystem::path assetRoot = Project::GetAssetDirectory();
+    std::filesystem::path relativePath =
+        std::filesystem::relative(m_CurrentDirectory, assetRoot);
 
-  float panelWidth = ImGui::GetContentRegionAvail().x;
-  int columnCount = (int)(panelWidth / cellSize);
-  if (columnCount < 1)
-    columnCount = 1;
-
-  ImGui::Columns(columnCount, 0, false);
-
-  TreeNode *node = &m_TreeNodes[0];
-  std::filesystem::path currentDir = std::filesystem::relative(
-      m_CurrentDirectory, Project::GetAssetDirectory());
-  for (const auto &p : currentDir) {
-    // Single level directory
-    if (node->Path == currentDir)
-      break;
-
-    if (node->Children.find(p) != node->Children.end()) {
-      node = &m_TreeNodes[node->Children[p]];
-      continue;
+    // Root button (Asset Root)
+    if (ImGui::Button("Assets")) {
+      m_CurrentDirectory = assetRoot;
     }
 
-    CE_API_ASSERT(false, "Child Not Found!");
-  }
+    // Render intermediate path segments as clickable buttons
+    std::filesystem::path accumulatedPath = assetRoot;
+    for (const auto &p : relativePath) {
+      if (p.empty() || p == ".")
+        continue;
 
-  for (const auto &[item, treeNodeIndex] : node->Children) {
-    bool isDirectory =
-        std::filesystem::is_directory(Project::GetAssetDirectory() / item);
-    bool isRegularFile =
-        std::filesystem::is_regular_file(Project::GetAssetDirectory() / item);
+      accumulatedPath /= p;
+      ImGui::SameLine();
+      ImGui::Text("/");
+      ImGui::SameLine();
 
-    std::string itemStr = item.generic_string();
-
-    ImGui::PushID(itemStr.c_str());
-    Ref<Texture2D> fileIcon;
-    AssetHandle handle = m_TreeNodes[treeNodeIndex].Handle;
-
-    AssetType type;
-
-    const Ref<Asset> &asset =
-        Project::GetActive()->GetEditorAssetManager()->GetAsset(handle);
-    if (asset) {
-      type = asset->GetType();
-    }
-
-    if (type == AssetType::Texture2D && !item.extension().string().empty()) {
-      const auto &asset =
-          Project::GetActive()->GetEditorAssetManager()->GetAsset(handle);
-      fileIcon = (const Ref<Texture2D> &)asset;
-      if (fileIcon == nullptr) {
-        CE_CLI_ERROR("Failed to load Texture2D!");
+      std::string segmentName = p.string();
+      if (ImGui::Button(segmentName.c_str())) {
+        m_CurrentDirectory = accumulatedPath;
+        break; // Stop iteration if user clicked an ancestor
       }
     }
 
-    fileIcon = !fileIcon ? IconManager::GetIcon("ScriptFileIcon") : fileIcon;
-    Ref<Texture2D> icon =
-        isDirectory ? IconManager::GetIcon("DirectoryIcon") : fileIcon;
-    ImGui::ImageButton("##ICON", (ImTextureID)(uint64_t)icon->GetRendererID(),
-                       {thumbnailSize, thumbnailSize}, {0, 1}, {1, 0});
-    if (ImGui::BeginDragDropSource()) {
-      AssetHandle handle = m_TreeNodes[treeNodeIndex].Handle;
-      ImGui::SetDragDropPayload("ASSET_MANAGER_ITEM", &handle, sizeof(handle),
-                                ImGuiCond_Once);
-      ImGui::EndDragDropSource();
-    }
+    ImGui::Separator();
+  }
 
-    if (ImGui::BeginPopupContextItem()) {
-      if (ImGui::MenuItem("Delete")) {
-        AssetHandle handle = m_TreeNodes[treeNodeIndex].Handle;
-        Application::Get().SubmitToMainThread([handle, this]() {
-          Project::GetActive()->GetEditorAssetManager()->DeleteAsset(handle);
-          RefreshAssetTree();
-        });
-      }
+  // ==========================================
+  // 2. CHILD WINDOW FOR GRID VIEW
+  // ==========================================
+  ImGui::BeginChild("AssetBrowserGrid", ImVec2(0, 0), false,
+                    ImGuiWindowFlags_None);
+  {
+    static float padding = 5.f;
+    static float thumbnailSize = 75.f;
+    float cellSize = thumbnailSize + padding;
 
-      ImGui::EndPopup();
-    }
+    float panelWidth = ImGui::GetContentRegionAvail().x;
+    int columnCount = (int)(panelWidth / cellSize);
+    if (columnCount < 1)
+      columnCount = 1;
 
-    if (ImGui::IsItemHovered()) {
-      if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
-        if (isDirectory)
-          m_CurrentDirectory /= item.filename();
-        else {
-          Ref<InspectorPanel> inspector = PanelManager::Get().GetPanel<InspectorPanel>("InspectorPanel");
+    // 1. Begin columns layout for the grid
+    ImGui::Columns(columnCount, "AssetColumns", false);
+
+    for (auto &directoryEntry :
+         std::filesystem::directory_iterator(m_CurrentDirectory)) {
+      const auto &path = directoryEntry.path();
+      std::string filenameString = path.filename().string();
+
+      if (directoryEntry.path().extension() == ".h")
+        continue;
+
+      if (strncmp(filenameString.c_str(), ".", 1) == 0)
+        continue;
+
+      ImGui::PushID(filenameString.c_str());
+      if (path.extension() == ".catsceneasset" ||
+          path.extension() == ".cattextureasset" ||
+          path.extension() == ".catprefabasset") {
+        std::filesystem::path fullPath = std::filesystem::absolute(path);
+        uint32_t fileHash = Hash::GenerateFNVHash(fullPath.generic_string());
+        AssetHandle handle = Project::GetActive()->GetAssetManager()->GetAssetHandle(fileHash);
+        Asset::MetaData metaData = Project::GetActive()->GetAssetManager()->GetAssetMetaData(fileHash);
+
+        Ref<Texture2D> icon = IconManager::GetIcon("ScriptFileIcon");
+        if (metaData.Type == AssetType::Texture2D) {
+          const auto &asset =
+              Project::GetActive()->GetEditorAssetManager()->GetAsset(handle);
+          icon = (const Ref<Texture2D> &)asset;
+        }
+
+        std::string fileName = filenameString;
+        size_t extensionLen = path.extension().string().length();
+        fileName.erase(fileName.length() - extensionLen);
+        filenameString = fileName;
+
+        ImGui::ImageButton("##ICON",
+                           (ImTextureID)(uint64_t)icon->GetRendererID(),
+                           {thumbnailSize, thumbnailSize}, {0, 1}, {1, 0});
+
+        if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
+          Ref<InspectorPanel> inspector = PanelManager::Get().GetPanel<InspectorPanel>("InpectorPanel");
           inspector->SetAssetSelectionContext(handle);
         }
-        // TODO: Make this load the item from it's path instead, i.e textures
-        // will open the underlying image if (isRegularFile)
-        //     System::OpenFile(m_CurrentDirectory / item.filename());
+      } else {
+        Ref<Texture2D> icon = directoryEntry.is_directory()
+                                  ? IconManager::GetIcon("DirectoryIcon")
+                                  : IconManager::GetIcon("ScriptFileIcon");
+        ImGui::ImageButton("##ICON",
+                           (ImTextureID)(uint64_t)icon->GetRendererID(),
+                           {thumbnailSize, thumbnailSize}, {0, 1}, {1, 0});
+
+        if (ImGui::IsItemHovered()) {
+          if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
+            if (directoryEntry.is_directory())
+              m_CurrentDirectory /= path.filename();
+          }
+        }
+      }
+
+
+      ImGui::TextWrapped("%s", filenameString.c_str());
+
+      // Advance to the next grid column
+      ImGui::NextColumn();
+      ImGui::PopID();
+    }
+    ImGui::Columns(1);
+  }
+  ImGui::EndChild();
+
+  if (ImGui::BeginDragDropTarget()) {
+    if (const ImGuiPayload *payload =
+      ImGui::AcceptDragDropPayload("SCENE_HIERARCHY_ITEM")) {
+      UUID entityID = *(UUID *)payload->Data;
+      Entity entity = m_SceneContext->GetEntityByUUID(entityID);
+
+      if (entity) {
+        std::filesystem::path targetDirectory = m_CurrentDirectory;
+      std::string entityName = entity.GetName();
+        std::filesystem::path prefabPath =
+          targetDirectory / (entityName + ".catprefab");
+
+        int counter = 0;
+        while (std::filesystem::exists(prefabPath)) {
+          prefabPath =
+            targetDirectory /
+            (entityName + "_" + std::to_string(++counter) + ".catprefab");
+        }
+
+        Ref<Prefab> newPrefab = CreateRef<Prefab>();
+        PrefabSerializer serializer(newPrefab);
+        serializer.Serialize(prefabPath, entity);
+
+        std::filesystem::path relativePath =
+          std::filesystem::relative(prefabPath, Project::GetAssetDirectory());
+      Project::GetActive()->GetEditorAssetManager()->ImportAsset(relativePath);
+
+        RefreshAssetTree();
       }
     }
-
-    std::string fileName = item.string();
-    size_t extensionLen = item.extension().string().length();
-    fileName.erase(fileName.length() - extensionLen);
-    ImGui::Text("%s", fileName.c_str());
-
-    ImGui::NextColumn();
-    ImGui::PopID();
+    ImGui::EndDragDropTarget();
   }
 
   ImGui::End();
@@ -160,8 +204,7 @@ void AssetBrowserPanel::RefreshAssetTree() {
   }
 }
 
-void AssetBrowserPanel::DrawAsset(const AssetHandle &handle) {
-  }
+void AssetBrowserPanel::DrawAsset(const AssetHandle &handle) {}
 
 void AssetBrowserPanel::ResetAssetDirectory() {
   m_CurrentDirectory = Project::GetAssetDirectory();

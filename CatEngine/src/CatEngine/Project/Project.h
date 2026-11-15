@@ -37,11 +37,6 @@ public:
     return GetProjectDirectory() / GetAssetDirectory() / path;
   }
 
-  static std::filesystem::path GetAssetRegistryPath() {
-    CE_API_ASSERT(s_ActiveProject, "No Active Project");
-    return GetAssetDirectory() / s_ActiveProject->m_Config.AssetRegistryPath;
-  }
-
   static void SetCurrentScene(AssetHandle handle) {
     CE_API_ASSERT(s_ActiveProject, "No Active Project");
     s_ActiveProject->m_Config.StartScene = handle;

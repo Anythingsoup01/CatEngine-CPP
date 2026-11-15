@@ -38,6 +38,77 @@ enum class DataType {
   ScriptComponent,
 };
 
+static std::string DataTypeToString(const DataType &type) {
+  switch (type) {
+  case DataType::Short:
+    return "Short";
+  case DataType::UShort:
+    return "UShort";
+  case DataType::Int:
+    return "Int";
+  case DataType::UInt:
+    return "UInt";
+  case DataType::Long:
+    return "Long";
+  case DataType::ULong:
+    return "ULong";
+  case DataType::Float:
+    return "Float";
+  case DataType::Double:
+    return "Double";
+  case DataType::Bool:
+    return "Bool";
+  case DataType::Vector2:
+    return "Vector2";
+  case DataType::Vector3:
+    return "Vector3";
+  case DataType::Vector4:
+    return "Vector4";
+  case DataType::DynamicVector:
+    return "DynamicVector";
+  case DataType::Entity:
+    return "Entity";
+  case DataType::Texture2D:
+    return "Texture2D";
+  default:
+    return "";
+  }
+}
+
+static DataType StringToDataType(const std::string &typeStr) {
+  if (typeStr == "Short")
+    return DataType::Short;
+  if (typeStr == "UShort")
+    return DataType::UShort;
+  if (typeStr == "Int")
+    return DataType::Int;
+  if (typeStr == "UInt")
+    return DataType::UInt;
+  if (typeStr == "Long")
+    return DataType::Long;
+  if (typeStr == "ULong")
+    return DataType::ULong;
+  if (typeStr == "Float")
+    return DataType::Float;
+  if (typeStr == "Double")
+    return DataType::Double;
+  if (typeStr == "Bool")
+    return DataType::Bool;
+  if (typeStr == "Vector2")
+    return DataType::Vector2;
+  if (typeStr == "Vector3")
+    return DataType::Vector3;
+  if (typeStr == "Vector4")
+    return DataType::Vector4;
+  if (typeStr == "DynamicVector")
+    return DataType::DynamicVector;
+  if (typeStr == "Entity")
+    return DataType::Entity;
+  if (typeStr == "Texture2D")
+    return DataType::Texture2D;
+  return DataType::ScriptComponent;
+}
+
 
 struct ScriptField {
   std::string Name;

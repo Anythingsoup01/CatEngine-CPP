@@ -27,6 +27,8 @@ public:
   Entity CreateEntityWithUUID(UUID uuid, const std::string &name = std::string(), UUID parent = 0);
   void DeleteEntity(Entity entity);
 
+  Entity InstantiatePrefab(const UUID &prefabID, const UUID &parentID = 0);
+
   void DrawEntityRecursive(Entity e, const glm::mat4 &parentWorldMatrix);
 
   void OnPauseStart();

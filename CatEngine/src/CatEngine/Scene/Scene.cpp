@@ -1,9 +1,9 @@
+#include "cepch.h"
 #include "Scene.h"
-#include "CatEngine/Core/Hash.h"
-#include "CatEngine/Core/Log.h"
 #include "CatEngine/Physics/Physics2D.h"
 #include "CatEngine/Scene/Components/Scripting/ScriptComponentContainer.h"
-#include "cepch.h"
+#include "CatEngine/AssetManager/AssetManager.h"
+#include "CatEngine/Scene/Prefab.h"
 
 #include "Components/Components.h"
 #include "Components/Required/RelationshipComponent.h"
@@ -20,7 +20,6 @@
 #include <box2d/b2_fixture.h>
 #include <box2d/b2_polygon_shape.h>
 #include <box2d/b2_world.h>
-#include <random>
 
 #include "CatEngine/Scripting/ScriptEngine.h"
 
@@ -75,12 +74,14 @@ static void CopyComponentIfExists(ComponentGroup<Component...>, Entity dst,
 }
 
 template <typename T>
-static void CopyComponentIfExistsForEntity(entt::registry &dstRegistry, entt::registry &srcRegistry,
-                                           entt::entity srcEntity, entt::entity destEntity) {
-    if (srcRegistry.any_of<T>(srcEntity)) {
-        auto &srcComponent = srcRegistry.get<T>(srcEntity);
-        dstRegistry.emplace_or_replace<T>(destEntity, srcComponent);
-    }
+static void CopyComponentIfExistsForEntity(entt::registry &dstRegistry,
+                                           entt::registry &srcRegistry,
+                                           entt::entity srcEntity,
+                                           entt::entity destEntity) {
+  if (srcRegistry.any_of<T>(srcEntity)) {
+    auto &srcComponent = srcRegistry.get<T>(srcEntity);
+    dstRegistry.emplace_or_replace<T>(destEntity, srcComponent);
+  }
 }
 
 void Scene::CopyTo(Ref<Scene> &target) {
@@ -92,7 +93,8 @@ void Scene::CopyTo(Ref<Scene> &target) {
   auto &srcRegistry = m_Registry;
   auto &dstRegistry = target->m_Registry;
 
-  // 1) Gather source entities into a vector to lock in their exact creation/editor order
+  // 1) Gather source entities into a vector to lock in their exact
+  // creation/editor order
   std::vector<entt::entity> orderedSourceEntities;
   auto idView = srcRegistry.view<IDComponent>();
   for (auto e : idView) {
@@ -114,20 +116,32 @@ void Scene::CopyTo(Ref<Scene> &target) {
 
   target->RegisterParents();
 
-  // 3) Copy components per entity, preserving the vector's exact iteration order
+  // 3) Copy components per entity, preserving the vector's exact iteration
+  // order
   for (auto srcEntity : orderedSourceEntities) {
-    entt::entity destEntity = enttMap.at(srcRegistry.get<IDComponent>(srcEntity).ID);
+    entt::entity destEntity =
+        enttMap.at(srcRegistry.get<IDComponent>(srcEntity).ID);
 
-    CopyComponentIfExistsForEntity<TagComponent>(dstRegistry, srcRegistry, srcEntity, destEntity);
-    CopyComponentIfExistsForEntity<LayerComponent>(dstRegistry, srcRegistry, srcEntity, destEntity);
-    CopyComponentIfExistsForEntity<TransformComponent>(dstRegistry, srcRegistry, srcEntity, destEntity);
-    CopyComponentIfExistsForEntity<CameraComponent>(dstRegistry, srcRegistry, srcEntity, destEntity);
-    CopyComponentIfExistsForEntity<SpriteRendererComponent>(dstRegistry, srcRegistry, srcEntity, destEntity);
-    CopyComponentIfExistsForEntity<CircleRendererComponent>(dstRegistry, srcRegistry, srcEntity, destEntity);
-    CopyComponentIfExistsForEntity<BoxCollider2DComponent>(dstRegistry, srcRegistry, srcEntity, destEntity);
-    CopyComponentIfExistsForEntity<CircleCollider2DComponent>(dstRegistry, srcRegistry, srcEntity, destEntity);
-    CopyComponentIfExistsForEntity<Rigidbody2DComponent>(dstRegistry, srcRegistry, srcEntity, destEntity);
-    CopyComponentIfExistsForEntity<ScriptComponentContainer>(dstRegistry, srcRegistry, srcEntity, destEntity);
+    CopyComponentIfExistsForEntity<TagComponent>(dstRegistry, srcRegistry,
+                                                 srcEntity, destEntity);
+    CopyComponentIfExistsForEntity<LayerComponent>(dstRegistry, srcRegistry,
+                                                   srcEntity, destEntity);
+    CopyComponentIfExistsForEntity<TransformComponent>(dstRegistry, srcRegistry,
+                                                       srcEntity, destEntity);
+    CopyComponentIfExistsForEntity<CameraComponent>(dstRegistry, srcRegistry,
+                                                    srcEntity, destEntity);
+    CopyComponentIfExistsForEntity<SpriteRendererComponent>(
+        dstRegistry, srcRegistry, srcEntity, destEntity);
+    CopyComponentIfExistsForEntity<CircleRendererComponent>(
+        dstRegistry, srcRegistry, srcEntity, destEntity);
+    CopyComponentIfExistsForEntity<BoxCollider2DComponent>(
+        dstRegistry, srcRegistry, srcEntity, destEntity);
+    CopyComponentIfExistsForEntity<CircleCollider2DComponent>(
+        dstRegistry, srcRegistry, srcEntity, destEntity);
+    CopyComponentIfExistsForEntity<Rigidbody2DComponent>(
+        dstRegistry, srcRegistry, srcEntity, destEntity);
+    CopyComponentIfExistsForEntity<ScriptComponentContainer>(
+        dstRegistry, srcRegistry, srcEntity, destEntity);
   }
 }
 
@@ -347,9 +361,7 @@ void Scene::OnPhysics2DUpdate(Time ts) { Physics2D::Get().Update(ts); }
 
 void Scene::OnPhysics2DStop() { Physics2D::Get().Stop(); }
 
-void Scene::OnScriptStart() {
-  ScriptEngine::GetMutable().LoadRuntimeScripts();
-}
+void Scene::OnScriptStart() { ScriptEngine::GetMutable().LoadRuntimeScripts(); }
 
 void Scene::UpdateTransforms() {
   for (auto entityID : m_RootEntities) {
@@ -456,6 +468,96 @@ void Scene::DeleteEntity(Entity entity) {
   m_Registry.destroy(entity);
 }
 
+Entity Scene::InstantiatePrefab(const UUID &prefabID, const UUID &parentID) {
+  CE_PROFILE_FUNCTION();
+
+  // 1. Fetch the Prefab asset via AssetManager using its UUID/handle
+  Ref<Prefab> prefab = AssetManager::GetAsset<Prefab>(prefabID);
+  if (!prefab) {
+    CE_API_WARN("Failed to load prefab with asset handle: {0}", (uint64_t)prefabID);
+    return {};
+  }
+
+  Ref<Scene> prefabScene = prefab->GetScene();
+  auto &srcRegistry = prefabScene->GetReg();
+  auto &dstRegistry = m_Registry;
+
+  // 2. Validate prefab root entities
+  const auto &prefabRoots = prefabScene->GetRootEntities();
+  if (prefabRoots.empty())
+    return {};
+
+  Entity prefabRootEntity = prefabScene->GetEntityByUUID(prefabRoots[0]);
+  if (!prefabRootEntity)
+    return {};
+
+  // Map old prefab UUIDs to newly generated runtime UUIDs
+  std::unordered_map<UUID, UUID> uuidMap;
+
+  // Recursive lambda to clone the prefab hierarchy
+  std::function<void(Entity, UUID)> cloneEntityRecursive =
+      [&](Entity srcEntity, UUID currentParentUUID) {
+        UUID oldUUID = srcEntity.GetUUID();
+        UUID newUUID = UUID(); // Generate a fresh unique ID for this
+                               // instantiation instance
+        uuidMap[oldUUID] = newUUID;
+
+        std::string name = srcEntity.GetName();
+        Entity newEntity =
+            CreateEntityWithUUID(newUUID, name, currentParentUUID);
+
+        // Copy components from source prefab entity to new destination entity
+        CopyComponentIfExistsForEntity<TagComponent>(dstRegistry, srcRegistry,
+                                                     srcEntity, newEntity);
+        CopyComponentIfExistsForEntity<LayerComponent>(dstRegistry, srcRegistry,
+                                                       srcEntity, newEntity);
+        CopyComponentIfExistsForEntity<TransformComponent>(
+            dstRegistry, srcRegistry, srcEntity, newEntity);
+        CopyComponentIfExistsForEntity<CameraComponent>(
+            dstRegistry, srcRegistry, srcEntity, newEntity);
+        CopyComponentIfExistsForEntity<SpriteRendererComponent>(
+            dstRegistry, srcRegistry, srcEntity, newEntity);
+        CopyComponentIfExistsForEntity<CircleRendererComponent>(
+            dstRegistry, srcRegistry, srcEntity, newEntity);
+        CopyComponentIfExistsForEntity<BoxCollider2DComponent>(
+            dstRegistry, srcRegistry, srcEntity, newEntity);
+        CopyComponentIfExistsForEntity<CircleCollider2DComponent>(
+            dstRegistry, srcRegistry, srcEntity, newEntity);
+        CopyComponentIfExistsForEntity<Rigidbody2DComponent>(
+            dstRegistry, srcRegistry, srcEntity, newEntity);
+        CopyComponentIfExistsForEntity<ScriptComponentContainer>(
+            dstRegistry, srcRegistry, srcEntity, newEntity);
+
+        // Recursively clone children
+        auto &rc = srcEntity.GetComponent<RelationshipComponent>();
+        for (UUID childOldUUID : rc.Children) {
+          Entity childSrc = prefabScene->GetEntityByUUID(childOldUUID);
+          if (childSrc) {
+            cloneEntityRecursive(childSrc, newUUID);
+          }
+        }
+      };
+
+  // 3. Begin cloning from the prefab root, attaching to the requested parentID
+  // (defaults to 0 / root)
+  cloneEntityRecursive(prefabRootEntity, parentID);
+
+  // 4. If a valid parentID was provided, explicitly push the newly created root
+  // into the parent's Children list
+  if (parentID != 0) {
+    Entity parentEntity = GetEntityByUUID(parentID);
+    Entity newlyCreatedRoot =
+        GetEntityByUUID(uuidMap[prefabRootEntity.GetUUID()]);
+    if (parentEntity && newlyCreatedRoot) {
+      parentEntity.GetComponent<RelationshipComponent>().Children.push_back(
+          newlyCreatedRoot.GetUUID());
+    }
+  }
+
+  RegisterParents();
+  return GetEntityByUUID(uuidMap[prefabRootEntity.GetUUID()]);
+}
+
 void Scene::DrawEntityRecursive(Entity entity,
                                 const glm::mat4 &parentWorldMatrix) {
   auto &tc = entity.GetComponent<TransformComponent>();
@@ -500,7 +602,6 @@ void Scene::ReparentEntity(Entity entity, Entity newParent) {
   if (newParent && entity.IsChild(newParent.GetUUID())) {
     return;
   }
-
 
   // 1. Detach from old parent or root list
   if (rc.Parent != 0) {
@@ -626,7 +727,8 @@ void Scene::MoveEntityAfter(Entity entityToMove, Entity targetEntity) {
 void Scene::RegisterParents() {
   auto view = m_Registry.view<IDComponent, RelationshipComponent>();
 
-  // 1) Gather entities into a vector and reverse to match the forward sequence order
+  // 1) Gather entities into a vector and reverse to match the forward sequence
+  // order
   std::vector<entt::entity> orderedEntities;
   for (auto entity : view) {
     orderedEntities.push_back(entity);

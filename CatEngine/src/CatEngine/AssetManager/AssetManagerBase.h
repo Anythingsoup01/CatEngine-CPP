@@ -12,5 +12,7 @@ public:
   virtual bool IsAssetHandleValid(AssetHandle handle) const = 0;
   virtual bool IsAssetLoaded(AssetHandle handle) const = 0;
   virtual AssetType GetAssetType(AssetHandle handle) const = 0;
+  virtual AssetHandle GetAssetHandle(const uint32_t &fileHash) const = 0;
+  virtual Asset::MetaData GetAssetMetaData(const uint32_t &fileHash) const = 0;
 };
 } // namespace CatEngine

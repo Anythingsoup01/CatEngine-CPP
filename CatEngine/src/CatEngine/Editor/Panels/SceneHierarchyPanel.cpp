@@ -176,7 +176,7 @@ void SceneHierarchyPanel::DrawEntityNode(Entity entity) {
     UUID entityID = entity.GetUUID();
     ImGui::SetDragDropPayload("SCENE_HIERARCHY_ITEM", &entityID,
                               sizeof(entityID));
-    ImGui::Text("Moving: %s", name);
+    ImGui::TextUnformatted(name);
     ImGui::EndDragDropSource();
   }
 
