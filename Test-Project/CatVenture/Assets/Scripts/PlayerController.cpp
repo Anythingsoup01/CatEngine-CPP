@@ -25,7 +25,7 @@ void PlayerController::Start() {
   }
 }
 
-void PlayerController::Update(float ts) {
+void PlayerController::FixedUpdate(float ts) {
   Vector2 playerVelocity = {0, 0};
 
   if (m_Grounded) {
@@ -46,10 +46,11 @@ void PlayerController::Update(float ts) {
   }
   auto rb2d = GetComponent<Rigidbody2D>();
   rb2d.ApplyLinearImpulse(playerVelocity, {0, 0});
+  Console::Log("Player Velocity: X {} , Y {}", playerVelocity.X, playerVelocity.Y);
 }
 
 void PlayerController::OnCollisionEnter(Object other) {
-  std::cout << "OTHER LAYER: " << other.layer() << "\n";
+  Console::Log("OTHER LAYER: {}", other.layer());
 
   if (other.layer() == "Ground" && !m_CanJump) {
     m_Grounded = true;

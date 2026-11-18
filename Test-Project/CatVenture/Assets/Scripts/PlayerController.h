@@ -13,7 +13,7 @@ public:
   ~PlayerController();
 
   void Start();
-  void Update(float ts);
+  void FixedUpdate(float ts);
 
   void OnCollisionEnter(Object other);
   void OnCollisionExit(Object other);

@@ -12,7 +12,7 @@ Object Scene::Instantiate(const Prefab &prefab) {
   uint64_t out = 0;
   Scene_InstantiatePrefab(prefab.GetAssetID(), &out);
   if (out == 0) {
-    Console::Error("Instantiate Error: Failed to get Prefab with ID: " + std::to_string(prefab.GetAssetID()));
+    Console::Error("Instantiate Error: Failed to get Prefab with ID: %lu", prefab.GetAssetID());
     return Object(0);
   }
 

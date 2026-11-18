@@ -8,9 +8,9 @@ std::ostream &operator<<(std::ostream &os, const CatRuntime::Layer &proxy) {
 
 namespace CatRuntime {
 
-Layer::operator std::string() const {
+Layer::operator const char *() const {
   if (m_EntityID == 0)
-    return std::string();
+    return "\0";
   return Object_GetLayer(m_EntityID);
 }
 

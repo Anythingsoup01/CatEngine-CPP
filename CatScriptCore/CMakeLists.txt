@@ -19,6 +19,7 @@ src/CatScriptCore/Scene/Component/AllComponents.cpp
 src/CatScriptCore/Scene/Component/Transform.cpp
 src/CatScriptCore/Scene/Component/Object.cpp
 src/CatScriptCore/Scene/Commands.cpp
+src/CatScriptCore/Core/Formatter.cpp
 )
 
 target_include_directories(CatScriptCore PRIVATE

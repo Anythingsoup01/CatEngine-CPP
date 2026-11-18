@@ -100,6 +100,8 @@ private:
 private:
   entt::registry m_Registry;
   uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
+  float m_FixedTimeStep = 0.02f;
+  float m_Accumulator = 0.0f;
 
   std::vector<UUID> m_DeletedEntities;
   std::unordered_map<UUID, entt::entity> m_EntityMap;

@@ -289,7 +289,8 @@ void ScriptEngine::LoadRuntimeScripts() {
     OnStartEntity(e);
   }
 }
-void ScriptEngine::OnUpdate(float ts) {
+
+void ScriptEngine::OnUpdate(Time time) {
   ExecuteCommandQueue();
 
   auto view = s_ScriptData->SceneContext->GetReg().view<ScriptComponentContainer>();
@@ -298,7 +299,20 @@ void ScriptEngine::OnUpdate(float ts) {
     auto &state = entity.GetComponent<ObjectStateComponent>();
     if (!state.SelfActive || !state.HierarchyActive)
       continue;
-    ScriptEngine::GetMutable().OnUpdateEntity(entity, ts);
+    ScriptEngine::GetMutable().OnUpdateEntity(entity, time.deltaTime());
+  }
+}
+
+void ScriptEngine::OnFixedUpdate(Time time) {
+  ExecuteCommandQueue();
+
+  auto view = s_ScriptData->SceneContext->GetReg().view<ScriptComponentContainer>();
+  for (auto e : view) {
+    Entity entity = {e, s_ScriptData->SceneContext.get()};
+    auto &state = entity.GetComponent<ObjectStateComponent>();
+    if (!state.SelfActive || !state.HierarchyActive)
+      continue;
+    ScriptEngine::GetMutable().OnFixedUpdateEntity(entity, time.deltaTime());
   }
 }
 
@@ -325,6 +339,31 @@ void ScriptEngine::OnUpdateEntity(Entity e, float ts) {
     }
   }
 }
+
+void ScriptEngine::OnFixedUpdateEntity(Entity e, float ts) {
+  auto &scc = e.GetComponent<ScriptComponentContainer>();
+  UUID entityUUID = e.GetUUID();
+  for (auto &sc : scc.Scripts) {
+    if (!sc.Active)
+      continue;
+    auto &instances = s_ScriptData->EntityInstances;
+    if (instances.find(entityUUID) == instances.end()) {
+      PanelManager::Get()
+          .GetPanel<ConsolePanel>("ConsolePanel")
+          ->WriteCritical("Failed to find script instance " +
+                          std::to_string(entityUUID));
+      CE_API_ERROR("Could not find script instance {}", (uint64_t)entityUUID);
+      continue;
+    }
+
+    auto entityInstances = instances.at(entityUUID);
+    for (auto &[scriptID, sc] : entityInstances) {
+      Ref<ScriptInstance> instance = entityInstances[scriptID];
+      instance->InvokeFixedUpdateMethod(ts);
+    }
+  }
+}
+
 void ScriptEngine::ExecuteCommandQueue() {
   std::vector<std::function<void()>> copy;
   {
@@ -617,6 +656,10 @@ ScriptClass::ScriptClass(const std::string &className)
       m_HasStart = true;
     } else if (method.Name == "Update") {
       m_HasUpdate = true;
+    } else if (method.Name == "FixedUpdate") {
+      m_HasFixedUpdate = true;
+    } else if (method.Name == "Delete") {
+      m_HasDelete = true;
     } else if (method.Name == "OnCollisionEnter") {
       m_HasOnCollisionEnter = true;
     } else if (method.Name == "OnCollisionExit") {
@@ -666,6 +709,12 @@ void ScriptInstance::InvokeUpdateMethod(float ts) {
   if (m_ScriptClass->m_HasUpdate)
     m_ScriptClass->InvokeMethod<void>("Update", m_Instance, ts);
 }
+
+void ScriptInstance::InvokeFixedUpdateMethod(float ts) {
+  if (m_ScriptClass->m_HasFixedUpdate)
+    m_ScriptClass->InvokeMethod<void>("FixedUpdate", m_Instance, ts);
+}
+
 
 void ScriptInstance::InvokeDeleteMethod() {
   if (m_ScriptClass->m_HasDelete)

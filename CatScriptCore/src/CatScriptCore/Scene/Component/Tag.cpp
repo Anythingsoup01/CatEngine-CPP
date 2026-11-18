@@ -6,9 +6,9 @@ std::ostream& operator<<(std::ostream& os, const CatRuntime::Tag& proxy)
     os << tagStr;
     return os;
 }
-CatRuntime::Tag::operator std::string() const {
+CatRuntime::Tag::operator const char *() const {
   if (m_EntityID == 0)
-    return std::string();
+    return "\0";
   return Object_GetTag(m_EntityID);
 }
 bool CatRuntime::Tag::operator==(const std::string &other) const {

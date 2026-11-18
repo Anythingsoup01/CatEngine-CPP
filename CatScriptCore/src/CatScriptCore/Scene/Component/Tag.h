@@ -7,7 +7,7 @@ struct Tag {
 public:
   Tag(const uint64_t &entityID) : m_EntityID(entityID) {}
 
-  operator std::string() const;
+  operator const char *() const;
 
   bool operator==(const std::string &other) const;
 

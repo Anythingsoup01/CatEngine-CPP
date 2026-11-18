@@ -41,8 +41,8 @@ public:
 
   void LoadRuntimeScripts();
 
-  void OnUpdate(float ts);
-
+  void OnUpdate(Time time);
+  void OnFixedUpdate(Time time);
 
   void DeleteEntity(Entity entity);
 
@@ -72,13 +72,12 @@ private:
   void LoadBinaryClasses();
 
   void OnUpdateEntity(Entity e, float ts);
-
+  void OnFixedUpdateEntity(Entity e, float ts);
 
   void ExecuteCommandQueue();
 
 private:
   static inline ScriptEngine *s_Instance;
-
 
   std::vector<std::function<void()>> m_CommandQueue;
   std::mutex m_CommandQueueMutex;
@@ -123,6 +122,7 @@ private:
 
   bool m_HasStart = false;
   bool m_HasUpdate = false;
+  bool m_HasFixedUpdate = false;
   bool m_HasDelete = false;
   bool m_HasOnCollisionEnter = false;
   bool m_HasOnCollisionExit = false;
@@ -147,6 +147,7 @@ public:
 
   void InvokeStartMethod();
   void InvokeUpdateMethod(float ts);
+  void InvokeFixedUpdateMethod(float ts);
   void InvokeDeleteMethod();
 
   void InvokeOnCollisionEnter(const UUID &other);
@@ -217,7 +218,8 @@ private:
 
   bool GetVectorFieldDataInternal(const std::string &name, VectorBuffer *out) {
     std::vector<uint8_t> tmp;
-    if (m_Instance->GetFieldVector(name, m_ScriptClass->m_ClassObject.get(), &tmp)) {
+    if (m_Instance->GetFieldVector(name, m_ScriptClass->m_ClassObject.get(),
+                                   &tmp)) {
       *out = VectorBuffer(tmp);
       return true;
     }

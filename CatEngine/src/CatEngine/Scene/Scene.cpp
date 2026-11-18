@@ -207,15 +207,32 @@ void Scene::OnRuntimeStart() {
 void Scene::OnUpdateRuntime(Time time) {
   CE_PROFILE_FUNCTION();
   ExecuteSceneCommandQueue();
-  DeleteEntities(); // Loads the delete command to run the next update frame
-  UpdateTransforms();
+
+  float frameTime = time.deltaTime();
+
+  if (frameTime > 0.25f)
+    frameTime = 0.25f;
 
   if (!m_IsPaused) {
-    // Update Scripts
+    m_Accumulator += frameTime;
+
+    while (m_Accumulator >= m_FixedTimeStep) {
+      // Loads the delete command to run the next update frame, allowing the physics engine to catch up
+      DeleteEntities();
+      
+      // Update Scripts
+      ScriptEngine::GetMutable().OnFixedUpdate(Time(m_FixedTimeStep));
+      // Physics 2D
+      OnPhysics2DUpdate(Time(m_FixedTimeStep));
+    
+      m_Accumulator -= m_FixedTimeStep;
+    }
+
     ScriptEngine::GetMutable().OnUpdate(time.deltaTime());
-    // Physics 2D
-    OnPhysics2DUpdate(time);
   }
+
+  UpdateTransforms();
+
 
   // Render 2D
   Camera *mainCamera = nullptr;
