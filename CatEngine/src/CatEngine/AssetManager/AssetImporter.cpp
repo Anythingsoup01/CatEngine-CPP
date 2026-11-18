@@ -9,6 +9,8 @@ namespace CatEngine {
 
 using AssetImportFunction = std::function<Ref<Asset>(AssetHandle, Asset::MetaData&)>;
 using ConstAssetImportFunction = std::function<Ref<Asset>(AssetHandle, const Asset::MetaData&)>;
+
+
 static std::unordered_map<AssetType, AssetImportFunction> s_AssetImportFunctions = {
   { AssetType::Prefab, PrefabImporter::ImportPrefab },
   { AssetType::Texture2D, TextureImporter::ImportTexture2D },
@@ -36,5 +38,6 @@ Ref<Asset> AssetImporter::ImportAsset(const AssetHandle &handle, const Asset::Me
   }
   return s_ConstAssetImportFunctions.at(metaData.Type)(handle, metaData);
 }
-
+void AssetImporter::RebuildAsset(const AssetHandle &handle,
+                                 Asset::MetaData &metaData) {}
 }

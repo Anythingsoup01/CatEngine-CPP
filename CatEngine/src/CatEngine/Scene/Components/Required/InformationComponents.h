@@ -4,64 +4,56 @@
 
 #include "CatEngine/Core/UUID.h"
 
-namespace CatEngine
-{
+namespace CatEngine {
 
-	struct IDComponent
-	{
-		UUID ID;
+struct IDComponent {
+  UUID ID;
 
-		IDComponent() = default;
-		IDComponent(const IDComponent&) = default;
-        IDComponent(const UUID& id)
-            : ID(id) {}
+  IDComponent() = default;
+  IDComponent(const IDComponent &) = default;
+  IDComponent(const UUID &id) : ID(id) {}
 
-        ~IDComponent() = default;
-	};
+  ~IDComponent() = default;
+};
 
-	struct TagComponent
-	{
-		std::string Tag;
+struct TagComponent {
+  std::string Tag;
 
-		TagComponent() = default;
-		TagComponent(const TagComponent&) = default;
-		TagComponent(const std::string& tag)
-			: Tag(tag) {}
+  TagComponent() = default;
+  TagComponent(const TagComponent &) = default;
+  TagComponent(const std::string &tag) : Tag(tag) {}
 
-        ~TagComponent() = default;
-	};
+  ~TagComponent() = default;
+};
 
-	struct LayerComponent
-	{
-		std::string Layer;
+struct LayerComponent {
+  std::string Layer;
 
-		LayerComponent() = default;
-		LayerComponent(const LayerComponent&) = default;
-		LayerComponent(const std::string& layer)
-			: Layer(layer) {}
+  LayerComponent() = default;
+  LayerComponent(const LayerComponent &) = default;
+  LayerComponent(const std::string &layer) : Layer(layer) {}
 
-        ~LayerComponent() = default;
-	};
+  ~LayerComponent() = default;
+};
 
-	struct NameComponent
-	{
-		std::string Name;
+struct NameComponent {
+  std::string Name;
 
-		NameComponent() = default;
-		NameComponent(const NameComponent&) = default;
-		NameComponent(const std::string& name)
-			: Name(name) {}
+  NameComponent() = default;
+  NameComponent(const NameComponent &) = default;
+  NameComponent(const std::string &name) : Name(name) {}
 
-        ~NameComponent() = default;
-	};
+  ~NameComponent() = default;
+};
 
-	//struct ObjectStateComponent
-	//{
-	//	bool IsActive = true;
+struct ObjectStateComponent {
+  bool isLocked = false;
+  bool Active = true;       // Local toggle
+  bool SelfActive = true;   // True if explicitly enabled by user
+  bool HierarchyActive = true; // Cached flag: true if parent chain is active
 
-	//	ObjectStateComponent() = default;
-	//	ObjectStateComponent(const ObjectStateComponent&) = default;
-	//	ObjectStateComponent(bool& isActive)
-	//		: IsActive(isActive) {}
-	//};
-}
+  ObjectStateComponent() = default;
+  ObjectStateComponent(const ObjectStateComponent &) = default;
+};
+
+} // namespace CatEngine

@@ -25,6 +25,10 @@ void InspectorPanel::OnImGuiRender(bool &isOpen) {
         ImGuiTreeNodeFlags_AllowItemOverlap | ImGuiTreeNodeFlags_FramePadding;
 
     if (m_EntitySelection) {
+      auto &stateComponent = m_EntitySelection.GetComponent<ObjectStateComponent>();
+      if (stateComponent.isLocked) {
+        ImGui::BeginDisabled();
+      }
       DrawComponents(m_EntitySelection);
 
       bool Components2DAvaliable =
@@ -63,6 +67,10 @@ void InspectorPanel::OnImGuiRender(bool &isOpen) {
         ImGui::EndPopup();
       }
 
+      if (stateComponent.isLocked) {
+        ImGui::EndDisabled();
+      }
+
     } else if (m_AssetSelection) {
       DrawAsset(m_AssetSelection);
     }
@@ -88,13 +96,24 @@ void InspectorPanel::SetAssetSelectionContext(AssetHandle handle) {
 }
 
 void InspectorPanel::DrawComponents(Entity selection) {
-  if (ImGui::BeginTable("##TAGLAYER", 2)) {
+  if (ImGui::BeginTable("##TAGLAYER", 4)) {
+    ImGui::TableSetupColumn("ACTIVE_STATE", ImGuiTableColumnFlags_WidthFixed, 10);
     ImGui::TableSetupColumn("TAG", ImGuiTableColumnFlags_WidthStretch);
     ImGui::TableSetupColumn("LAYER", ImGuiTableColumnFlags_WidthStretch);
 
     ImGui::TableNextRow();
 
     ImGui::TableSetColumnIndex(0);
+    auto &stateComponent = selection.GetComponent<ObjectStateComponent>();
+    bool activeState = stateComponent.SelfActive;
+    if (ImGui::Checkbox("##VISIBILITY_BUTTON", &activeState)) {
+      m_Context->SetEntityActive(selection, activeState);
+    }
+
+    if (ImGui::IsItemHovered())
+      ImGui::SetTooltip("Active");
+
+    ImGui::TableSetColumnIndex(1);
     auto &tag = selection.GetComponent<TagComponent>().Tag;
 
     ImGui::PushItemWidth(-1.0f);
@@ -108,7 +127,7 @@ void InspectorPanel::DrawComponents(Entity selection) {
     }
     ImGui::PopItemWidth();
 
-    ImGui::TableSetColumnIndex(1);
+    ImGui::TableSetColumnIndex(2);
     auto &layer = selection.GetComponent<LayerComponent>().Layer;
 
     ImGui::PushItemWidth(-1.0f);

@@ -15,35 +15,23 @@ public:
   virtual void OnImGuiRender(bool &isOpen) override;
   virtual void OnEvent(Event &e) override {};
 
-  void ResetAssetDirectory();
+  void SetCurrentDirectory(const std::filesystem::path &dir) { m_CurrentDirectory = dir; }
 
   void SetSelectionHandle(const AssetHandle &handle = 0) {
     m_SelectionContext = handle;
   }
 
 private:
-  static void RefreshAssetTree();
-
   void DrawAsset(const AssetHandle &handle);
+  void DrawRegularFile(const bool &isDirectory, const std::string &fileName);
 
-private:
-  struct TreeNode {
-    std::filesystem::path Path;
-    AssetHandle Handle = 0;
-
-    std::unordered_map<std::filesystem::path, uint32_t> Children;
-    uint32_t Parent = (uint32_t)-1;
-
-    TreeNode(const std::filesystem::path &path, AssetHandle handle)
-        : Path(path), Handle(handle) {}
-  };
-  static inline std::vector<TreeNode> m_TreeNodes;
 private:
   Ref<Scene> m_SceneContext;
   std::filesystem::path m_CurrentDirectory;
 
   AssetHandle m_SelectionContext = 0;
-  AssetHandle m_PreviousSelection = 0;
+
+  float m_ThumbnailSize = 75.0f;
 
   friend class ContentBrowserPanel;
 };

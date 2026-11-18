@@ -35,9 +35,16 @@ public:
 
   bool ScriptClassExists(const std::string_view &className);
 
+  void LoadEntityScriptInstances(Entity entity);
+  void LoadEnityFieldInstances(Entity entity);
+  void OnStartEntity(Entity entity);
+
   void LoadRuntimeScripts();
 
-  void OnUpdateEntity(Entity e, float ts);
+  void OnUpdate(float ts);
+
+
+  void DeleteEntity(Entity entity);
 
   void DispatchCollisionEvent(UUID entityA, UUID entityB, CollisionType type);
 
@@ -64,8 +71,17 @@ private:
   Ref<Capybara::CapyObject> InstantiateClass(const std::string_view &className);
   void LoadBinaryClasses();
 
+  void OnUpdateEntity(Entity e, float ts);
+
+
+  void ExecuteCommandQueue();
+
 private:
   static inline ScriptEngine *s_Instance;
+
+
+  std::vector<std::function<void()>> m_CommandQueue;
+  std::mutex m_CommandQueueMutex;
 
 private:
   friend class ScriptGlue;
@@ -86,6 +102,7 @@ public:
   ScriptClass(const std::string &className);
 
   Ref<Capybara::CapyObject::Instance> Instantiate(UUID entityID);
+  void Destroy(Ref<Capybara::CapyObject::Instance> instance);
 
   template <typename Ret, typename... Args>
   Ret InvokeMethod(const std::string &methodName,
@@ -106,6 +123,7 @@ private:
 
   bool m_HasStart = false;
   bool m_HasUpdate = false;
+  bool m_HasDelete = false;
   bool m_HasOnCollisionEnter = false;
   bool m_HasOnCollisionExit = false;
 
@@ -125,8 +143,11 @@ public:
   ScriptInstance(Ref<ScriptClass> scriptClass, Entity entity);
   ~ScriptInstance();
 
-  void InvokeUpdateMethod(float ts);
+  void DestroyInstance();
+
   void InvokeStartMethod();
+  void InvokeUpdateMethod(float ts);
+  void InvokeDeleteMethod();
 
   void InvokeOnCollisionEnter(const UUID &other);
   void InvokeOnCollisionExit(const UUID &other);

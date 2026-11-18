@@ -16,7 +16,6 @@ public:
   static Ref<Prefab> ConstImportPrefab(AssetHandle handle, const Asset::MetaData &metaData);
 
   static Ref<Prefab> LoadPrefab(const std::filesystem::path &filePath);
-
 };
 
 } // namespace CatEngine

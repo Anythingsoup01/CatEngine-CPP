@@ -62,7 +62,7 @@ void PrefabSerializer::SerializeEntityScriptVector(YAML::Emitter &out,
     break;
   }
 }
-void PrefabSerializer::SerializeEntity(YAML::Emitter &out, Entity entity) {
+void PrefabSerializer::SerializeEntity(YAML::Emitter &out, Entity entity, Ref<Scene> rootScene) {
   CE_PROFILE_FUNCTION();
 
   out << YAML::BeginMap; // Entity
@@ -311,8 +311,13 @@ void PrefabSerializer::SerializeEntity(YAML::Emitter &out, Entity entity) {
     out << YAML::Key << "Children" << YAML::Value;
     out << YAML::BeginSeq;
     for (auto &child : rc.Children) {
-      Entity e = m_Prefab->m_PrefabScene->GetEntityByUUID(child);
-      SerializeEntity(out, e);
+      Entity e;
+      if (rootScene) {
+        e = rootScene->GetEntityByUUID(child);
+      } else {
+        e = m_Prefab->m_PrefabScene->GetEntityByUUID(child);
+      }
+      SerializeEntity(out, e, rootScene);
     }
 
     out << YAML::EndSeq;
@@ -323,21 +328,18 @@ void PrefabSerializer::SerializeEntity(YAML::Emitter &out, Entity entity) {
 }
 
 void PrefabSerializer::Serialize(const std::filesystem::path &filepath,
-                                 Entity rootEntity) {
+                                 Entity rootEntity, Ref<Scene> rootScene) {
   YAML::Emitter out;
   out << YAML::BeginMap;
   out << YAML::Key << "Prefab" << YAML::Value << "CatEngine Prefab";
   out << YAML::Key << "Version" << YAML::Value << 1;
   out << YAML::Key << "Entities" << YAML::BeginSeq;
 
-  for (auto entityID : m_Prefab->m_PrefabScene->GetRootEntities()) {
-    Entity entity = m_Prefab->m_PrefabScene->GetEntityByUUID(entityID);
-    if (!entity)
-      return;
+  if (!rootEntity)
+    return;
 
-    if (entity.GetComponent<RelationshipComponent>().Parent == 0)
-      SerializeEntity(out, entity);
-  }
+  SerializeEntity(out, rootEntity, rootScene);
+
   out << YAML::EndSeq;
   out << YAML::EndMap;
 
@@ -545,7 +547,7 @@ void PrefabSerializer::DeserializeEntity(YAML::Node &entity, UUID parent) {
 
   auto scriptComponentContainer = entity["ScriptComponentContainer"];
   if (scriptComponentContainer) {
-    auto scriptEngine = ScriptEngine::GetMutable();
+    auto &scriptEngine = ScriptEngine::GetMutable();
     auto &scc = deserializedEntity.AddComponent<ScriptComponentContainer>();
     for (auto scriptEntry : scriptComponentContainer) {
       auto scriptComponent = scriptEntry["ScriptComponent"];
@@ -664,11 +666,6 @@ bool PrefabSerializer::Deserialize(const std::filesystem::path &filepath) {
                  ex.what());
     return false;
   }
-
-  if (!data["Scene"])
-    return false;
-
-  std::string sceneName = data["Scene"].as<std::string>();
 
   auto entities = data["Entities"];
   if (entities) {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "AssetManagerBase.h"
+#include "CatEngine/AssetManager/Asset.h"
 #include <cstdint>
 
 namespace CatEngine {
@@ -18,7 +19,15 @@ public:
   virtual AssetHandle GetAssetHandle(const uint32_t &fileHash) const override;
   virtual Asset::MetaData GetAssetMetaData(const uint32_t &fileHash) const override;
 
-  AssetHandle ImportAsset(const std::filesystem::path &filePath);
+  // When creating a new asset, this is called
+  AssetHandle ImportNewAsset(const std::filesystem::path &filePath);
+
+  // Used when loading an asset from disk
+  AssetHandle ImportAssetFromDisk(const AssetHandle &handle, const Asset::MetaData &metaData);
+
+  // Used when editing an assets metadata
+  AssetHandle ReloadAssetWithNewMetaData(const AssetHandle &handle, const Asset::MetaData &metaData);
+
   void DeleteAsset(AssetHandle handle); // TODO: WORK ON THIS
 
   const Asset::MetaData &GetMetaData(AssetHandle handle) const;
@@ -29,8 +38,12 @@ public:
 
   bool IsAssetExtension(const std::string &extension);
 
+  void SerializeAsset(const AssetHandle &handle);
+
   void SerializeAssetRegistry();
   bool DeserializeAssetRegistry();
+
+  void RebuildAssetRegistry();
 
 private:
   AssetRegistry m_AssetRegistry;

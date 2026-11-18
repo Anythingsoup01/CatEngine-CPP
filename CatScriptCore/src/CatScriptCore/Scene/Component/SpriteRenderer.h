@@ -1,8 +1,9 @@
 #pragma once
 
 #include "CatScriptCore/InternalCalls/InternalCalls.h"
-#include "CatScriptCore/Types/Texture.h"
-#include "CatScriptCore/Types/Types.h"
+
+#include "CatScriptCore/Asset/Texture.h"
+
 #include <cstdint>
 
 namespace CatRuntime {
@@ -15,9 +16,9 @@ private:
   public:
     TextureProxy(const uint64_t &entityID) : m_EntityID(entityID) {}
 
-    operator Texture2D() const;
+    operator Texture() const;
 
-    TextureProxy &operator=(const Texture2D &t);
+    TextureProxy &operator=(const Texture &t);
 
   private:
     uint64_t m_EntityID;

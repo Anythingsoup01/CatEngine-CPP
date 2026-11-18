@@ -4,6 +4,7 @@
 
 namespace CatEngine {
 struct CircleRendererComponent {
+  bool Active = true;
   glm::vec4 Color{1.f, 1.f, 1.f, 1.f};
   float Thickness = 1.0f;
   float Fade = 0.005f;

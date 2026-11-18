@@ -63,7 +63,6 @@ void DrawTransformComponent(Entity selection) {
   }
 
   if (open) {
-
     ImGuiDraw::Vec3("Position", component.LocalPosition, 0.1f, 0.0f, 0.0f);
     glm::vec3 rotation = glm::degrees(component.LocalRotation);
     ImGuiDraw::Vec3("Rotation", rotation, 0.1f, 0.0f, 0.0f);
@@ -135,7 +134,7 @@ void DrawSpriteRendererComponent(Entity selection) {
 
     if (ImGui::BeginDragDropTarget()) {
       if (const ImGuiPayload *payload =
-              ImGui::AcceptDragDropPayload("ASSET_MANAGER_ITEM")) {
+              ImGui::AcceptDragDropPayload("ASSET_BROWSER_ASSET")) {
         AssetHandle handle = *(AssetHandle *)payload->Data;
         const AssetType type = AssetManager::GetAssetType(handle);
 
@@ -597,8 +596,22 @@ void DrawRuntimeScriptVector(const ScriptField &field, const int &index,
                   .AssetName;
     }
     label = label.empty() ? "(empty)" : label;
-    label.append(" [" + std::to_string(index) + "]");
-
+    label.append(" (" + field.TypeName + ")");
+    ImGuiDraw::DataField("[" + std::to_string(index) + "]", label);
+    break;
+  }
+  case DataType::Prefab: {
+    uint64_t assetID = *reinterpret_cast<uint64_t *>(elementPtr);
+    std::string label = "";
+    if (assetID != 0 && Project::GetActive() &&
+        Project::GetActive()->GetEditorAssetManager()) {
+      label = Project::GetActive()
+                  ->GetEditorAssetManager()
+                  ->GetMetaData(assetID)
+                  .AssetName;
+    }
+    label = label.empty() ? "(empty)" : label;
+    label.append(" (" + field.TypeName + ")");
     ImGuiDraw::DataField("[" + std::to_string(index) + "]", label);
     break;
   }
@@ -741,10 +754,21 @@ void DrawRuntimeScriptComponents(const ScriptField &field,
                                 ->GetMetaData(data)
                                 .AssetName;
     labelName = labelName.empty() ? "(empty)" : labelName;
-    labelName.append(" (Texture2D)");
+    labelName.append("(" + field.TypeName + ")");
     ImGuiDraw::DataField(field.Name, labelName);
     break;
-  }
+    }
+    case DataType::Prefab: {
+      uint64_t data = scriptInstance->GetFieldData<uint64_t>(field.Name);
+      std::string labelName = Project::GetActive()
+        ->GetEditorAssetManager()
+        ->GetMetaData(data)
+        .AssetName;
+      labelName = labelName.empty() ? "(empty)" : labelName;
+      labelName.append("(" + field.TypeName + ")");
+      ImGuiDraw::DataField(field.Name, labelName);
+      break;
+    }
   case DataType::ScriptComponent:
     uint64_t data = scriptInstance->GetFieldData<uint64_t>(field.Name);
     std::string label = "";
@@ -911,12 +935,44 @@ bool DrawEditTimeScriptVector(const ScriptField &field, const int &index,
     ImGuiDraw::DataField("[" + std::to_string(index) + "]", label);
     if (ImGui::BeginDragDropTarget()) {
       if (const ImGuiPayload *payload =
-              ImGui::AcceptDragDropPayload("ASSET_MANAGER_ITEM")) {
+              ImGui::AcceptDragDropPayload("ASSET_BROWSER_ASSET")) {
         UUID droppedAssetID = *(UUID *)payload->Data;
         const auto &asset =
             Project::GetActive()->GetEditorAssetManager()->GetAsset(
                 droppedAssetID);
         if (asset && asset->GetType() == AssetType::Texture2D) {
+          *assetIDPtr = droppedAssetID.uuid();
+          interaction = true;
+        }
+      }
+      ImGui::EndDragDropTarget();
+    }
+    break;
+  }
+    case DataType::Prefab: {
+    uint64_t *assetIDPtr = reinterpret_cast<uint64_t *>(elementPtr);
+    uint64_t assetID = *assetIDPtr;
+
+    std::string label = "";
+    if (assetID != 0 && Project::GetActive() &&
+        Project::GetActive()->GetEditorAssetManager()) {
+      label = Project::GetActive()
+                  ->GetEditorAssetManager()
+                  ->GetMetaData(assetID)
+                  .AssetName;
+    }
+    label = label.empty() ? "(empty)" : label;
+    label.append(" [" + std::to_string(index) + "]");
+
+    ImGuiDraw::DataField("[" + std::to_string(index) + "]", label);
+    if (ImGui::BeginDragDropTarget()) {
+      if (const ImGuiPayload *payload =
+              ImGui::AcceptDragDropPayload("ASSET_BROWSER_ASSET")) {
+        UUID droppedAssetID = *(UUID *)payload->Data;
+        const auto &asset =
+            Project::GetActive()->GetEditorAssetManager()->GetAsset(
+                droppedAssetID);
+        if (asset && asset->GetType() == AssetType::Prefab) {
           *assetIDPtr = droppedAssetID.uuid();
           interaction = true;
         }
@@ -1246,12 +1302,45 @@ void DrawEditTimeScriptComponents(const UUID &fieldID, const ScriptField &field,
     ImGuiDraw::DataField(field.Name, label);
     if (ImGui::BeginDragDropTarget()) {
       if (const ImGuiPayload *payload =
-              ImGui::AcceptDragDropPayload("ASSET_MANAGER_ITEM")) {
+              ImGui::AcceptDragDropPayload("ASSET_BROWSER_ASSET")) {
         UUID droppedAssetID = *(UUID *)payload->Data;
         const auto &asset =
             Project::GetActive()->GetEditorAssetManager()->GetAsset(
                 droppedAssetID);
         if (asset && asset->GetType() == AssetType::Texture2D) {
+          getOrCreateInstance().SetValue(droppedAssetID.uuid());
+        }
+      }
+      ImGui::EndDragDropTarget();
+    }
+    break;
+  }
+  case DataType::Prefab: {
+    uint64_t assetID = hasInstance
+                           ? fieldMap[fieldID].GetValue<uint64_t>()
+                           : (!field.DefaultValue.empty()
+                                  ? *(uint64_t *)field.DefaultValue.data()
+                                  : 0);
+    std::string label = "";
+    if (assetID != 0 && Project::GetActive() &&
+        Project::GetActive()->GetEditorAssetManager()) {
+      label = Project::GetActive()
+                  ->GetEditorAssetManager()
+                  ->GetMetaData(assetID)
+                  .AssetName;
+    }
+    label = label.empty() ? "(empty)" : label;
+    label.append(" (" + field.TypeName + ")");
+
+    ImGuiDraw::DataField(field.Name, label);
+    if (ImGui::BeginDragDropTarget()) {
+      if (const ImGuiPayload *payload =
+              ImGui::AcceptDragDropPayload("ASSET_BROWSER_ASSET")) {
+        UUID droppedAssetID = *(UUID *)payload->Data;
+        const auto &asset =
+            Project::GetActive()->GetEditorAssetManager()->GetAsset(
+                droppedAssetID);
+        if (asset && asset->GetType() == AssetType::Prefab) {
           getOrCreateInstance().SetValue(droppedAssetID.uuid());
         }
       }
@@ -1358,7 +1447,7 @@ void DrawScriptComponent(Entity selection) {
     return;
   }
 
-  auto scriptEngine = ScriptEngine::GetMutable();
+  auto &scriptEngine = ScriptEngine::GetMutable();
   auto context = scriptEngine.GetSceneContext();
 
   int idx = 0;
@@ -1444,8 +1533,6 @@ void DrawScriptComponent(Entity selection) {
             sc.ClassName.empty() ? 0 : Hash::GenerateFNVHash(sc.ClassName);
       }
     }
-
-    sc.Loaded = true;
 
     bool scriptClassExists =
         scriptEngine.ScriptClassExists(sc.ClassName.c_str());

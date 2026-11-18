@@ -277,9 +277,6 @@ static void Camera_SetPerspective(UUID entityID) {
 }
 
 #pragma endregion
-#pragma region Scripts
-
-#pragma endregion
 
 #pragma region Rigidbody2D
 
@@ -445,8 +442,6 @@ static void BoxCollider2D_SetRestitutionThreshold(UUID entityID,
 
 #pragma region CircleCollider2D
 
-#pragma region CircleCollider2D
-
 static void CircleCollider2D_GetOffset(UUID entityID, glm::vec2 *outOffset) {
   const Entity &entity = GetEntity(entityID);
   *outOffset = entity.GetComponent<CircleCollider2DComponent>().Offset;
@@ -554,6 +549,8 @@ static void CircleCollider2D_SetRestitutionThreshold(UUID entityID, float *thres
 }
 
 #pragma endregion
+
+#pragma region Transform
 
 static void Transform_GetPosition(UUID entityID, glm::vec3 *outPosition) {
   const Entity &entity = GetEntity(entityID);
@@ -789,6 +786,20 @@ static void Editor_ConsoleLog(int logLevel, const char *message) {
   }
 }
 
+#pragma endregion
+
+#pragma region Scene
+
+static void Scene_InstantiatePrefab(AssetHandle assetID, UUID *outParent) {
+  auto scene = ScriptEngine::GetMutable().GetSceneContext();
+  *outParent = scene->InstantiatePrefab(assetID).GetUUID();
+}
+
+static void Scene_DestroyObject(UUID objectID) {
+  auto scene = ScriptEngine::GetMutable().GetSceneContext();
+  Entity e = GetEntity(objectID);
+  scene->DeleteEntity(e);
+}
 
 #pragma endregion
 
@@ -848,10 +859,6 @@ void ScriptGlue::RegisterFunctions() {
   CE_ADD_INTERNAL_CALL(Camera_SetFar);
   CE_ADD_INTERNAL_CALL(Camera_SetOrthographic);
   CE_ADD_INTERNAL_CALL(Camera_SetPerspective);
-#pragma endregion
-
-#pragma region Scripts
-
 #pragma endregion
 
 #pragma region Rigidbody2D
@@ -930,6 +937,12 @@ void ScriptGlue::RegisterFunctions() {
 #pragma region Editor Commands
   CE_ADD_INTERNAL_CALL(Editor_ConsoleLog);
 #pragma endregion
+
+#pragma region Editor Commands
+  CE_ADD_INTERNAL_CALL(Scene_InstantiatePrefab);
+  CE_ADD_INTERNAL_CALL(Scene_DestroyObject);
+#pragma endregion
+
 
 }
 } // namespace CatEngine

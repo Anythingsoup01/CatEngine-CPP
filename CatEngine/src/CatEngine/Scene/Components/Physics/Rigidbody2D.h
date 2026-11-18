@@ -2,6 +2,7 @@
 
 namespace CatEngine {
 struct Rigidbody2DComponent {
+  bool Active = true;
   enum class BodyType { Static = 0, Kinematic, Dynamic };
 
   BodyType Type = BodyType::Static;

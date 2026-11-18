@@ -34,6 +34,7 @@ enum class DataType {
   Entity,
 
   Texture2D,
+  Prefab,
 
   ScriptComponent,
 };
@@ -69,7 +70,10 @@ static std::string DataTypeToString(const DataType &type) {
   case DataType::Entity:
     return "Entity";
   case DataType::Texture2D:
-    return "Texture2D";
+    return "Texture";
+  case DataType::Prefab:
+    return "Prefab";
+
   default:
     return "";
   }
@@ -104,8 +108,11 @@ static DataType StringToDataType(const std::string &typeStr) {
     return DataType::DynamicVector;
   if (typeStr == "Entity")
     return DataType::Entity;
-  if (typeStr == "Texture2D")
+  if (typeStr == "Texture")
     return DataType::Texture2D;
+  if (typeStr == "Prefab")
+    return DataType::Prefab;
+
   return DataType::ScriptComponent;
 }
 

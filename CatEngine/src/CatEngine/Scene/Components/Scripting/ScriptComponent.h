@@ -6,6 +6,7 @@
 namespace CatEngine {
 
 struct ScriptComponent {
+  bool Active = true;
   UUID ScriptID;
   std::string ClassName;
   bool Loaded = false;

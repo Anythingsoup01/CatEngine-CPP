@@ -27,10 +27,20 @@ public:
   template <typename T> bool HasComponent();
   template <typename T> T GetComponent();
 
+  operator uint64_t () { return m_EntityID; }
+  operator uint64_t() const { return m_EntityID; }
+
   operator bool() { return m_EntityID != 0; }
+  operator bool() const { return m_EntityID != 0; }
+
+  bool operator==(const Object &rhs) { return m_EntityID == rhs.m_EntityID; }
+  const bool operator==(const Object &rhs) const { return m_EntityID == rhs.m_EntityID; }
+
+  bool operator!=(const Object &rhs) { return m_EntityID != rhs.m_EntityID; }
+  const bool operator!=(const Object &rhs) const { return m_EntityID != rhs.m_EntityID; }
+
 
 public:
-
   template <typename T>
   bool HasScript() {
     std::string scriptName = typeid(T).name();

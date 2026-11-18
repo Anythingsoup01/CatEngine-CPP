@@ -5,20 +5,19 @@
 
 #include <glm/glm.hpp>
 
-namespace CatEngine
-{
-	struct SpriteRendererComponent
-	{
+namespace CatEngine {
 
-		glm::vec4 Color{ 1.f, 1.f, 1.f, 1.f };
-	    AssetHandle Texture;
-		float TilingFactor = 1.0f;
+struct SpriteRendererComponent {
+  bool Active = true;
+  glm::vec4 Color{1.f, 1.f, 1.f, 1.f};
+  AssetHandle Texture;
+  float TilingFactor = 1.0f;
 
-		SpriteRendererComponent() = default;
-		SpriteRendererComponent(const SpriteRendererComponent&) = default;
-		SpriteRendererComponent(const glm::vec4& color, AssetHandle texture)
-			: Color(color), Texture(texture) {}
+  SpriteRendererComponent() = default;
+  SpriteRendererComponent(const SpriteRendererComponent &) = default;
+  SpriteRendererComponent(const glm::vec4 &color, AssetHandle texture)
+      : Color(color), Texture(texture) {}
 
-        ~SpriteRendererComponent() = default;
-	};
-}
+  ~SpriteRendererComponent() = default;
+};
+} // namespace CatEngine

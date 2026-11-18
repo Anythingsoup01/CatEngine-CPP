@@ -1,5 +1,5 @@
 Project:
-  Name: test
+  Name: CatVenture
   AssetDirectory: Assets
   AssetRegistryPath: .editor/AssetRegistry.catreg
   StartScene: 7495987576117382183

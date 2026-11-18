@@ -1,21 +1,22 @@
 #include "SpriteRenderer.h"
+#include <cstdint>
 
 namespace CatRuntime {
 
-SpriteRenderer::TextureProxy::operator Texture2D() const {
+SpriteRenderer::TextureProxy::operator Texture() const {
   if (m_EntityID == 0)
-    return Texture2D{0};
-  Texture2D textureID;
-  SpriteRenderer_GetTextureID(m_EntityID, &textureID.ID);
-  return textureID;
+    return Texture(0);
+  uint64_t id;
+  SpriteRenderer_GetTextureID(m_EntityID, &id);
+  return Texture(id);
 }
 
-SpriteRenderer::TextureProxy &SpriteRenderer::TextureProxy::operator=(const Texture2D &t) {
+SpriteRenderer::TextureProxy &SpriteRenderer::TextureProxy::operator=(const Texture &t) {
   if (m_EntityID == 0) {
     return *this;
   }
-  Texture2D tT = t;
-  SpriteRenderer_SetTextureID(m_EntityID, &tT.ID);
+  uint64_t id = t.GetID();
+  SpriteRenderer_SetTextureID(m_EntityID, &id);
   return *this;
 }
 

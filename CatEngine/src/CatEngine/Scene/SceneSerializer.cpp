@@ -75,6 +75,7 @@ void SceneSerializer::SerializeEntityScriptVector(YAML::Emitter &out,
     break;
   case DataType::Entity:
   case DataType::Texture2D:
+  case DataType::Prefab:
   case DataType::ScriptComponent:
     out << *reinterpret_cast<const uint64_t *>(elementPtr);
     break;
@@ -310,6 +311,7 @@ void SceneSerializer::SerializeEntity(YAML::Emitter &out, Entity entity) {
             break;
           case DataType::Entity:
           case DataType::Texture2D:
+          case DataType::Prefab:
           case DataType::ScriptComponent:
             out << YAML::Value << field.GetValue<uint64_t>();
             break;
@@ -445,6 +447,7 @@ void SceneSerializer::DeserializeEntityScriptVector(
     }
     case DataType::Entity:
     case DataType::Texture2D:
+    case DataType::Prefab:
     case DataType::ScriptComponent: {
       uint64_t value = element.as<uint64_t>();
       outVectorData.PushBack(sizeof(uint64_t), &value);
@@ -570,7 +573,7 @@ void SceneSerializer::DeserializeEntity(YAML::Node &entity, UUID parent) {
 
   auto scriptComponentContainer = entity["ScriptComponentContainer"];
   if (scriptComponentContainer) {
-    auto scriptEngine = ScriptEngine::GetMutable();
+    auto &scriptEngine = ScriptEngine::GetMutable();
     auto &scc = deserializedEntity.AddComponent<ScriptComponentContainer>();
     for (auto scriptEntry : scriptComponentContainer) {
       auto scriptComponent = scriptEntry["ScriptComponent"];
@@ -654,6 +657,7 @@ void SceneSerializer::DeserializeEntity(YAML::Node &entity, UUID parent) {
                 break;
               case DataType::Entity:
               case DataType::Texture2D:
+              case DataType::Prefab:
               case DataType::ScriptComponent:
                 sfi.SetValue(field["Value"].as<uint64_t>());
                 break;

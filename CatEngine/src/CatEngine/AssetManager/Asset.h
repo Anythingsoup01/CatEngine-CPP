@@ -130,6 +130,7 @@ static ImageFormat StringToImageFormat(const std::string &param) {
 
 class Asset {
 public:
+  const AssetHandle &GetAssetHandle() const { return m_Handle; }
   struct MetaData {
     std::string AssetName;
     AssetType Type = AssetType::None;

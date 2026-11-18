@@ -145,10 +145,6 @@ public:
   }
 
   glm::mat4 GetWorldTransform() const {
-    if (!HasComponent<TransformComponent>() || !HasComponent<RelationshipComponent>()) {
-        return glm::mat4(1.0f);
-    }
-
     const auto &tc = GetComponent<TransformComponent>();
     const auto &rc = GetComponent<RelationshipComponent>();
 
@@ -200,6 +196,7 @@ public:
   operator entt::entity() const { return m_EntityHandle; }
 
   UUID GetUUID() { return GetComponent<IDComponent>().ID; }
+  const UUID GetUUID() const { return GetComponent<IDComponent>().ID; }
   const std::string &GetName() {
     static std::string nullScene = "<null scene>";
     if (!m_Scene)

@@ -1,101 +1,101 @@
-#include <cepch.h>
 #include "IconManager.h"
+#include <cepch.h>
 
 #include <stb_image.h>
 
 #include "CatEngine/Core/Hash.h"
 
-namespace CatEngine
-{
+namespace CatEngine {
 
-    static Ref<Texture2D> ImportIconTexture(const std::filesystem::path& filePath)
-    {
-        CE_PROFILE_FUNCTION();
-        int width, height, channels;
-        stbi_set_flip_vertically_on_load(1);
-        Buffer data;
-        {
-            CE_PROFILE_SCOPE("stbi_load - ImportIconTexture");
-            data.Data = stbi_load(filePath.c_str(), &width, &height, &channels, 0);
-        }
-        if (!data)
-        {
-            CE_API_ASSERT(false, "Failed to load texture from filepath {}", filePath.string());
-            return nullptr;
-        }
+static Ref<Texture2D> ImportIconTexture(const std::filesystem::path &filePath) {
+  CE_PROFILE_FUNCTION();
+  int width, height, channels;
+  stbi_set_flip_vertically_on_load(1);
+  Buffer data;
+  {
+    CE_PROFILE_SCOPE("stbi_load - ImportIconTexture");
+    data.Data = stbi_load(filePath.c_str(), &width, &height, &channels, 0);
+  }
+  if (!data) {
+    CE_API_ASSERT(false, "Failed to load texture from filepath {}",
+                  filePath.string());
+    return nullptr;
+  }
 
-        // TODO: Rework this when HDR gets supported!
-        data.Size = width * height * channels;
+  // TODO: Rework this when HDR gets supported!
+  data.Size = width * height * channels;
 
-        TextureSpecification newSpec;
-        newSpec.Width = width;
-        newSpec.Height = height;
-        newSpec.FilePath = filePath;
-        newSpec.MinFilter = TextureParameter::Linear;
-        newSpec.MagFilter = TextureParameter::Linear;
-        newSpec.WrapOption = TextureWrapParameter::Repeat;
+  TextureSpecification newSpec;
+  newSpec.Width = width;
+  newSpec.Height = height;
+  newSpec.FilePath = filePath;
+  newSpec.MinFilter = TextureParameter::Linear;
+  newSpec.MagFilter = TextureParameter::Linear;
+  newSpec.WrapOption = TextureWrapParameter::Repeat;
 
-        if (channels == 3)
-            newSpec.Format = ImageFormat::RGB8;
-        else if (channels == 4)
-            newSpec.Format = ImageFormat::RGBA8;
+  if (channels == 3)
+    newSpec.Format = ImageFormat::RGB8;
+  else if (channels == 4)
+    newSpec.Format = ImageFormat::RGBA8;
 
-        Ref<Texture2D> texture = Texture2D::Create(newSpec, data);
-        
-        data.Release();
-        return texture;
-    }
+  Ref<Texture2D> texture = Texture2D::Create(newSpec, data);
 
-    void IconManager::Init()
-    {
-        AddIcon("Resources/Icons/Editor/Start-Runtime.png");
-        AddIcon("Resources/Icons/Editor/Pause-Runtime.png");
-		AddIcon("Resources/Icons/Editor/Pause-Runtime-Selected.png");
-		AddIcon("Resources/Icons/Editor/NextFrame-Runtime.png");
-		AddIcon("Resources/Icons/Editor/Stop-Runtime.png");
-		AddIcon("Resources/Icons/Editor/Start-Simulation.png");
+  data.Release();
+  return texture;
+}
 
-        AddIcon("Resources/Icons/DirectoryIcon.png");
-		AddIcon("Resources/Icons/ScriptFileIcon.png");
-    }
+void IconManager::Init() {
+  AddIcon("Resources/Icons/Editor/Start-Runtime.png");
+  AddIcon("Resources/Icons/Editor/Pause-Runtime.png");
+  AddIcon("Resources/Icons/Editor/Pause-Runtime-Selected.png");
+  AddIcon("Resources/Icons/Editor/NextFrame-Runtime.png");
+  AddIcon("Resources/Icons/Editor/Stop-Runtime.png");
+  AddIcon("Resources/Icons/Editor/Start-Simulation.png");
 
-    void IconManager::Shutdown()
-    {
-        s_IconMap.clear();
-    }
+  AddIcon("Resources/Icons/DirectoryIcon.png");
+  AddIcon("Resources/Icons/ScriptFileIcon.png");
 
-    Ref<Texture2D> IconManager::AddIcon(const std::filesystem::path& filePath, const std::string& nameOverload)
-    {
-        std::filesystem::path fileName = filePath.filename();
-        fileName.replace_extension("");
+  AddIcon("Resources/Icons/AssetLock-Unlocked.png");
+  AddIcon("Resources/Icons/AssetLock-Locked.png");
+  AddIcon("Resources/Icons/AssetVisibility-Visible.png");
+  AddIcon("Resources/Icons/AssetVisibility-Invisible.png");
+}
 
-        std::string_view name = nameOverload.empty() ? fileName.c_str() : nameOverload.c_str();
-        uint32_t nameHash = Hash::GenerateFNVHash(name);
+void IconManager::Shutdown() { s_IconMap.clear(); }
 
-        if (s_IconMap.contains(nameHash))
-        {
-            CE_API_ERROR("Icon '{}' already exists! If this is a custom icon use nameOverload to specify!", name.data());
-            return nullptr;
-        }
+Ref<Texture2D> IconManager::AddIcon(const std::filesystem::path &filePath,
+                                    const std::string &nameOverload) {
+  std::filesystem::path fileName = filePath.filename();
+  fileName.replace_extension("");
 
-        Ref<Texture2D> out = ImportIconTexture(filePath);
-        if (!out)
-            return nullptr;
+  std::string_view name =
+      nameOverload.empty() ? fileName.c_str() : nameOverload.c_str();
+  uint32_t nameHash = Hash::GenerateFNVHash(name);
 
-        s_IconMap[nameHash] = out;
+  if (s_IconMap.contains(nameHash)) {
+    CE_API_ERROR("Icon '{}' already exists! If this is a custom icon use "
+                 "nameOverload to specify!",
+                 name.data());
+    return nullptr;
+  }
 
-        return out;
-    }
+  Ref<Texture2D> out = ImportIconTexture(filePath);
+  if (!out)
+    return nullptr;
 
-    Ref<Texture2D> IconManager::GetIcon(const char* iconName)
-    {
-        uint32_t nameHash = Hash::GenerateFNVHash(iconName);
+  s_IconMap[nameHash] = out;
 
-        if (s_IconMap.contains(nameHash))
-            return s_IconMap[nameHash];
+  return out;
+}
 
-        CE_API_ERROR("Icon '{}' doesn't exist!", iconName);
-        return nullptr;
-    }
+Ref<Texture2D> IconManager::GetIcon(const char *iconName) {
+  uint32_t nameHash = Hash::GenerateFNVHash(iconName);
 
-} 
+  if (s_IconMap.contains(nameHash))
+    return s_IconMap[nameHash];
+
+  CE_API_ERROR("Icon '{}' doesn't exist!", iconName);
+  return nullptr;
+}
+
+} // namespace CatEngine

@@ -19,7 +19,6 @@ public:
   virtual void OnEvent(Event &event) override;
 
   static EditorLayer &Get() { return *s_Instance; }
-
 private:
   bool OnWindowResize(WindowResizeEvent &e);
   bool OnKeyPressed(KeyPressedEvent &e);

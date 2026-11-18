@@ -51,7 +51,8 @@ static std::unordered_map<std::string, DataType> s_DataTypeLookup = {
 
     {"Object", DataType::Entity},
 
-    {"Texture2D", DataType::Texture2D},
+    {"Texture", DataType::Texture2D},
+    {"Prefab", DataType::Prefab},
 };
 
 struct ScriptEngineData {
@@ -128,143 +129,176 @@ bool ScriptEngine::ScriptClassExists(const std::string_view &className) {
          s_ScriptData->EntityClasses.end();
 }
 
-void ScriptEngine::LoadRuntimeScripts() {
-  auto view =
-      s_ScriptData->SceneContext->GetReg().view<ScriptComponentContainer>();
+void ScriptEngine::LoadEntityScriptInstances(Entity entity) {
+  auto &scc = entity.GetComponent<ScriptComponentContainer>();
 
-  // Instantiate All Scripts
-  for (auto entityID : view) {
-    Entity e = {entityID, s_ScriptData->SceneContext.get()};
-    auto &scc = e.GetComponent<ScriptComponentContainer>();
-
-    for (auto &sc : scc.Scripts) {
-      if (!ScriptEngine::ScriptClassExists(sc.ClassName.c_str()))
+  for (auto &sc : scc.Scripts) {
+    if (!ScriptEngine::ScriptClassExists(sc.ClassName.c_str()))
         continue;
 
-      UUID entUUID = e.GetUUID();
+    UUID entUUID = entity.GetUUID();
 
-      // Create the script instance and register it immediately
-      // so global lookups/registries can see that it exists in memory.
-      Ref<ScriptInstance> instance = CreateRef<ScriptInstance>(
-          s_ScriptData->EntityClasses[Hash::GenerateFNVHash(sc.ClassName)], e);
+    // Create the script instance and register it immediately
+    // so global lookups/registries can see that it exists in memory.
+    Ref<ScriptInstance> instance = CreateRef<ScriptInstance>(s_ScriptData->EntityClasses[Hash::GenerateFNVHash(sc.ClassName)], entity);
 
-      if (!instance)
-        continue;
-
-      s_ScriptData->EntityInstances[entUUID][sc.ScriptID] = instance;
-    }
-  }
-
-  for (auto entityID : view) {
-    Entity e = {entityID, s_ScriptData->SceneContext.get()};
-    auto &scc = e.GetComponent<ScriptComponentContainer>();
-    UUID entUUID = e.GetUUID();
-
-    if (s_ScriptData->EntityInstances.find(entUUID) ==
-        s_ScriptData->EntityInstances.end())
+    if (!instance)
       continue;
 
-    auto &scriptInstances = s_ScriptData->EntityInstances[entUUID];
+    s_ScriptData->EntityInstances[entUUID][sc.ScriptID] = instance;
+  }
+}
 
-    for (auto &sc : scc.Scripts) {
-      if (scriptInstances.find(sc.ScriptID) == scriptInstances.end())
-        continue;
+void ScriptEngine::LoadEnityFieldInstances(Entity enitity) {
+  auto &scc = enitity.GetComponent<ScriptComponentContainer>();
+  UUID entUUID = enitity.GetUUID();
 
-      auto &instance = scriptInstances[sc.ScriptID];
+  if (s_ScriptData->EntityInstances.find(entUUID) ==
+    s_ScriptData->EntityInstances.end())
+    return;
 
-      // Copy saved field values into the instance memory
-      if (s_ScriptData->EntityScriptFields.find(entUUID) !=
-          s_ScriptData->EntityScriptFields.end()) {
-        auto &scriptFieldMap = s_ScriptData->EntityScriptFields.at(entUUID);
+  auto &scriptInstances = s_ScriptData->EntityInstances[entUUID];
 
-        if (scriptFieldMap.find(sc.ScriptID) != scriptFieldMap.end()) {
-          auto &fieldMap = scriptFieldMap.at(sc.ScriptID);
-          for (auto &[fieldHash, fieldInstance] : fieldMap) {
-            if (fieldInstance.Field.IsVector) {
-              // Pass the editor's serialized VectorBuffer blob into the
-              // instance initializer
-              if (fieldInstance.Field.ElementType ==
-                  DataType::ScriptComponent) {
-                // 1. Copy the VectorData object so we don't corrupt
-                // s_ScriptData->EntityScriptFields
-                auto runtimeVectorData = fieldInstance.VectorData;
+  for (auto &sc : scc.Scripts) {
+    if (scriptInstances.find(sc.ScriptID) == scriptInstances.end())
+      continue;
 
-                for (size_t i = 0; i < runtimeVectorData.GetCount(); i++) {
-                  void *elementPtr = runtimeVectorData.GetElementPointer(
-                      i, fieldInstance.Field.ElementSize);
-                  if (!elementPtr)
-                    continue;
+    auto &instance = scriptInstances[sc.ScriptID];
 
-                  // Read the persistent Entity ID from our local copy
-                  uint64_t targetEntityID =
-                      *reinterpret_cast<uint64_t *>(elementPtr);
-                  if (targetEntityID == 0)
-                    continue;
+    // Copy saved field values into the instance memory
+    if (s_ScriptData->EntityScriptFields.find(entUUID) !=
+      s_ScriptData->EntityScriptFields.end()) {
+      auto &scriptFieldMap = s_ScriptData->EntityScriptFields.at(entUUID);
 
-                  uint64_t classHash = Hash::GenerateFNVHash(
-                      fieldInstance.Field.ElementTypeName);
-                  Ref<ScriptInstance> otherInstance =
-                      GetEntityScriptInstance(targetEntityID, classHash);
+      if (scriptFieldMap.find(sc.ScriptID) != scriptFieldMap.end()) {
+        auto &fieldMap = scriptFieldMap.at(sc.ScriptID);
+        for (auto &[fieldHash, fieldInstance] : fieldMap) {
+          if (fieldInstance.Field.IsVector) {
+            // Pass the editor's serialized VectorBuffer blob into the
+            // instance initializer
+            if (fieldInstance.Field.ElementType ==
+              DataType::ScriptComponent) {
+              // 1. Copy the VectorData object so we don't corrupt
+              // s_ScriptData->EntityScriptFields
+              auto runtimeVectorData = fieldInstance.VectorData;
 
-                  if (!otherInstance)
-                    continue;
+              for (size_t i = 0; i < runtimeVectorData.GetCount(); i++) {
+                void *elementPtr = runtimeVectorData.GetElementPointer(
+                  i, fieldInstance.Field.ElementSize);
+                if (!elementPtr)
+                  continue;
 
-                  // Write the runtime pointer into our local copy's slot
-                  void **slotPtr = reinterpret_cast<void **>(elementPtr);
-                  *slotPtr =
-                      otherInstance->GetManagedObject()->RawMemory.data();
-                }
+                // Read the persistent Entity ID from our local copy
+                uint64_t targetEntityID =
+                  *reinterpret_cast<uint64_t *>(elementPtr);
+                if (targetEntityID == 0)
+                  continue;
 
-                // 2. Pass the modified runtime copy to the instance initializer
-                instance->m_Instance->InitializeVectorField(
-                    fieldInstance.Field.Name,
-                    instance->m_ScriptClass->m_ClassObject.get(),
-                    runtimeVectorData.Data, fieldInstance.Field.ElementSize);
-                continue;
-              }
-            }
-            if (fieldInstance.Field.Type != DataType::ScriptComponent) {
-              instance->SetFieldDataInternal(
-                  fieldInstance.Field.Name,
-                  (void *)fieldInstance.TrivialData.Data,
-                  fieldInstance.Field.Size);
-            } else {
-              uint64_t classHash =
-                  Hash::GenerateFNVHash(fieldInstance.Field.TypeName);
-              uint64_t targetEntityID =
-                  *(uint64_t *)fieldInstance.TrivialData.Data;
-              Ref<ScriptInstance> otherInstance =
+                uint64_t classHash = Hash::GenerateFNVHash(
+                  fieldInstance.Field.ElementTypeName);
+                Ref<ScriptInstance> otherInstance =
                   GetEntityScriptInstance(targetEntityID, classHash);
-              if (!otherInstance)
-                continue;
 
-              void *data = otherInstance->GetManagedObject()->RawMemory.data();
-              instance->SetFieldDataInternal(fieldInstance.Field.Name, data,
-                                             fieldInstance.Field.Size);
+                if (!otherInstance)
+                  continue;
+
+                // Write the runtime pointer into our local copy's slot
+                void **slotPtr = reinterpret_cast<void **>(elementPtr);
+                *slotPtr =
+                  otherInstance->GetManagedObject()->RawMemory.data();
+              }
+
+              // 2. Pass the modified runtime copy to the instance initializer
+              instance->m_Instance->InitializeVectorField(
+                fieldInstance.Field.Name,
+                instance->m_ScriptClass->m_ClassObject.get(),
+                runtimeVectorData.Data, fieldInstance.Field.ElementSize);
+              continue;
             }
+          }
+          if (fieldInstance.Field.Type != DataType::ScriptComponent) {
+            instance->SetFieldDataInternal(
+              fieldInstance.Field.Name,
+              (void *)fieldInstance.TrivialData.Data,
+              fieldInstance.Field.Size);
+          } else {
+            uint64_t classHash =
+              Hash::GenerateFNVHash(fieldInstance.Field.TypeName);
+            uint64_t targetEntityID =
+              *(uint64_t *)fieldInstance.TrivialData.Data;
+            Ref<ScriptInstance> otherInstance =
+              GetEntityScriptInstance(targetEntityID, classHash);
+            if (!otherInstance)
+              continue;
+
+            void *data = otherInstance->GetManagedObject()->RawMemory.data();
+            instance->SetFieldDataInternal(fieldInstance.Field.Name, data,
+                                             fieldInstance.Field.Size);
           }
         }
       }
     }
   }
-  for (auto entityID : view) {
-    Entity e = {entityID, s_ScriptData->SceneContext.get()};
-    auto &scc = e.GetComponent<ScriptComponentContainer>();
-    UUID entUUID = e.GetUUID();
+}
 
-    if (s_ScriptData->EntityInstances.find(entUUID) ==
-        s_ScriptData->EntityInstances.end())
+void ScriptEngine::OnStartEntity(Entity entity) {
+  auto &state = entity.GetComponent<ObjectStateComponent>();
+  if (!state.Active)
+    return;
+
+  auto &scc = entity.GetComponent<ScriptComponentContainer>();
+
+  UUID entUUID = entity.GetUUID();
+
+  if (s_ScriptData->EntityInstances.find(entUUID) ==
+    s_ScriptData->EntityInstances.end())
+    return;
+
+  auto &scriptInstances = s_ScriptData->EntityInstances[entUUID];
+
+  for (auto &sc : scc.Scripts) {
+    if (!sc.Active || sc.Loaded)
+      return;
+
+    if (scriptInstances.find(sc.ScriptID) == scriptInstances.end())
       continue;
 
-    auto &scriptInstances = s_ScriptData->EntityInstances[entUUID];
+    auto &instance = scriptInstances[sc.ScriptID];
+    instance->InvokeStartMethod();
+    sc.Loaded = true;
+  }
+}
 
-    for (auto &sc : scc.Scripts) {
-      if (scriptInstances.find(sc.ScriptID) == scriptInstances.end())
-        continue;
+void ScriptEngine::LoadRuntimeScripts() {
+  auto view = s_ScriptData->SceneContext->GetReg().view<ScriptComponentContainer>();
+  // Instantiate All Scripts
+  for (auto entityID : view) {
+    Entity e = {entityID, s_ScriptData->SceneContext.get()};
+    LoadEntityScriptInstances(e);
+  }
 
-      auto &instance = scriptInstances[sc.ScriptID];
-      instance->InvokeStartMethod();
-    }
+  for (auto entityID : view) {
+    Entity e = {entityID, s_ScriptData->SceneContext.get()};
+    LoadEnityFieldInstances(e);
+  }
+
+  // Initialize all fields and data in case we use a script to enable the object
+  // However, skip the start function
+  for (auto entityID : view) {
+    Entity e = {entityID, s_ScriptData->SceneContext.get()};
+    OnStartEntity(e);
+  }
+}
+void ScriptEngine::OnUpdate(float ts) {
+  ExecuteCommandQueue();
+
+  auto view = s_ScriptData->SceneContext->GetReg().view<ScriptComponentContainer>();
+  for (auto e : view) {
+    Entity entity = {e, s_ScriptData->SceneContext.get()};
+    auto &state = entity.GetComponent<ObjectStateComponent>();
+    if (!state.SelfActive || !state.HierarchyActive)
+      continue;
+    ScriptEngine::GetMutable().OnUpdateEntity(entity, ts);
   }
 }
 
@@ -272,6 +306,8 @@ void ScriptEngine::OnUpdateEntity(Entity e, float ts) {
   auto &scc = e.GetComponent<ScriptComponentContainer>();
   UUID entityUUID = e.GetUUID();
   for (auto &sc : scc.Scripts) {
+    if (!sc.Active)
+      continue;
     auto &instances = s_ScriptData->EntityInstances;
     if (instances.find(entityUUID) == instances.end()) {
       PanelManager::Get()
@@ -289,11 +325,43 @@ void ScriptEngine::OnUpdateEntity(Entity e, float ts) {
     }
   }
 }
+void ScriptEngine::ExecuteCommandQueue() {
+  std::vector<std::function<void()>> copy;
+  {
+    std::scoped_lock<std::mutex> lock(m_CommandQueueMutex);
+    copy = m_CommandQueue;
+    m_CommandQueue.clear();
+  }
 
-void ScriptEngine::DispatchCollisionEvent(UUID uuidA, UUID uuidB,
-                                          CollisionType type) {
+  for (auto &function : copy)
+    function();
+}
+
+void ScriptEngine::DeleteEntity(Entity entity) {
+  m_CommandQueue.push_back([this, entity]() {
+    auto &entityInstances = s_ScriptData->EntityInstances[entity.GetUUID()];
+    for (auto &[scriptID, script] : entityInstances) {
+      script->InvokeDeleteMethod();
+      script->DestroyInstance();
+    }
+    entityInstances.clear();
+
+    auto &entityFieldInstances = s_ScriptData->EntityScriptFields[entity.GetUUID()];
+    entityFieldInstances.clear();
+  });
+}
+
+void ScriptEngine::DispatchCollisionEvent(UUID uuidA, UUID uuidB, CollisionType type) {
   auto &instances = s_ScriptData->EntityInstances;
   EntityScriptInstanceMap entityA, entityB;
+
+  if (!s_ScriptData->SceneContext->GetEntityByUUID(uuidA))
+    uuidA = 0;
+
+  if (!s_ScriptData->SceneContext->GetEntityByUUID(uuidB))
+    uuidB = 0;
+
+
   if (instances.find(uuidA) != instances.end())
     entityA = instances[uuidA];
 
@@ -302,11 +370,10 @@ void ScriptEngine::DispatchCollisionEvent(UUID uuidA, UUID uuidB,
 
   for (auto &[scriptID, script] : entityA) {
     switch (type) {
-    case CollisionType::Begin:
-      script->InvokeOnCollisionEnter(uuidB);
-      break;
-    case CollisionType::End:
-      if (script)
+      case CollisionType::Begin: {
+        script->InvokeOnCollisionEnter(uuidB);
+      }
+      case CollisionType::End:
         script->InvokeOnCollisionExit(uuidB);
       break;
     default:
@@ -565,6 +632,11 @@ Ref<Capybara::CapyObject::Instance> ScriptClass::Instantiate(UUID entityID) {
   return instance;
 }
 
+void ScriptClass::Destroy(Ref<Capybara::CapyObject::Instance> instance) {
+  CE_API_ASSERT(m_ClassObject, "Class is null!");
+  m_ClassObject->DestroyInstance(instance);
+}
+
 ////////////////////////////////////////////////////////////////////////////
 // Script Instance /////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////
@@ -578,6 +650,16 @@ ScriptInstance::ScriptInstance(Ref<ScriptClass> scriptClass, Entity entity)
 ScriptInstance::~ScriptInstance() {
   if (!m_Instance)
     return;
+
+  m_ScriptClass->Destroy(m_Instance);
+}
+void ScriptInstance::DestroyInstance() {
+  m_ScriptClass->Destroy(m_Instance);
+}
+
+void ScriptInstance::InvokeStartMethod() {
+  if (m_ScriptClass->m_HasStart)
+    m_ScriptClass->InvokeMethod<void>("Start", m_Instance);
 }
 
 void ScriptInstance::InvokeUpdateMethod(float ts) {
@@ -585,10 +667,11 @@ void ScriptInstance::InvokeUpdateMethod(float ts) {
     m_ScriptClass->InvokeMethod<void>("Update", m_Instance, ts);
 }
 
-void ScriptInstance::InvokeStartMethod() {
-  if (m_ScriptClass->m_HasStart)
-    m_ScriptClass->InvokeMethod<void>("Start", m_Instance);
+void ScriptInstance::InvokeDeleteMethod() {
+  if (m_ScriptClass->m_HasDelete)
+    m_ScriptClass->InvokeMethod<void>("Delete", m_Instance);
 }
+
 
 void ScriptInstance::InvokeOnCollisionEnter(const UUID &other) {
   if (m_ScriptClass->m_HasOnCollisionEnter)

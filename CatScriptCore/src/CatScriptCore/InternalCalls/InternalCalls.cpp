@@ -95,3 +95,8 @@ CE_INITIALIZE_INTERNAL_CALL(CircleRenderer_SetFade);
 
 // Editor Commands
 CE_INITIALIZE_INTERNAL_CALL(Editor_ConsoleLog);
+
+// Scene Commands
+CE_INITIALIZE_INTERNAL_CALL(Scene_InstantiatePrefab);
+CE_INITIALIZE_INTERNAL_CALL(Scene_DestroyObject);
+

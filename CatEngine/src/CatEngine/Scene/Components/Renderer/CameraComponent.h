@@ -5,6 +5,7 @@
 namespace CatEngine {
 
 struct CameraComponent {
+  bool Active = true;
   SceneCamera Camera;
   bool Primary = true;
   bool FixedAspectRatio = false;

@@ -1,3 +1,5 @@
+#include "CatEngine/Editor/PanelManager.h"
+#include "CatEngine/Editor/Panels/ConsolePanel.h"
 #include "cepch.h"
 #include "Scene.h"
 #include "CatEngine/Physics/Physics2D.h"
@@ -61,11 +63,11 @@ CopyComponent(entt::registry &dstRegistry, entt::registry &srcRegistry,
 template <typename... Component>
 static void CopyComponentIfExists(Entity dst, Entity src) {
   (
-      [&]() {
-        if (src.HasComponent<Component>())
-          dst.AddOrReplaceComponent<Component>(src.GetComponent<Component>());
-      }(),
-      ...);
+    [&]() {
+      if (src.HasComponent<Component>())
+        dst.AddOrReplaceComponent<Component>(src.GetComponent<Component>());
+    }(),
+    ...);
 }
 template <typename... Component>
 static void CopyComponentIfExists(ComponentGroup<Component...>, Entity dst,
@@ -89,13 +91,12 @@ void Scene::CopyTo(Ref<Scene> &target) {
 
   target->m_ViewportWidth = m_ViewportWidth;
   target->m_ViewportHeight = m_ViewportHeight;
+  target->m_Handle = m_Handle;
 
   auto &srcRegistry = m_Registry;
-  auto &dstRegistry = target->m_Registry;
 
-  // 1) Gather source entities into a vector to lock in their exact
-  // creation/editor order
-  std::vector<entt::entity> orderedSourceEntities;
+  // 1) Gather source entities into a vector to lock in their exact editor order
+std::vector<entt::entity> orderedSourceEntities;
   auto idView = srcRegistry.view<IDComponent>();
   for (auto e : idView) {
     orderedSourceEntities.push_back(e);
@@ -105,48 +106,47 @@ void Scene::CopyTo(Ref<Scene> &target) {
 
   std::unordered_map<UUID, entt::entity> enttMap;
 
-  // 2) Create empty entities in the target registry in the exact same sequence
+  // 2) Create empty entities in the target registry using CreateEntityWithUUID
   for (auto srcEntity : orderedSourceEntities) {
-    UUID uuid = srcRegistry.get<IDComponent>(srcEntity).ID;
-    auto name = srcRegistry.get<NameComponent>(srcEntity).Name;
-    UUID parent = srcRegistry.get<RelationshipComponent>(srcEntity).Parent;
+    Entity srcEntityWrapper{srcEntity, this};
+    UUID uuid = srcEntityWrapper.GetUUID();
+    std::string name = srcEntityWrapper.GetName();
+UUID parent = srcEntityWrapper.GetComponent<RelationshipComponent>().Parent;
 
-    enttMap[uuid] = target->CreateEntityWithUUID(uuid, name, parent);
+    Entity destEntityWrapper = target->CreateEntityWithUUID(uuid, name, parent);
+    enttMap[uuid] = destEntityWrapper.GetEntityID();
   }
 
   target->RegisterParents();
 
-  // 3) Copy components per entity, preserving the vector's exact iteration
-  // order
+  // 3) Copy components per entity using Entity wrapper and AddOrReplaceComponent
   for (auto srcEntity : orderedSourceEntities) {
-    entt::entity destEntity =
-        enttMap.at(srcRegistry.get<IDComponent>(srcEntity).ID);
+    Entity srcEntityWrapper{srcEntity, this};
+    UUID uuid = srcEntityWrapper.GetUUID();
+    Entity destEntityWrapper = target->GetEntityByUUID(uuid);
 
-    CopyComponentIfExistsForEntity<TagComponent>(dstRegistry, srcRegistry,
-                                                 srcEntity, destEntity);
-    CopyComponentIfExistsForEntity<LayerComponent>(dstRegistry, srcRegistry,
-                                                   srcEntity, destEntity);
-    CopyComponentIfExistsForEntity<TransformComponent>(dstRegistry, srcRegistry,
-                                                       srcEntity, destEntity);
-    CopyComponentIfExistsForEntity<CameraComponent>(dstRegistry, srcRegistry,
-                                                    srcEntity, destEntity);
-    CopyComponentIfExistsForEntity<SpriteRendererComponent>(
-        dstRegistry, srcRegistry, srcEntity, destEntity);
-    CopyComponentIfExistsForEntity<CircleRendererComponent>(
-        dstRegistry, srcRegistry, srcEntity, destEntity);
-    CopyComponentIfExistsForEntity<BoxCollider2DComponent>(
-        dstRegistry, srcRegistry, srcEntity, destEntity);
-    CopyComponentIfExistsForEntity<CircleCollider2DComponent>(
-        dstRegistry, srcRegistry, srcEntity, destEntity);
-    CopyComponentIfExistsForEntity<Rigidbody2DComponent>(
-        dstRegistry, srcRegistry, srcEntity, destEntity);
-    CopyComponentIfExistsForEntity<ScriptComponentContainer>(
-        dstRegistry, srcRegistry, srcEntity, destEntity);
+    if (!destEntityWrapper)
+      continue;
+
+    CopyComponentIfExists<
+        TagComponent,
+        LayerComponent,
+        ObjectStateComponent,
+        TransformComponent,
+        CameraComponent,
+        SpriteRendererComponent,
+        CircleRendererComponent,
+        Rigidbody2DComponent,
+        BoxCollider2DComponent,
+        CircleCollider2DComponent,
+        ScriptComponentContainer
+    >(destEntityWrapper, srcEntityWrapper);
   }
 }
 
 void Scene::OnUpdateEditor(Time ts, EditorCamera &camera) {
   CE_PROFILE_FUNCTION();
+  ExecuteSceneCommandQueue();
   UpdateTransforms();
   Renderer2D::BeginScene(camera);
   const auto &rootEntities = GetRootEntities();
@@ -166,14 +166,15 @@ void Scene::OnUpdateMainCameraPreview(Time ts) {
   Camera *mainCamera = nullptr;
   glm::mat4 cameraTransform;
   {
-    auto view = m_Registry.view<TransformComponent, CameraComponent>();
+    auto view = m_Registry.view<CameraComponent>();
     for (auto entity : view) {
-      auto [transform, camera] =
-          view.get<TransformComponent, CameraComponent>(entity);
+      Entity e{entity, this};
+      auto &camera = view.get<CameraComponent>(entity);
+      
 
       if (camera.Primary) {
         mainCamera = &camera.Camera;
-        cameraTransform = transform.GetWorldTransform();
+        cameraTransform = e.GetWorldTransform();
         break;
       }
     }
@@ -205,17 +206,13 @@ void Scene::OnRuntimeStart() {
 
 void Scene::OnUpdateRuntime(Time time) {
   CE_PROFILE_FUNCTION();
+  ExecuteSceneCommandQueue();
+  DeleteEntities(); // Loads the delete command to run the next update frame
   UpdateTransforms();
 
   if (!m_IsPaused) {
     // Update Scripts
-    {
-      auto view = m_Registry.view<ScriptComponentContainer>();
-      for (auto e : view) {
-        Entity entity = {e, this};
-        ScriptEngine::GetMutable().OnUpdateEntity(entity, time.deltaTime());
-      }
-    }
+    ScriptEngine::GetMutable().OnUpdate(time.deltaTime());
     // Physics 2D
     OnPhysics2DUpdate(time);
   }
@@ -291,12 +288,21 @@ void Scene::OnRuntimeStop() {
   m_IsRunning = false;
   OnPhysics2DStop();
   ScriptEngine::GetMutable().OnRuntimeStop();
+  
+  auto view = m_Registry.view<ScriptComponentContainer>();
+  for (auto entityID : view) {
+    auto &container = view.get<ScriptComponentContainer>(entityID);
+    for (auto &sc : container.Scripts) {
+      sc.Loaded = false;
+    }
+  }
 }
 
 void Scene::OnSimulationStart() { OnPhysics2DStart(); }
 
 void Scene::OnUpdateSimulation(Time time, EditorCamera &camera) {
   CE_PROFILE_FUNCTION();
+  ExecuteSceneCommandQueue();
   UpdateTransforms();
   if (!m_IsPaused) {
     // Physics 2D
@@ -391,6 +397,20 @@ void Scene::CalculateTransformRecursive(Entity entity,
     }
   }
 }
+void Scene::DeleteEntities() {
+  m_SceneCommandQueue.push_back([this](){
+    for (auto &entityID : m_DeletedEntities) {
+      Entity e = this->GetEntityByUUID(entityID);
+      m_EntityMap.erase(entityID);
+      m_RootEntities.erase(std::remove(m_RootEntities.begin(), m_RootEntities.end(),
+                                   entityID),
+                       m_RootEntities.end());
+      m_Registry.destroy(e);
+    }
+    m_DeletedEntities.clear();
+  });
+
+}
 
 void Scene::DuplicateEntity(Entity entity) { PasteEntity(entity); }
 
@@ -449,6 +469,8 @@ Entity Scene::CreateEntityWithUUID(UUID uuid, const std::string &name,
     m_RootEntities.push_back(uuid);
   }
 
+  entity.AddComponent<ObjectStateComponent>();
+
   entity.AddComponent<TransformComponent>();
 
   m_EntityMap[uuid] = entity.GetEntityID();
@@ -457,15 +479,119 @@ Entity Scene::CreateEntityWithUUID(UUID uuid, const std::string &name,
 }
 
 void Scene::DeleteEntity(Entity entity) {
-  auto &rc = entity.GetComponent<RelationshipComponent>();
-  for (auto &child : rc.Children) {
-    DeleteEntity(GetEntityByUUID(child));
+  m_SceneCommandQueue.push_back([this, entity](){
+    auto &rc = entity.GetComponent<RelationshipComponent>();
+    for (auto &child : rc.Children) {
+      DeleteEntity(GetEntityByUUID(child));
+    }
+
+    if (entity.HasComponent<BoxCollider2DComponent>() || entity.HasComponent<CircleCollider2DComponent>()) {
+      Physics2D::Get().EnableCollider(entity, false);
+    }
+
+    if (entity.HasComponent<Rigidbody2DComponent>()) {
+      Physics2D::Get().EnableRigidbody(entity, false);
+    }
+
+    if (entity.HasComponent<ScriptComponentContainer>()) {
+      ScriptEngine::GetMutable().DeleteEntity(entity);
+    }
+
+    m_DeletedEntities.push_back(entity.GetUUID());
+  });
+}
+
+void Scene::SetEntityActive(Entity entity, bool active) {
+  m_SceneCommandQueue.push_back([this, entity, active]() {
+    auto& state = entity.GetComponent<ObjectStateComponent>();
+    state.SelfActive = active;
+
+    // Evaluate against parent hierarchy
+    bool parentActive = true;
+    auto& rel = entity.GetComponent<RelationshipComponent>();
+    if (rel.Parent != 0) {
+      Entity parent = GetEntityByUUID(rel.Parent);
+      if (parent) {
+        parentActive = parent.GetComponent<ObjectStateComponent>().HierarchyActive 
+          && parent.GetComponent<ObjectStateComponent>().Active;
+      }
+    }
+
+    state.HierarchyActive = parentActive;
+    state.Active = state.SelfActive && state.HierarchyActive;
+
+    if (entity.HasComponent<Rigidbody2DComponent>()) {
+      if (!m_IsRunning)
+        return;
+      Physics2D::Get().EnableRigidbody(entity, state.Active);
+    }
+
+    if (entity.HasComponent<BoxCollider2DComponent>()) {
+      if (!m_IsRunning)
+        return;
+
+      Physics2D::Get().EnableCollider(entity, state.Active);
+    }
+
+    if (entity.HasComponent<CircleCollider2DComponent>()) {
+      if (!m_IsRunning)
+        return;
+      Physics2D::Get().EnableCollider(entity, state.Active);
+    }
+
+    if (entity.HasComponent<ScriptComponentContainer>()) {
+      if (!m_IsRunning)
+        return;
+      ScriptEngine::GetMutable().OnStartEntity(entity);
+    }
+
+
+    // Propagate down to all children immediately
+    for (UUID childUUID : rel.Children) {
+      Entity child = GetEntityByUUID(childUUID);
+      if (child) {
+        SetEntityChildActiveRecursive(child, state.Active);
+      }
+    }
+  });
+}
+
+void Scene::SetEntityChildActiveRecursive(Entity entity, bool parentActive) {
+  auto& state = entity.GetComponent<ObjectStateComponent>();
+  state.HierarchyActive = parentActive;
+  bool effectiveActive = state.SelfActive && state.HierarchyActive;
+
+  if (entity.HasComponent<Rigidbody2DComponent>()) {
+    if (!m_IsRunning)
+      return;
+    Physics2D::Get().EnableRigidbody(entity, effectiveActive);
   }
-  m_EntityMap.erase(entity.GetUUID());
-  m_RootEntities.erase(std::remove(m_RootEntities.begin(), m_RootEntities.end(),
-                                   entity.GetUUID()),
-                       m_RootEntities.end());
-  m_Registry.destroy(entity);
+
+  if (entity.HasComponent<BoxCollider2DComponent>()) {
+    if (!m_IsRunning)
+      return;
+    Physics2D::Get().EnableCollider(entity, effectiveActive);
+  }
+
+  if (entity.HasComponent<CircleCollider2DComponent>()) {
+    if (!m_IsRunning)
+      return;
+    Physics2D::Get().EnableCollider(entity, effectiveActive);
+  }
+
+  if (entity.HasComponent<ScriptComponentContainer>()) {
+    if (!m_IsRunning)
+      return;
+    ScriptEngine::GetMutable().OnStartEntity(entity);
+  }
+
+  auto& rel = entity.GetComponent<RelationshipComponent>();
+  for (UUID childUUID : rel.Children) {
+    Entity c = GetEntityByUUID(childUUID);
+    if (c) {
+      SetEntityChildActiveRecursive(c, effectiveActive);
+    }
+  }
 }
 
 Entity Scene::InstantiatePrefab(const UUID &prefabID, const UUID &parentID) {
@@ -475,6 +601,8 @@ Entity Scene::InstantiatePrefab(const UUID &prefabID, const UUID &parentID) {
   Ref<Prefab> prefab = AssetManager::GetAsset<Prefab>(prefabID);
   if (!prefab) {
     CE_API_WARN("Failed to load prefab with asset handle: {0}", (uint64_t)prefabID);
+    auto consolePanel = PanelManager::Get().GetPanel<ConsolePanel>("ConsolePanel");
+    consolePanel->WriteWarning("Failed to load prefab with asset handle: " + std::to_string(prefabID));
     return {};
   }
 
@@ -484,8 +612,11 @@ Entity Scene::InstantiatePrefab(const UUID &prefabID, const UUID &parentID) {
 
   // 2. Validate prefab root entities
   const auto &prefabRoots = prefabScene->GetRootEntities();
-  if (prefabRoots.empty())
+  if (prefabRoots.empty()) {
+    auto consolePanel = PanelManager::Get().GetPanel<ConsolePanel>("ConsolePanel");
+    consolePanel->WriteWarning("Prefab: " + std::to_string(prefabID) + " has no root entity!");
     return {};
+  }
 
   Entity prefabRootEntity = prefabScene->GetEntityByUUID(prefabRoots[0]);
   if (!prefabRootEntity)
@@ -496,47 +627,40 @@ Entity Scene::InstantiatePrefab(const UUID &prefabID, const UUID &parentID) {
 
   // Recursive lambda to clone the prefab hierarchy
   std::function<void(Entity, UUID)> cloneEntityRecursive =
-      [&](Entity srcEntity, UUID currentParentUUID) {
-        UUID oldUUID = srcEntity.GetUUID();
-        UUID newUUID = UUID(); // Generate a fresh unique ID for this
-                               // instantiation instance
-        uuidMap[oldUUID] = newUUID;
+    [&](Entity srcEntity, UUID currentParentUUID) {
+      UUID oldUUID = srcEntity.GetUUID();
+      UUID newUUID = UUID(); // Generate a fresh unique ID for this
+      // instantiation instance
+      uuidMap[oldUUID] = newUUID;
 
-        std::string name = srcEntity.GetName();
-        Entity newEntity =
-            CreateEntityWithUUID(newUUID, name, currentParentUUID);
+      std::string name = srcEntity.GetName() + " (Prefab)";
+      Entity newEntity = CreateEntityWithUUID(newUUID, name, currentParentUUID);
 
-        // Copy components from source prefab entity to new destination entity
-        CopyComponentIfExistsForEntity<TagComponent>(dstRegistry, srcRegistry,
-                                                     srcEntity, newEntity);
-        CopyComponentIfExistsForEntity<LayerComponent>(dstRegistry, srcRegistry,
-                                                       srcEntity, newEntity);
-        CopyComponentIfExistsForEntity<TransformComponent>(
-            dstRegistry, srcRegistry, srcEntity, newEntity);
-        CopyComponentIfExistsForEntity<CameraComponent>(
-            dstRegistry, srcRegistry, srcEntity, newEntity);
-        CopyComponentIfExistsForEntity<SpriteRendererComponent>(
-            dstRegistry, srcRegistry, srcEntity, newEntity);
-        CopyComponentIfExistsForEntity<CircleRendererComponent>(
-            dstRegistry, srcRegistry, srcEntity, newEntity);
-        CopyComponentIfExistsForEntity<BoxCollider2DComponent>(
-            dstRegistry, srcRegistry, srcEntity, newEntity);
-        CopyComponentIfExistsForEntity<CircleCollider2DComponent>(
-            dstRegistry, srcRegistry, srcEntity, newEntity);
-        CopyComponentIfExistsForEntity<Rigidbody2DComponent>(
-            dstRegistry, srcRegistry, srcEntity, newEntity);
-        CopyComponentIfExistsForEntity<ScriptComponentContainer>(
-            dstRegistry, srcRegistry, srcEntity, newEntity);
 
-        // Recursively clone children
-        auto &rc = srcEntity.GetComponent<RelationshipComponent>();
-        for (UUID childOldUUID : rc.Children) {
-          Entity childSrc = prefabScene->GetEntityByUUID(childOldUUID);
-          if (childSrc) {
-            cloneEntityRecursive(childSrc, newUUID);
-          }
+      // Copy components from source prefab entity to new destination entity
+      CopyComponentIfExists<
+        TagComponent,
+        LayerComponent,
+        ObjectStateComponent,
+        TransformComponent,
+        CameraComponent,
+        SpriteRendererComponent,
+        CircleRendererComponent,
+        Rigidbody2DComponent,
+        BoxCollider2DComponent,
+        CircleCollider2DComponent,
+        ScriptComponentContainer
+        >(newEntity, srcEntity);
+
+      // Recursively clone children
+      auto &rc = srcEntity.GetComponent<RelationshipComponent>();
+      for (UUID childOldUUID : rc.Children) {
+        Entity childSrc = prefabScene->GetEntityByUUID(childOldUUID);
+        if (childSrc) {
+          cloneEntityRecursive(childSrc, newUUID);
         }
-      };
+      }
+    };
 
   // 3. Begin cloning from the prefab root, attaching to the requested parentID
   // (defaults to 0 / root)
@@ -560,6 +684,12 @@ Entity Scene::InstantiatePrefab(const UUID &prefabID, const UUID &parentID) {
 
 void Scene::DrawEntityRecursive(Entity entity,
                                 const glm::mat4 &parentWorldMatrix) {
+  auto &stateComponent = entity.GetComponent<ObjectStateComponent>();
+
+  if (!stateComponent.Active) {
+    return;
+  }
+
   auto &tc = entity.GetComponent<TransformComponent>();
   auto &rc = entity.GetComponent<RelationshipComponent>();
 
@@ -746,55 +876,92 @@ void Scene::RegisterParents() {
   }
 }
 
+void Scene::ExecuteSceneCommandQueue() {
+  std::vector<std::function<void()>> copy;
+  {
+    std::scoped_lock<std::mutex> lock(m_SceneCommandQueueMutex);
+    copy = m_SceneCommandQueue;
+    m_SceneCommandQueue.clear();
+  }
+
+  for (auto &function : copy)
+    function();
+
+}
+
+
+// On Component Added
+
 template <typename T>
 void Scene::OnComponentAdded(Entity entity, T &component) {
   static_assert(false, "Component Not Supported!");
 }
 template <>
-void Scene::OnComponentAdded<LayerComponent>(Entity entity,
-                                             LayerComponent &component) {}
+void Scene::OnComponentAdded<LayerComponent>(Entity entity, LayerComponent &component) {}
+
 template <>
-void Scene::OnComponentAdded<TagComponent>(Entity entity,
-                                           TagComponent &component) {}
+void Scene::OnComponentAdded<TagComponent>(Entity entity, TagComponent &component) {}
+
 template <>
-void Scene::OnComponentAdded<CameraComponent>(Entity entity,
-                                              CameraComponent &component) {
+void Scene::OnComponentAdded<ObjectStateComponent>(Entity entity, ObjectStateComponent &component) {}
+
+template <>
+void Scene::OnComponentAdded<CameraComponent>(Entity entity, CameraComponent &component) {
   if (m_ViewportWidth > 0 && m_ViewportHeight > 0)
     component.Camera.SetViewportSize(m_ViewportWidth, m_ViewportHeight);
 }
-template <>
-void Scene::OnComponentAdded<TransformComponent>(
-    Entity entity, TransformComponent &component) {}
-template <>
-void Scene::OnComponentAdded<CircleRendererComponent>(
-    Entity entity, CircleRendererComponent &component) {}
 
 template <>
-void Scene::OnComponentAdded<SpriteRendererComponent>(
-    Entity entity, SpriteRendererComponent &component) {}
-template <>
-void Scene::OnComponentAdded<Rigidbody2DComponent>(
-    Entity entity, Rigidbody2DComponent &component) {}
+void Scene::OnComponentAdded<TransformComponent>(Entity entity, TransformComponent &component) {}
 
 template <>
-void Scene::OnComponentAdded<NameComponent>(Entity entity,
-                                            NameComponent &component) {}
-template <>
-void Scene::OnComponentAdded<BoxCollider2DComponent>(
-    Entity entity, BoxCollider2DComponent &component) {}
-template <>
-void Scene::OnComponentAdded<CircleCollider2DComponent>(
-    Entity entity, CircleCollider2DComponent &component) {}
-template <>
-void Scene::OnComponentAdded<ScriptComponentContainer>(
-    Entity entity, ScriptComponentContainer &component) {}
+void Scene::OnComponentAdded<CircleRendererComponent>(Entity entity, CircleRendererComponent &component) {}
 
 template <>
-void Scene::OnComponentAdded<IDComponent>(Entity entity,
-                                          IDComponent &component) {}
+void Scene::OnComponentAdded<SpriteRendererComponent>(Entity entity, SpriteRendererComponent &component) {}
 
 template <>
-void Scene::OnComponentAdded<RelationshipComponent>(
-    Entity entity, RelationshipComponent &component) {}
+void Scene::OnComponentAdded<Rigidbody2DComponent>(Entity entity, Rigidbody2DComponent &component) {
+  if (!m_IsRunning)
+    return;
+
+  Physics2D::Get().EnableRigidbody(entity, true);
+}
+
+template <>
+void Scene::OnComponentAdded<NameComponent>(Entity entity, NameComponent &component) {}
+
+template <>
+void Scene::OnComponentAdded<BoxCollider2DComponent>(Entity entity, BoxCollider2DComponent &component) {
+  if (!m_IsRunning)
+    return;
+
+  Physics2D::Get().EnableCollider(entity, true);
+}
+
+template <>
+void Scene::OnComponentAdded<CircleCollider2DComponent>(Entity entity, CircleCollider2DComponent &component) {
+  if (!m_IsRunning)
+    return;
+
+  Physics2D::Get().EnableCollider(entity, true);
+}
+
+template <>
+void Scene::OnComponentAdded<ScriptComponentContainer>(Entity entity, ScriptComponentContainer &component) {
+  for (auto &sc : component.Scripts)
+    sc.Loaded = false;
+
+  if (!m_IsRunning)
+    return;
+
+  ScriptEngine::GetMutable().OnStartEntity(entity);
+}
+
+template <>
+void Scene::OnComponentAdded<IDComponent>(Entity entity, IDComponent &component) {}
+
+template <>
+void Scene::OnComponentAdded<RelationshipComponent>(Entity entity, RelationshipComponent &component) {}
 
 } // namespace CatEngine

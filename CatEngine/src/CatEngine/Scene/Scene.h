@@ -8,7 +8,6 @@
 #include "CatEngine/Renderer/EditorCamera.h"
 
 #include "CatEngine/AssetManager/Asset.h"
-#include "CatEngine/Scene/ContactListener.h"
 
 class b2World;
 
@@ -26,6 +25,9 @@ public:
   Entity CreateEntity(const std::string &name = std::string());
   Entity CreateEntityWithUUID(UUID uuid, const std::string &name = std::string(), UUID parent = 0);
   void DeleteEntity(Entity entity);
+
+  void SetEntityActive(Entity entity, bool active);
+  void SetEntityChildActiveRecursive(Entity child, bool parentActive);
 
   Entity InstantiatePrefab(const UUID &prefabID, const UUID &parentID = 0);
 
@@ -80,6 +82,8 @@ public:
 private:
   template <typename T> void OnComponentAdded(Entity entity, T &component);
 
+
+private:
   void OnPhysics2DStart();
   void OnPhysics2DUpdate(Time ts);
   void OnPhysics2DStop();
@@ -90,16 +94,22 @@ private:
 
   void CalculateTransformRecursive(Entity e, const glm::mat4 &parentWorldMatrix);
 
+  void DeleteEntities();
+private:
+  void ExecuteSceneCommandQueue();
 private:
   entt::registry m_Registry;
   uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
 
+  std::vector<UUID> m_DeletedEntities;
   std::unordered_map<UUID, entt::entity> m_EntityMap;
   std::vector<UUID> m_RootEntities;
 
-
   bool m_IsRunning = false;
   bool m_IsPaused = false;
+
+  std::vector<std::function<void()>> m_SceneCommandQueue;
+  std::mutex m_SceneCommandQueueMutex;
 
   friend class Entity;
   friend class Physics2D;

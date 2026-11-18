@@ -11,9 +11,9 @@ public:
 
 
   void SerializeEntityScriptVector(YAML::Emitter &out, const DataType &elementType, const void *elementPtr);
-  void SerializeEntity(YAML::Emitter &out, Entity e);
+  void SerializeEntity(YAML::Emitter &out, Entity e, Ref<Scene> rootScene = nullptr);
 
-  void Serialize(const std::filesystem::path &filepath, Entity rootEntity);
+  void Serialize(const std::filesystem::path &filepath, Entity rootEntity, Ref<Scene> rootScene = nullptr);
 
   void DeserializeEntityScriptVector(YAML::Node &vectorNode, const DataType elementType, size_t elementSize, VectorBuffer &outVectorData);
   void DeserializeEntity(YAML::Node &node, UUID parent);

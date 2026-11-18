@@ -1,4 +1,5 @@
 #include "Physics2D.h"
+#include "CatEngine/Scene/Components/Physics/BoxCollider2D.h"
 #include "cepch.h"
 
 #include "CatEngine/Scene/Components/Physics/Rigidbody2D.h"
@@ -33,8 +34,12 @@ void Physics2D::Start(Scene *context) {
   m_PhysicsWorld->SetContactListener(&m_ContactListenter);
 
   auto view = m_Context->m_Registry.view<Rigidbody2DComponent>();
-  for (auto e : view) {
+  for (auto e : view) { // For now, Disable all physics if not enabled on start
     Entity entity = {e, m_Context};
+    auto &state = entity.GetComponent<ObjectStateComponent>();
+    if (!state.Active)
+      continue;
+
     auto &rb2d = entity.GetComponent<Rigidbody2DComponent>();
 
     // 1. Compute true absolute world transform recursively
@@ -91,6 +96,7 @@ void Physics2D::Start(Scene *context) {
 }
 
 void Physics2D::Update(Time ts) {
+  ExecutePhysicsCommandQueue();
   SyncColliders();
 
   const int32_t velocityIterations = 6;
@@ -102,8 +108,13 @@ void Physics2D::Update(Time ts) {
   auto view = m_Context->m_Registry.view<Rigidbody2DComponent>();
   for (auto e : view) {
     Entity entity{e, m_Context};
-    auto &transform = entity.GetComponent<TransformComponent>();
+    auto& state = entity.GetComponent<ObjectStateComponent>();
     auto &rb2d = entity.GetComponent<Rigidbody2DComponent>();
+    // Skip if entity or component is disabled
+    if (!state.Active || !rb2d.Active)
+      return;
+
+    auto &transform = entity.GetComponent<TransformComponent>();
     auto &rc = entity.GetComponent<RelationshipComponent>();
 
     b2Body *body = (b2Body *)rb2d.RuntimeBody;
@@ -135,14 +146,14 @@ void Physics2D::Update(Time ts) {
         // 4. Assign back using your LocalPosition.z 2D angle convention
         transform.LocalPosition.x = translation.x;
         transform.LocalPosition.y = translation.y;
-        transform.LocalPosition.z = rotation.z; // Local 2D rotation angle
+        transform.LocalRotation.z = rotation.z; // Local 2D rotation angle
         transform.LocalScale = scale;
       }
     } else {
       // --- ROOT ENTITY ---
       transform.LocalPosition.x = position.x;
       transform.LocalPosition.y = position.y;
-      transform.LocalPosition.z = angle;
+      transform.LocalRotation.z = angle;
     }
   }
 }
@@ -162,6 +173,8 @@ void Physics2D::ApplyForce(const Entity &entity, const glm::vec2 &impulse,
 
   auto &rb2d = entity.GetComponent<Rigidbody2DComponent>();
   b2Body *body = (b2Body *)rb2d.RuntimeBody;
+  if (!body)
+    return;
   body->ApplyForce(b2Vec2(impulse.x, impulse.y), b2Vec2(point.x, point.y),
                    wake);
 }
@@ -173,6 +186,8 @@ void Physics2D::ApplyForceToCenter(const Entity &entity,
 
   auto &rb2d = entity.GetComponent<Rigidbody2DComponent>();
   b2Body *body = (b2Body *)rb2d.RuntimeBody;
+  if (!body)
+    return;
   body->ApplyForceToCenter(b2Vec2(impulse.x, impulse.y), wake);
 }
 
@@ -184,6 +199,8 @@ void Physics2D::ApplyLinearImpulse(const Entity &entity,
 
   auto &rb2d = entity.GetComponent<Rigidbody2DComponent>();
   b2Body *body = (b2Body *)rb2d.RuntimeBody;
+  if (!body)
+    return;
   body->ApplyLinearImpulse(b2Vec2(impulse.x, impulse.y),
                            b2Vec2(point.x, point.y), wake);
 }
@@ -196,7 +213,109 @@ void Physics2D::ApplyLinearImpulseToCenter(const Entity &entity,
 
   auto &rb2d = entity.GetComponent<Rigidbody2DComponent>();
   b2Body *body = (b2Body *)rb2d.RuntimeBody;
+  if (!body)
+    return;
   body->ApplyLinearImpulseToCenter(b2Vec2(impulse.x, impulse.y), wake);
+}
+
+void Physics2D::EnableCollider(const Entity &entity, bool enable) {
+  m_PhysicsCommandQueue.emplace_back([this, entity, enable](){
+    if (entity.HasComponent<BoxCollider2DComponent>() && entity.HasComponent<Rigidbody2DComponent>()) {
+      auto &bc2d = entity.GetComponent<BoxCollider2DComponent>();
+
+      b2Fixture *fixture = (b2Fixture *)bc2d.RuntimeFixture;
+      if (!fixture) {
+        glm::mat4 worldTransform = entity.GetWorldTransform();
+        glm::vec3 worldPos, worldRot, worldScale;
+        Math::DecomposeTransform(worldTransform, worldPos, worldRot, worldScale);
+
+        b2PolygonShape boxShape;
+        // Use decomposed worldScale instead of cached WorldScale
+        boxShape.SetAsBox(worldScale.x * bc2d.Size.x, worldScale.y * bc2d.Size.y,
+                        {bc2d.Offset.x, bc2d.Offset.y},
+                        glm::radians(bc2d.Rotation));
+
+        b2FixtureDef fixtureDef;
+        fixtureDef.shape = &boxShape;
+        fixtureDef.density = bc2d.Density;
+        fixtureDef.friction = bc2d.Friction;
+        fixtureDef.restitution = bc2d.Restitution;
+        fixtureDef.restitutionThreshold = bc2d.RestitutionThreshold;
+        fixtureDef.userData.pointer = static_cast<uintptr_t>(entity.GetUUID());
+        auto &rb2d = entity.GetComponent<Rigidbody2DComponent>();
+        b2Body *body = (b2Body *)rb2d.RuntimeBody;
+        bc2d.RuntimeFixture = (void *)body->CreateFixture(&fixtureDef);
+      }
+
+      fixture = (b2Fixture *)bc2d.RuntimeFixture;
+      b2Filter filter = fixture->GetFilterData();
+      filter.maskBits = enable ? 0xFFFF : 0x0000; // TODO: When collision layers come into play
+      fixture->SetFilterData(filter);
+    }
+
+    if (entity.HasComponent<CircleCollider2DComponent>() && entity.HasComponent<Rigidbody2DComponent>()) {
+      auto &cc2d = entity.GetComponent<CircleCollider2DComponent>();
+
+      b2Fixture *fixture = (b2Fixture *)cc2d.RuntimeFixture;
+      if (!fixture) {
+        glm::mat4 worldTransform = entity.GetWorldTransform();
+        glm::vec3 worldPos, worldRot, worldScale;
+        Math::DecomposeTransform(worldTransform, worldPos, worldRot, worldScale);
+
+        auto &cc2d = entity.GetComponent<CircleCollider2DComponent>();
+
+        b2CircleShape circleShape;
+        circleShape.m_p.Set(cc2d.Offset.x, cc2d.Offset.y);
+        // Use decomposed worldScale
+        circleShape.m_radius = worldScale.x * cc2d.Radius;
+
+        b2FixtureDef fixtureDef;
+        fixtureDef.shape = &circleShape;
+        fixtureDef.density = cc2d.Density;
+        fixtureDef.friction = cc2d.Friction;
+        fixtureDef.restitution = cc2d.Restitution;
+        fixtureDef.restitutionThreshold = cc2d.RestitutionThreshold;
+        fixtureDef.userData.pointer = static_cast<uintptr_t>(entity.GetUUID());
+        auto &rb2d = entity.GetComponent<Rigidbody2DComponent>();
+        b2Body *body = (b2Body *)rb2d.RuntimeBody;
+        cc2d.RuntimeFixture = (void *)body->CreateFixture(&fixtureDef);
+      }
+
+      fixture = (b2Fixture *)cc2d.RuntimeFixture;
+      b2Filter filter = fixture->GetFilterData();
+      filter.maskBits = enable ? 0xFFFF : 0x0000; // TODO: When collision layers come into play
+      fixture->SetFilterData(filter);
+    }
+
+  });
+}
+
+void Physics2D::EnableRigidbody(const Entity &entity, bool enable) {
+  m_PhysicsCommandQueue.emplace_back([this, entity, enable](){
+
+    if (entity.HasComponent<Rigidbody2DComponent>()) {
+      auto &rb2d = entity.GetComponent<Rigidbody2DComponent>();
+
+      b2Body *body = (b2Body *)rb2d.RuntimeBody;
+      if (!body) {
+        // 1. Compute true absolute world transform recursively
+        glm::mat4 worldTransform = entity.GetWorldTransform();
+        glm::vec3 worldPos, worldRot, worldScale;
+        Math::DecomposeTransform(worldTransform, worldPos, worldRot, worldScale);
+
+        b2BodyDef bodyDef;
+        bodyDef.type = Rigidbody2DTypeToBox2DType(rb2d.Type);
+        bodyDef.position.Set(worldPos.x, worldPos.y); // Use true world position
+        bodyDef.angle = worldRot.z;                   // Use true world rotation
+
+        body = m_PhysicsWorld->CreateBody(&bodyDef);
+        body->SetFixedRotation(rb2d.FixedRotation);
+        rb2d.RuntimeBody = body;
+      }
+
+      body->SetEnabled(enable);
+    }
+  });
 }
 
 void Physics2D::SyncColliders() {
@@ -204,11 +323,13 @@ void Physics2D::SyncColliders() {
     return;
 
   // --- 1. Sync BoxCollider2D components ---
-  auto boxView =
-      m_Context->m_Registry.view<TransformComponent, Rigidbody2DComponent,
-                                 BoxCollider2DComponent>();
+  auto boxView = m_Context->m_Registry.view<TransformComponent, Rigidbody2DComponent, BoxCollider2DComponent>();
   for (auto e : boxView) {
     Entity entity{e, m_Context};
+    auto &state = entity.GetComponent<ObjectStateComponent>();
+    if (!state.Active)
+      continue;
+
     auto &transform = entity.GetComponent<TransformComponent>();
     auto &rb2d = entity.GetComponent<Rigidbody2DComponent>();
     auto &bc2d = entity.GetComponent<BoxCollider2DComponent>();
@@ -252,6 +373,10 @@ void Physics2D::SyncColliders() {
                                  CircleCollider2DComponent>();
   for (auto e : circleView) {
     Entity entity{e, m_Context};
+    auto &state = entity.GetComponent<ObjectStateComponent>();
+    if (!state.Active)
+      continue;
+
     auto &transform = entity.GetComponent<TransformComponent>();
     auto &rb2d = entity.GetComponent<Rigidbody2DComponent>();
     auto &cc2d = entity.GetComponent<CircleCollider2DComponent>();
@@ -281,6 +406,18 @@ void Physics2D::SyncColliders() {
     body->ResetMassData();
     cc2d.IsDirty = false;
   }
+}
+
+void Physics2D::ExecutePhysicsCommandQueue() {
+  std::vector<std::function<void()>> copy;
+  {
+    std::scoped_lock<std::mutex> lock(m_PhysicsCommandQueueMutex);
+    copy = m_PhysicsCommandQueue;
+    m_PhysicsCommandQueue.clear();
+  }
+
+  for (auto &function : copy)
+    function();
 }
 
 } // namespace CatEngine

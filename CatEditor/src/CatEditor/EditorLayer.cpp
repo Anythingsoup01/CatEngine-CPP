@@ -2,6 +2,7 @@
 
 #include "CatEngine/Editor/Panels/ConsolePanel.h"
 #include "CatEngine/Editor/Panels/InpectorPanel.h"
+#include "CatEngine/Project/Project.h"
 #include "CatEngine/Scene/Entity.h"
 #include "imgui.h"
 #include <imgui_internal.h>
@@ -18,7 +19,6 @@
 #include "CatEngine/AssetManager/AssetManager.h"
 
 #include "CatEngine/Editor/Panels/AssetBrowserPanel.h"
-#include "CatEngine/Editor/Panels/ContentBrowserPanel.h"
 #include "CatEngine/Editor/Panels/SceneHierarchyPanel.h"
 
 #include "CatEngine/Editor/IconManager.h"
@@ -321,7 +321,7 @@ void EditorLayer::OnUpdateMainCameraPreview(Time deltaTime) {
 
     m_SceneCameraPanel.BindFramebuffer();
     RenderCommand::Clear({0.1, 0.1, 0.1, 1.0});
-    m_EditorScene->OnUpdateMainCameraPreview(deltaTime);
+    m_CurrentScene->OnUpdateMainCameraPreview(deltaTime);
 
     m_SceneCameraPanel.UnbindFramebuffer();
   }
@@ -333,7 +333,7 @@ void EditorLayer::OnUpdateRuntime(Time deltaTime) {
 
     m_SceneCameraPanel.BindFramebuffer();
     RenderCommand::Clear({0.1, 0.1, 0.1, 1.0});
-    m_RuntimeScene->OnUpdateRuntime(deltaTime);
+    m_CurrentScene->OnUpdateRuntime(deltaTime);
 
     m_SceneCameraPanel.UnbindFramebuffer();
   } else if (m_SceneViewportPanel.IsActive()) {
@@ -341,7 +341,7 @@ void EditorLayer::OnUpdateRuntime(Time deltaTime) {
 
     RenderCommand::Clear({0.1, 0.1, 0.1, 1.0});
 
-    m_RuntimeScene->OnUpdateRuntime(deltaTime);
+    m_CurrentScene->OnUpdateRuntime(deltaTime);
 
     m_SceneViewportPanel.UnbindFramebuffer();
   }
@@ -401,24 +401,28 @@ void EditorLayer::UI_Viewport() {
     m_SceneViewportPanel.OnImGuiRender();
     if (ImGui::BeginDragDropTarget()) {
       if (const ImGuiPayload *payload =
-              ImGui::AcceptDragDropPayload("ASSET_MANAGER_ITEM")) {
+              ImGui::AcceptDragDropPayload("ASSET_BROWSER_ASSET")) {
         AssetHandle handle = *(AssetHandle *)payload->Data;
         const AssetType type = AssetManager::GetAssetType(handle);
 
         switch (type) {
-        case AssetType::Scene: {
-          OpenScene(handle);
-          break;
-        }
-        case AssetType::Texture2D: {
-          if (m_HoveredEntity &&
+          case AssetType::Scene: {
+            OpenScene(handle);
+            break;
+          }
+          case AssetType::Texture2D: {
+            if (m_HoveredEntity &&
               m_HoveredEntity.HasComponent<SpriteRendererComponent>())
-            m_HoveredEntity.GetComponent<SpriteRendererComponent>().Texture =
+              m_HoveredEntity.GetComponent<SpriteRendererComponent>().Texture =
                 handle;
-          break;
-        }
-        default:
-          break;
+            break;
+          }
+          case AssetType::Prefab: {
+            m_CurrentScene->InstantiatePrefab(handle);
+            break;
+          }
+          default:
+            break;
         }
       }
 
@@ -440,6 +444,11 @@ void EditorLayer::UI_Gizmos() {
       m_PanelManager->GetPanel<SceneHierarchyPanel>("SceneHierarchyPanel")
           ->GetSelectedEntity();
   if (selectedEntity && m_GizmoType != -1) {
+    auto &stateComponent = selectedEntity.GetComponent<ObjectStateComponent>();
+
+    if (stateComponent.isLocked)
+      return;
+
     ImGuizmo::SetOrthographic(false);
     ImGuizmo::SetDrawlist();
 
@@ -511,7 +520,7 @@ void EditorLayer::UI_Toolbar() {
     ImGui::SameLine();
     if (ImGui::ImageButton("##PAUSE",
                            (ImTextureID)(uint64_t)pauseIcon->GetRendererID(),
-                           ImVec2(size * 1.403f, size), {0, 0}, {1, 1})) {
+                           ImVec2(size * 1.403f, size), {1, 0}, {0, 1})) {
       if (m_SceneState == SceneState::Edit) {
         m_IsScenePaused = !m_IsScenePaused;
         OnScenePause(m_IsScenePaused);
@@ -581,14 +590,8 @@ void EditorLayer::SaveSceneAs() {
 
     std::filesystem::path relativePath = std::filesystem::relative(
         m_EditorScenePath, Project::GetAssetDirectory());
-    AssetHandle handle =
-        Project::GetActive()->GetEditorAssetManager()->ImportAsset(
-            relativePath);
+    AssetHandle handle = Project::GetActive()->GetEditorAssetManager()->ImportNewAsset(relativePath);
     m_CurrentSceneHandle = handle;
-    m_PanelManager->GetPanel<ContentBrowserPanel>("ContentBrowserPanel")
-        ->ResetAssetDirectory();
-    m_PanelManager->GetPanel<AssetBrowserPanel>("AssetBrowserPanel")
-        ->ResetAssetDirectory();
   }
 }
 
@@ -597,12 +600,12 @@ void EditorLayer::SaveScene() {
 
   if (m_SceneState == SceneState::Edit) {
     if (!m_EditorScenePath.empty()) {
-      SceneSerializer serializer(m_EditorScene);
+      SceneSerializer serializer(m_CurrentScene);
       serializer.Serialize(m_EditorScenePath.string());
       if (AssetManager::IsAssetHandleValid(m_CurrentSceneHandle)) {
         m_EditorScenePath =
             Project::GetAssetDirectory() /
-            Project::GetActive()->GetEditorAssetManager()->GetFilePath(
+            Project::GetActive()->GetEditorAssetManager()->GetSourceFilePath(
                 m_CurrentSceneHandle);
       }
       CE_API_WARN("Attempting to save at {}", m_EditorScenePath.c_str());
@@ -646,6 +649,7 @@ void EditorLayer::NewScene() {
   m_EditorScenePath = std::filesystem::path();
 
   m_EditorScene = CreateRef<Scene>();
+
   m_EditorScene->OnViewportResize(m_SceneViewportPanel.GetWidth(),
                                   m_SceneViewportPanel.GetHeight());
 
@@ -682,12 +686,12 @@ void EditorLayer::OpenProject(const std::filesystem::path &filePath) {
   if (Project::Load(filePath)) {
     m_CurrentProjectPath = filePath;
     m_ProjectActive = true;
+    Ref<AssetBrowserPanel> assetBrowser = m_PanelManager->GetPanel<AssetBrowserPanel>("AssetBrowserPanel");
+    assetBrowser->SetCurrentDirectory(Project::GetAssetDirectory());
     auto startScenePath = Project::GetConfig().StartScene;
     if (AssetManager::IsAssetHandleValid(startScenePath))
       OpenScene(startScenePath);
     ScriptEngine::GetMutable().Init();
-    m_PanelManager->GetPanel<AssetBrowserPanel>("AssetBrowserPanel")
-        ->ResetAssetDirectory();
   }
 }
 
@@ -701,17 +705,19 @@ void EditorLayer::OnScenePlay() {
   m_RuntimeScene = CreateRef<Scene>();
 
   m_EditorScene->CopyTo(m_RuntimeScene);
+
+  m_PanelManager->SetSceneContext(m_RuntimeScene);
+
+  m_SceneViewportPanel.SetContext(m_RuntimeScene);
+  m_SceneCameraPanel.SetContext(m_RuntimeScene);
+  ScriptEngine::GetMutable().SetSceneContext(m_RuntimeScene);
+
   m_RuntimeScene->OnRuntimeStart();
-  m_CurrentScene = m_RuntimeScene;
-
-  m_PanelManager->SetSceneContext(m_CurrentScene);
-
-  m_SceneViewportPanel.SetContext(m_CurrentScene);
-  m_SceneCameraPanel.SetContext(m_CurrentScene);
-  ScriptEngine::GetMutable().SetSceneContext(m_CurrentScene);
 
   if (m_IsScenePaused)
-    m_CurrentScene->OnPauseStart();
+    m_RuntimeScene->OnPauseStart();
+
+  m_CurrentScene = m_RuntimeScene;
 }
 
 void EditorLayer::OnScenePause(bool isPaused) {
@@ -729,8 +735,7 @@ void EditorLayer::OnSceneStop() {
   CE_PROFILE_FUNCTION();
 
   m_SceneState = SceneState::Edit;
-  m_CurrentScene->OnRuntimeStop();
-
+  m_RuntimeScene->OnRuntimeStop();
   m_RuntimeScene = nullptr;
 
   m_PanelManager->SetSceneContext(m_EditorScene);
@@ -738,6 +743,7 @@ void EditorLayer::OnSceneStop() {
   m_SceneViewportPanel.SetContext(m_EditorScene);
   m_SceneCameraPanel.SetContext(m_EditorScene);
   ScriptEngine::GetMutable().SetSceneContext(m_EditorScene);
+
   m_CurrentScene = m_EditorScene;
 }
 

@@ -23,7 +23,6 @@ src/CatEngine/Editor/ImGui/CEImGui.cpp
 src/CatEngine/Editor/Panels/SceneHierarchyPanel.cpp
 src/CatEngine/Editor/Panels/ConsolePanel.cpp
 src/CatEngine/Editor/Panels/AssetBrowserPanel.cpp
-src/CatEngine/Editor/Panels/ContentBrowserPanel.cpp
 src/CatEngine/Editor/Panels/InpectorPanel.cpp
 src/CatEngine/Editor/Panels/DrawComponents.cpp
 src/CatEngine/ImGui/ImGuiBuild.cpp

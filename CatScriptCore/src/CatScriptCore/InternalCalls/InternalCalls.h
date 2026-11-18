@@ -115,6 +115,10 @@ CE_ADD_INTERNAL_CALL(CircleRenderer_SetFade, void, uint64_t, float*)
 // Editor Commands
 CE_ADD_INTERNAL_CALL(Editor_ConsoleLog, void, int, const char *);
 
+// Scene Commands
+CE_ADD_INTERNAL_CALL(Scene_InstantiatePrefab, void, uint64_t, uint64_t *);
+CE_ADD_INTERNAL_CALL(Scene_DestroyObject, void, uint64_t);
+
 // Declare the internal call
 
 #ifdef __cplusplus

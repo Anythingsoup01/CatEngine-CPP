@@ -8,8 +8,7 @@ void ContactListener::BeginContact(b2Contact *contact) {
   const auto &handleA = static_cast<UUID>(contact->GetFixtureA()->GetUserData().pointer);
   const auto &handleB = static_cast<UUID>(contact->GetFixtureB()->GetUserData().pointer);
 
-  ScriptEngine::GetMutable().DispatchCollisionEvent(handleA, handleB,
-                                                    CollisionType::Begin);
+  ScriptEngine::GetMutable().DispatchCollisionEvent(handleA, handleB, CollisionType::Begin);
 }
 void ContactListener::EndContact(b2Contact *contact) {
   const auto &handleA =

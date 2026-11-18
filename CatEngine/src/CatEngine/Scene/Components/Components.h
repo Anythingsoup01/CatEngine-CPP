@@ -21,7 +21,8 @@ namespace CatEngine {
 template <typename... Component> struct ComponentGroup {};
 
 using AllComponents = ComponentGroup<
-    TagComponent, LayerComponent, RelationshipComponent, TransformComponent, CameraComponent,
+    TagComponent, LayerComponent, RelationshipComponent, ObjectStateComponent,
+    TransformComponent, CameraComponent,
     SpriteRendererComponent, CircleRendererComponent, BoxCollider2DComponent,
     CircleCollider2DComponent, Rigidbody2DComponent, ScriptComponentContainer>;
 

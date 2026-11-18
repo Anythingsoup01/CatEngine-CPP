@@ -8,6 +8,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "CatEngine/Core/UUID.h"
+#include "CatEngine/Editor/IconManager.h"
 #include "CatEngine/Editor/PanelManager.h"
 #include "CatEngine/Editor/Panels/InpectorPanel.h"
 #include "CatEngine/Scene/Components/Components.h"
@@ -35,87 +36,95 @@ void SceneHierarchyPanel::SetSceneContext(const Ref<Scene> &scene) {
 void SceneHierarchyPanel::OnImGuiRender(bool &isOpen) {
   ImGui::Begin("Hierarchy");
   {
-    ImGuiTableFlags tableFlags = ImGuiTableFlags_NoPadInnerX |
-                                 ImGuiTableFlags_BordersInnerV |
-                                 ImGuiTableFlags_ScrollY;
+    ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow |
+                               ImGuiTreeNodeFlags_SpanAvailWidth |
+                               ImGuiTreeNodeFlags_DefaultOpen;
 
-    // Name, Visibility, Lock
-    const int numberOfCols = 3;
-    if (ImGui::BeginTable("##SceneHierarchy-Table", numberOfCols, tableFlags,
-                          ImVec2(ImGui::GetContentRegionAvail()))) {
+    const Asset::MetaData &sceneMetaData =
+        Project::GetActive()->GetEditorAssetManager()->GetMetaData(
+            m_Context->m_Handle);
+    std::string projName = Project::GetConfig().Name;
 
-      ImGui::TableSetupColumn("Label");
-      ImGui::TableSetupColumn("Visibility", ImGuiTableColumnFlags_WidthFixed,
-                              25.0f);
-      ImGui::TableSetupColumn("Lock", ImGuiTableColumnFlags_WidthFixed, 25.0f);
+    std::string label = projName + " (" + sceneMetaData.AssetName + ")";
 
-      // Headers
-      {
-        ImGui::TableSetupScrollFreeze(ImGui::TableGetColumnCount(), 1);
+    if (ImGui::TreeNodeEx(label.c_str(), flags)) {
 
-        ImGui::TableNextRow(ImGuiTableRowFlags_Headers, 22.0f);
-        for (int column = 0; column < ImGui::TableGetColumnCount(); column++) {
-          ImGui::TableSetColumnIndex(column);
-          const char *column_name = ImGui::TableGetColumnName(column);
-          ImGui::TableHeader(column_name);
-        }
-      }
+      ImGuiTableFlags tableFlags = ImGuiTableFlags_NoPadInnerX |
+                                   ImGuiTableFlags_BordersInnerV |
+                                   ImGuiTableFlags_ScrollY;
 
-      ImGui::TableNextRow();
+      // Name, Visibility, Lock
+      const int numberOfCols = 3;
+      if (ImGui::BeginTable("##SceneHierarchy-Table", numberOfCols, tableFlags,
+                            ImVec2(ImGui::GetContentRegionAvail()))) {
 
-      ImGui::TableSetColumnIndex(0);
+        ImGui::TableSetupColumn("Label");
+        ImGui::TableSetupColumn("Visibility", ImGuiTableColumnFlags_WidthFixed,
+                                25.0f);
+        ImGui::TableSetupColumn("Lock", ImGuiTableColumnFlags_WidthFixed,
+                                25.0f);
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
 
-      {
-        for (auto entity : m_Context->GetRootEntities()) {
-          Entity e = m_Context->GetEntityByUUID(entity);
-          auto &rel = e.GetComponent<RelationshipComponent>();
-          if (rel.Parent == 0) { // Root Node
-            DrawEntityNode(e);
+        {
+          for (auto entity : m_Context->GetRootEntities()) {
+            Entity e = m_Context->GetEntityByUUID(entity);
+            auto &rel = e.GetComponent<RelationshipComponent>();
+            if (rel.Parent == 0) { // Root Node
+              DrawEntityNode(e);
+            }
           }
         }
-      }
 
-      ImGui::TableNextRow();
-      ImGui::TableSetColumnIndex(0);
-      ImGui::Spacing();
-      ImGui::Dummy(ImGui::GetContentRegionAvail());
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+        ImGui::Spacing();
+        ImGui::Dummy(ImGui::GetContentRegionAvail());
 
-      if (ImGui::BeginDragDropTarget()) {
-        if (const ImGuiPayload *payload = ImGui::AcceptDragDropPayload("SCENE_HIERARCHY_ITEM")) {
-          UUID droppedEntityID = *(UUID *)payload->Data;
-          Entity droppedEntity = m_Context->GetEntityByUUID(droppedEntityID);
+        if (ImGui::BeginDragDropTarget()) {
+          if (const ImGuiPayload *payload =
+                  ImGui::AcceptDragDropPayload("SCENE_HIERARCHY_ITEM")) {
+            UUID droppedEntityID = *(UUID *)payload->Data;
+            Entity droppedEntity = m_Context->GetEntityByUUID(droppedEntityID);
 
-          if (droppedEntity) {
-            // Dropped into empty space = Make it a root-level entity (Parent = 0)
-            m_Context->ReparentEntity(droppedEntity, {}); 
+            if (droppedEntity) {
+              // Dropped into empty space = Make it a root-level entity (Parent
+              // = 0)
+              m_Context->ReparentEntity(droppedEntity, {});
+            }
           }
+          ImGui::EndDragDropTarget();
         }
-        ImGui::EndDragDropTarget();
-      }
 
-      if (ImGui::BeginPopupContextWindow(nullptr,
-                                         ImGuiPopupFlags_MouseButtonRight |
-                                             ImGuiPopupFlags_NoOpenOverItems)) {
-        if (ImGui::BeginMenu("Create")) {
-          if (ImGui::MenuItem("Create Empty GameObject")) {
-            const auto &entity = m_Context->CreateEntity("GameObject");
-            Ref<InspectorPanel> inspector = PanelManager::Get().GetPanel<InspectorPanel>("InspectorPanel");
-            inspector->SetEntitySelectionContext(entity);
-            ImGui::CloseCurrentPopup();
+        if (ImGui::BeginPopupContextWindow(
+                nullptr, ImGuiPopupFlags_MouseButtonRight |
+                             ImGuiPopupFlags_NoOpenOverItems)) {
+          if (ImGui::BeginMenu("Create")) {
+            if (ImGui::MenuItem("Create Empty GameObject")) {
+              const auto &entity = m_Context->CreateEntity("GameObject");
+              Ref<InspectorPanel> inspector =
+                  PanelManager::Get().GetPanel<InspectorPanel>(
+                      "InspectorPanel");
+              inspector->SetEntitySelectionContext(entity);
+              ImGui::CloseCurrentPopup();
+            }
+            if (ImGui::MenuItem("Create Camera")) {
+              const auto &entity = m_Context->CreateEntity("Camera");
+              entity.AddComponent<CameraComponent>().Primary = false;
+              Ref<InspectorPanel> inspector =
+                  PanelManager::Get().GetPanel<InspectorPanel>(
+                      "InspectorPanel");
+              inspector->SetEntitySelectionContext(entity);
+              ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndMenu();
           }
-          if (ImGui::MenuItem("Create Camera")) {
-            const auto &entity = m_Context->CreateEntity("Camera");
-            entity.AddComponent<CameraComponent>().Primary = false;
-            Ref<InspectorPanel> inspector = PanelManager::Get().GetPanel<InspectorPanel>("InspectorPanel");
-            inspector->SetEntitySelectionContext(entity);
-            ImGui::CloseCurrentPopup();
-          }
-          ImGui::EndMenu();
+          ImGui::EndPopup();
         }
-        ImGui::EndPopup();
-      }
 
-      ImGui::EndTable();
+        ImGui::EndTable();
+      }
+      ImGui::TreePop();
     }
   }
   ImGui::End();
@@ -123,7 +132,7 @@ void SceneHierarchyPanel::OnImGuiRender(bool &isOpen) {
 
 void SceneHierarchyPanel::DrawEntityNode(Entity entity) {
   if (!entity || !m_Context->GetReg().valid(entity))
-        return;
+    return;
 
   ImGui::PushID(std::to_string(entity.GetUUID()).c_str());
   const char *name = "Unnamed Entity";
@@ -180,8 +189,9 @@ void SceneHierarchyPanel::DrawEntityNode(Entity entity) {
     ImGui::EndDragDropSource();
   }
 
- if (ImGui::BeginDragDropTarget()) {
-    if (const ImGuiPayload *payload = ImGui::AcceptDragDropPayload("SCENE_HIERARCHY_ITEM")) {
+  if (ImGui::BeginDragDropTarget()) {
+    if (const ImGuiPayload *payload =
+            ImGui::AcceptDragDropPayload("SCENE_HIERARCHY_ITEM")) {
       UUID droppedEntityID = *(UUID *)payload->Data;
       Entity droppedEntity = m_Context->GetEntityByUUID(droppedEntityID);
 
@@ -193,16 +203,15 @@ void SceneHierarchyPanel::DrawEntityNode(Entity entity) {
 
         float relativeY = mousePos.y - itemRectMin.y;
 
-        // Wased thresholds: Top 35% = Before, Bottom 35% = After, Middle 30% = Reparent
+        // Wased thresholds: Top 35% = Before, Bottom 35% = After, Middle 30% =
+        // Reparent
         if (relativeY < itemHeight * 0.35f) {
           // Drop Above (Sibling Reorder - Before)
           m_Context->MoveEntityBefore(droppedEntity, entity);
-        } 
-        else if (relativeY > itemHeight * 0.65f) {
+        } else if (relativeY > itemHeight * 0.65f) {
           // Drop Below (Sibling Reorder - After)
           m_Context->MoveEntityAfter(droppedEntity, entity);
-        } 
-        else {
+        } else {
           // Drop Directly On (Reparent as Child)
           m_Context->ReparentEntity(droppedEntity, entity);
         }
@@ -216,21 +225,23 @@ void SceneHierarchyPanel::DrawEntityNode(Entity entity) {
     float itemHeight = itemRectMax.y - itemRectMin.y;
     float relativeY = mousePos.y - itemRectMin.y;
 
-    auto* drawList = ImGui::GetWindowDrawList();
+    auto *drawList = ImGui::GetWindowDrawList();
     if (relativeY < itemHeight * 0.35f) {
       // Draw line above item
-      drawList->AddLine(itemRectMin, ImVec2(itemRectMax.x, itemRectMin.y), IM_COL32(0, 120, 255, 255), 2.0f);
+      drawList->AddLine(itemRectMin, ImVec2(itemRectMax.x, itemRectMin.y),
+                        IM_COL32(0, 120, 255, 255), 2.0f);
     } else if (relativeY > itemHeight * 0.65f) {
       // Draw line below item
-      drawList->AddLine(ImVec2(itemRectMin.x, itemRectMax.y), itemRectMax, IM_COL32(0, 120, 255, 255), 2.0f);
+      drawList->AddLine(ImVec2(itemRectMin.x, itemRectMax.y), itemRectMax,
+                        IM_COL32(0, 120, 255, 255), 2.0f);
     }
 
     ImGui::EndDragDropTarget();
   }
 
-
   if (ImGui::IsMouseDoubleClicked(0) && ImGui::IsItemHovered()) {
-    Ref<InspectorPanel> inspector = PanelManager::Get().GetPanel<InspectorPanel>("InspectorPanel");
+    Ref<InspectorPanel> inspector =
+        PanelManager::Get().GetPanel<InspectorPanel>("InspectorPanel");
     inspector->SetEntitySelectionContext(entity);
     m_SelectionContext = entity;
   }
@@ -243,6 +254,44 @@ void SceneHierarchyPanel::DrawEntityNode(Entity entity) {
     ImGui::EndPopup();
   }
 
+  // Visibility column
+
+  ImGui::TableSetColumnIndex(1);
+
+  auto &stateComponent = entity.GetComponent<ObjectStateComponent>();
+
+  {
+    float columnWidth = ImGui::GetColumnWidth();
+    float iconSize = ImGui::GetFrameHeight();
+
+    float cursorX = ImGui::GetCursorPosX();
+    ImGui::SetCursorPosX(cursorX + (columnWidth - iconSize) * 0.5f);
+    Ref<Texture2D> icon = stateComponent.SelfActive ? 
+      IconManager::GetIcon("AssetVisibility-Visible") :
+      IconManager::GetIcon("AssetVisibility-Invisible");
+    if (ImGui::ImageButton("##ASSET_VISIBILITY_BUTTONE", (ImTextureID)(uint64_t)icon->GetRendererID(), ImVec2(iconSize, iconSize), ImVec2(0, 0), ImVec2(1, 1))) {
+      bool isActive = !stateComponent.SelfActive;
+      m_Context->SetEntityActive(entity, isActive);
+    }
+  }
+
+  // Lock column
+
+  ImGui::TableSetColumnIndex(2);
+
+  {
+    float columnWidth = ImGui::GetColumnWidth();
+    float iconSize = ImGui::GetFrameHeight(); // square icon
+
+    float cursorX = ImGui::GetCursorPosX();
+    ImGui::SetCursorPosX(cursorX + (columnWidth - iconSize) * 0.5f);
+    Ref<Texture2D> icon = stateComponent.isLocked ? 
+      IconManager::GetIcon("AssetLock-Locked") :
+      IconManager::GetIcon("AssetLock-Unlocked");
+    if (ImGui::ImageButton("##ASSET_LOCK_BUTTON", (ImTextureID)(uint64_t)icon->GetRendererID(), ImVec2(iconSize, iconSize), ImVec2(0, 1), ImVec2(1, 0))) {
+      stateComponent.isLocked = !stateComponent.isLocked;
+    }
+  }
   if (opened) {
     for (auto childUUID : relationship.Children) {
       Entity childEntity = m_Context->GetEntityByUUID(childUUID);
@@ -252,43 +301,18 @@ void SceneHierarchyPanel::DrawEntityNode(Entity entity) {
     }
     ImGui::TreePop();
   }
+
   if (entityDeleted) {
     if (m_SelectionContext == entity) {
       Ref<InspectorPanel> inspector = PanelManager::Get().GetPanel<InspectorPanel>("InspectorPanel");
       inspector->SetEntitySelectionContext({});
+      m_SelectionContext = {};
+      m_Context->DeleteEntity(entity);
     }
-    m_Context->DeleteEntity(entity);
   }
 
-  // Visibility column
 
-  ImGui::TableSetColumnIndex(1);
-
-  bool visible = true;
-  {
-    float columnWidth = ImGui::GetColumnWidth();
-    float iconSize = ImGui::GetFrameHeight();
-
-    float cursorX = ImGui::GetCursorPosX();
-    ImGui::SetCursorPosX(cursorX + (columnWidth - iconSize) * 0.5f);
-
-    ImGui::Checkbox("##Visible", &visible);
-  }
-
-  // Lock column
-
-  ImGui::TableSetColumnIndex(2);
-
-  bool lock = false;
-  {
-    float columnWidth = ImGui::GetColumnWidth();
-    float iconSize = ImGui::GetFrameHeight(); // square icon
-
-    float cursorX = ImGui::GetCursorPosX();
-    ImGui::SetCursorPosX(cursorX + (columnWidth - iconSize) * 0.5f);
-
-    ImGui::Checkbox("##lock", &lock);
-  }
   ImGui::PopID();
 }
+
 } // namespace CatEngine

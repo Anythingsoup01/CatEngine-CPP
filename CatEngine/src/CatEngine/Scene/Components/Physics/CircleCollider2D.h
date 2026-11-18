@@ -5,6 +5,7 @@
 namespace CatEngine {
 
 struct CircleCollider2DComponent {
+  bool Active = true;
   glm::vec2 Offset = {0.0f, 0.0f};
   float Radius = 0.5f;
   bool ShowColliderBounds = false;

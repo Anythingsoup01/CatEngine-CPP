@@ -2,6 +2,8 @@
 
 #include <CatScriptCore/ScriptInclude.h>
 
+#include <CatScriptCore/Asset/Prefab.h>
+
 #include "PlayerHealth.h"
 
 namespace CatRuntime {
@@ -17,8 +19,8 @@ public:
   void OnCollisionExit(Object other);
 
 public:
-  std::vector<PlayerHealth *> m_PlayerHealths;
-  PlayerHealth *m_PH;
+  std::vector<Object> m_Enemies;
+  Prefab m_PlayerPrefab;
   float m_PlayerTerminalVelocity = 25.0f;
   float m_PlayerSpeed = 10;
   float m_JumpForce = 25.0f;
