@@ -30,6 +30,7 @@ public:
   void SetEntityChildActiveRecursive(Entity child, bool parentActive);
 
   Entity InstantiatePrefab(const UUID &prefabID, const UUID &parentID = 0);
+  void OnPrefabReloaded(const UUID &prefabID);
 
   void DrawEntityRecursive(Entity e, const glm::mat4 &parentWorldMatrix);
 
@@ -106,6 +107,8 @@ private:
   std::vector<UUID> m_DeletedEntities;
   std::unordered_map<UUID, entt::entity> m_EntityMap;
   std::vector<UUID> m_RootEntities;
+
+  bool m_IsDirty = false;
 
   bool m_IsRunning = false;
   bool m_IsPaused = false;

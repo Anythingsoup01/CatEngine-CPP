@@ -1,10 +1,13 @@
 #include "EditorLayer.h"
 
+#include "CatEngine/Core/Application.h"
+#include "CatEngine/Core/Log.h"
 #include "CatEngine/Editor/Panels/ConsolePanel.h"
 #include "CatEngine/Editor/Panels/InpectorPanel.h"
 #include "CatEngine/Project/Project.h"
 #include "CatEngine/Scene/Entity.h"
 #include "imgui.h"
+#include <filesystem>
 #include <imgui_internal.h>
 
 #include "glm/glm.hpp"
@@ -73,28 +76,26 @@ void EditorLayer::OnUpdate(Time deltaTime) {
   m_BlockKeyboardEvents = m_SceneViewportPanel.IsFocused();
 
   if (m_ProjectActive) {
+    Project::GetActive()->UpdateAssetManager();
+    OnUpdateEditor(deltaTime);
     switch (m_SceneState) {
-    case SceneState::Edit: {
-      OnUpdateEditor(deltaTime);
-      OnUpdateMainCameraPreview(deltaTime);
-      ScriptEngine::GetMutable().PollJIT();
-      break;
-    }
-    case SceneState::Play: {
-      OnUpdateRuntime(deltaTime);
-      OnUpdateEditor(deltaTime);
-      break;
-    }
-    case SceneState::Simulate: {
-      OnUpdateSimulation(deltaTime);
-      OnUpdateEditor(deltaTime);
-      break;
-    }
-    case SceneState::Pause: {
-      OnUpdateRuntime(deltaTime);
-      OnUpdateEditor(deltaTime);
-      break;
-    }
+      case SceneState::Edit: {
+        OnUpdateMainCameraPreview(deltaTime);
+        ScriptEngine::GetMutable().PollJIT();
+        break;
+      }
+      case SceneState::Play: {
+        OnUpdateRuntime(deltaTime);
+        break;
+      }
+      case SceneState::Simulate: {
+        OnUpdateSimulation(deltaTime);
+        break;
+      }
+      case SceneState::Pause: {
+        OnUpdateRuntime(deltaTime);
+        break;
+      }
     }
   } else {
     OpenProject();
@@ -583,43 +584,46 @@ void EditorLayer::UI_MenuBar() {
 void EditorLayer::SaveSceneAs() {
   CE_PROFILE_FUNCTION();
 
-  if (m_SceneState == SceneState::Edit) {
-    m_EditorScenePath = FileDialog::SaveFile({{"CatEngine Scene", "catscene"}});
-    if (!m_EditorScenePath.empty())
-      SaveScene();
+  if (m_SceneState != SceneState::Edit)
+    return;
 
-    std::filesystem::path relativePath = std::filesystem::relative(
-        m_EditorScenePath, Project::GetAssetDirectory());
-    AssetHandle handle = Project::GetActive()->GetEditorAssetManager()->ImportNewAsset(relativePath);
-    m_CurrentSceneHandle = handle;
-  }
+  m_EditorScenePath = FileDialog::SaveFile({{"CatEngine Scene", "catscene"}});
+  if (!m_EditorScenePath.empty())
+    SaveScene();
 }
 
 void EditorLayer::SaveScene() {
   CE_PROFILE_FUNCTION();
 
-  if (m_SceneState == SceneState::Edit) {
-    if (!m_EditorScenePath.empty()) {
-      SceneSerializer serializer(m_CurrentScene);
-      serializer.Serialize(m_EditorScenePath.string());
-      if (AssetManager::IsAssetHandleValid(m_CurrentSceneHandle)) {
-        m_EditorScenePath =
-            Project::GetAssetDirectory() /
-            Project::GetActive()->GetEditorAssetManager()->GetSourceFilePath(
-                m_CurrentSceneHandle);
-      }
-      CE_API_WARN("Attempting to save at {}", m_EditorScenePath.c_str());
-    } else
-      SaveSceneAs();
+  if (m_SceneState != SceneState::Edit)
+    return;
+
+  auto sceneMetaData = Project::GetActive()->GetEditorAssetManager()->GetMetaData(m_CurrentScene->GetAssetHandle());
+  auto absPath = std::filesystem::absolute(Project::GetAssetDirectory() / sceneMetaData.SourceFilePath);
+  CE_API_WARN("Attempting to save at {}", absPath.generic_string());
+
+  SceneSerializer serializer(m_CurrentScene);
+  serializer.Serialize(absPath);
+  if (!AssetManager::IsAssetHandleValid(m_CurrentSceneHandle)) {
+    CE_API_WARN("Failed to find valid asset handle for scene {}", absPath.generic_string());
   }
 }
 
 void EditorLayer::OpenScene(AssetHandle handle) {
   CE_PROFILE_FUNCTION();
 
+  if (!AssetManager::IsAssetHandleValid(handle)) {
+    CE_API_ERROR("Scene Asset Handle is Invalid!");
+    auto console = m_PanelManager->GetPanel<ConsolePanel>("ConsolePanel");
+    console->WriteError("Scene Asset Handle: " + std::to_string(handle) + " is invalid!");
+    return;
+  }
+
+
   Ref<Scene> readOnlyScene = AssetManager::GetAsset<Scene>(handle);
   Ref<Scene> newScene = CreateRef<Scene>();
   readOnlyScene->CopyTo(newScene);
+  Project::GetActive()->OpenScene(handle);
 
   m_EditorScene = newScene;
 
@@ -645,10 +649,29 @@ void EditorLayer::OpenScene(AssetHandle handle) {
 void EditorLayer::NewScene() {
   CE_PROFILE_FUNCTION();
 
-  m_CurrentSceneHandle = 0;
-  m_EditorScenePath = std::filesystem::path();
+  std::filesystem::path sampleScenePath = std::filesystem::absolute(Application::Get().GetMainPath() / "Resources/Samples/SampleScene2D.catscene");
+  std::filesystem::path newSourcePath = std::filesystem::absolute(Project::GetAssetDirectory() / "SampleScene2D.catscene");
+  int i = 1;
+  while (std::filesystem::exists(newSourcePath)) {
+    std::string fileName = newSourcePath.filename();
+    std::string extension = newSourcePath.extension();
+    newSourcePath = newSourcePath.parent_path();
 
-  m_EditorScene = CreateRef<Scene>();
+    fileName = fileName.erase(fileName.find('.'));
+    newSourcePath = newSourcePath / (fileName + std::to_string(i) + extension);
+  }
+
+  std::filesystem::copy(sampleScenePath, newSourcePath);
+
+  auto sceneHandle = Project::GetActive()->GetEditorAssetManager()->ImportNewAsset(newSourcePath);
+
+
+  Ref<Scene> readOnlyScene = AssetManager::GetAsset<Scene>(sceneHandle);
+  Ref<Scene> newScene = CreateRef<Scene>();
+  readOnlyScene->CopyTo(newScene);
+  Project::GetActive()->OpenScene(sceneHandle);
+
+  m_EditorScene = newScene;
 
   m_EditorScene->OnViewportResize(m_SceneViewportPanel.GetWidth(),
                                   m_SceneViewportPanel.GetHeight());
@@ -663,7 +686,6 @@ void EditorLayer::NewScene() {
 }
 
 void EditorLayer::SaveProject() {
-  Project::SetCurrentScene(m_CurrentSceneHandle);
   Project::Save(m_CurrentProjectPath);
 }
 
@@ -688,7 +710,9 @@ void EditorLayer::OpenProject(const std::filesystem::path &filePath) {
     m_ProjectActive = true;
     Ref<AssetBrowserPanel> assetBrowser = m_PanelManager->GetPanel<AssetBrowserPanel>("AssetBrowserPanel");
     assetBrowser->SetCurrentDirectory(Project::GetAssetDirectory());
-    auto startScenePath = Project::GetConfig().StartScene;
+    auto &scenes = Project::GetConfig().OpenScenes;
+    // We store scenes from most oldest to newest
+    auto startScenePath = scenes.at(scenes.size() - 1);
     if (AssetManager::IsAssetHandleValid(startScenePath))
       OpenScene(startScenePath);
     ScriptEngine::GetMutable().Init();

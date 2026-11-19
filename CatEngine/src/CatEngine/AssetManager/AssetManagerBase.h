@@ -8,6 +8,8 @@ namespace CatEngine {
 using AssetMap = std::unordered_map<AssetHandle, Ref<Asset>>;
 class AssetManagerBase {
 public:
+  virtual void Init() = 0;
+  virtual void Poll() = 0;
   virtual Ref<Asset> GetAsset(AssetHandle handle) = 0;
   virtual bool IsAssetHandleValid(AssetHandle handle) const = 0;
   virtual bool IsAssetLoaded(AssetHandle handle) const = 0;

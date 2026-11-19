@@ -1,5 +1,6 @@
 #include "EditorAssetManager.h"
 #include "CatEngine/AssetManager/Asset.h"
+#include "CatEngine/AssetManager/AssetPostprocessor.h"
 #include "CatEngine/AssetManager/Importers/SceneImporter.h"
 #include "CatEngine/AssetManager/Importers/TextureImporter.h"
 #include "CatEngine/Editor/PanelManager.h"
@@ -21,6 +22,31 @@ namespace CatEngine {
 EditorAssetManager::~EditorAssetManager() {
   m_AssetRegistry.clear();
   m_LoadedAssets.clear();
+}
+void EditorAssetManager::Init() {
+  std::filesystem::path absPath = std::filesystem::absolute(Project::GetAssetDirectory());
+  m_FileWatcher.Init(absPath);
+}
+
+void EditorAssetManager::Poll() {
+  std::vector<Capybara::FileChangeEvent> changes = m_FileWatcher.Poll();
+
+  if (changes.empty())
+    return;
+
+  for (const auto &change : changes) {
+    if (change.Path.extension() != ".catprefab")
+      continue;
+
+    switch (change.type) {
+      case Capybara::FileChangeEvent::Modified:
+      case Capybara::FileChangeEvent::Created: {
+        AssetPostprocessor::OnFileModified(change.Path);
+      }
+      case Capybara::FileChangeEvent::Deleted:
+      break;
+    }
+  }
 }
 
 static std::unordered_map<std::filesystem::path, AssetType>
@@ -167,22 +193,74 @@ AssetHandle EditorAssetManager::ReloadAssetWithNewMetaData(
   }
   return 0;
 }
-void EditorAssetManager::DeleteAsset(AssetHandle handle) {
+bool EditorAssetManager::ReloadAssetFromDisk(const std::filesystem::path &filePath) {
+  std::filesystem::path absPath = std::filesystem::absolute(filePath);
+  YAML::Node data;
+  try {
+    data = YAML::LoadFile(absPath);
+  } catch (YAML::ParserException ex) {
+    Ref<ConsolePanel> console = PanelManager::Get().GetPanel<ConsolePanel>("ConsolePanel");
+    console->WriteError("Failed to load asset file: " + absPath.string());
+    return false;
+  }
+
+  AssetHandle handle = data["Handle"].as<AssetHandle>();
+  DeleteAsset(handle, false);
+  Asset::MetaData &metaData = m_AssetRegistry[handle];
+  metaData.AssetName = data["Name"].as<std::string>();
+  metaData.FilePath = data["FilePath"].as<std::string>();
+  metaData.SourceFilePath = data["SourceFilePath"].as<std::string>();
+  metaData.Type = StringToAssetType(data["Type"].as<std::string>());
+  if (metaData.Type == AssetType::Texture2D) {
+    metaData.TextureMinFilter = StringToTextureParameter(data["MinFilter"].as<std::string>());
+    metaData.TextureMagFilter = StringToTextureParameter(data["MagFilter"].as<std::string>());
+    metaData.TextureWrap = StringToTextureWrapParameter(data["WrapOption"].as<std::string>());
+    metaData.TextureFormat = StringToImageFormat(data["ImageFormat"].as<std::string>());
+  }
+
+
+  ImportAssetFromDisk(handle, metaData);
+  SerializeAsset(handle);
+  uint32_t pathHash = Hash::GenerateFNVHash(absPath.generic_string());
+  m_AssetRegistryFileMap[pathHash] = handle;
+  return true;
+}
+AssetHandle EditorAssetManager::GetAssetIDFromPath(const std::filesystem::path &filePath) {
+  std::filesystem::path absPath = std::filesystem::absolute(filePath);
+  uint32_t pathHash = Hash::GenerateFNVHash(absPath.generic_string());
+  if (!m_AssetRegistryFileMap.contains(pathHash))
+    return 0;
+
+  return m_AssetRegistryFileMap[pathHash];
+}
+
+void EditorAssetManager::DeleteAsset(AssetHandle handle, bool deleteSource) {
   auto &metaData = GetMetaData(handle);
   std::filesystem::path absPath = std::filesystem::absolute(Project::GetAssetDirectory() / metaData.FilePath);
   if (std::filesystem::exists(absPath)) {
     std::filesystem::remove(absPath);
   }
 
-  switch (metaData.Type) {
-    case AssetType::Prefab:
-    case AssetType::Scene: {
-      std::filesystem::path absSourcePath = std::filesystem::absolute(Project::GetAssetDirectory() / metaData.SourceFilePath);
-      if (std::filesystem::exists(absSourcePath))
-        std::filesystem::remove(absSourcePath);
+  if (deleteSource) {
+    switch (metaData.Type) {
+      case AssetType::Prefab:
+      case AssetType::Scene: {
+        std::filesystem::path absSourcePath = std::filesystem::absolute(Project::GetAssetDirectory() / metaData.SourceFilePath);
+        if (std::filesystem::exists(absSourcePath))
+          std::filesystem::remove(absSourcePath);
+
+        auto &openScenes = Project::GetActive()->GetOpenScenes();
+        for (auto it = openScenes.begin(); it != openScenes.end(); it++) {
+          auto sceneHandle = *it;
+          if (handle == sceneHandle) {
+            openScenes.erase(it);
+            break;
+          }
+        }
+      }
+      default:
+        break;
     }
-    default:
-      break;
   }
 
   for (auto it = m_AssetRegistryFileMap.begin(); it != m_AssetRegistryFileMap.end(); it++) {
@@ -203,6 +281,9 @@ void EditorAssetManager::DeleteAsset(AssetHandle handle) {
     if (it != m_LoadedAssets.end())
       m_LoadedAssets.erase(it);
   }
+
+
+
 }
 
 const Asset::MetaData &EditorAssetManager::GetMetaData(AssetHandle handle) const {

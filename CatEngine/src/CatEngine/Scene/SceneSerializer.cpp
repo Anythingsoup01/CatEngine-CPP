@@ -117,6 +117,16 @@ void SceneSerializer::SerializeEntity(YAML::Emitter &out, Entity entity) {
 
     out << YAML::EndMap; // NameComponent
   }
+  if (entity.HasComponent<PrefabLinkComponent>()) {
+    auto &plc = entity.GetComponent<PrefabLinkComponent>();
+    out << YAML::Key << "PrefabLinkComponent";
+    out << YAML::BeginMap; // PrefabLinkComponent
+
+    out << YAML::Key << "PrefabID" << YAML::Value << plc.PrefabID;
+    out << YAML::Key << "SourceEntityID" << YAML::Value << plc.SourceEntityID;
+
+    out << YAML::EndMap; // PrefabLinkComponent
+  }
   if (entity.HasComponent<TransformComponent>()) {
     out << YAML::Key << "TransformComponent";
     out << YAML::BeginMap; // TransformComponent
@@ -482,6 +492,13 @@ void SceneSerializer::DeserializeEntity(YAML::Node &entity, UUID parent) {
   if (layerComponent)
     layer = layerComponent["Layer"].as<std::string>();
   deserializedEntity.GetComponent<LayerComponent>().Layer = layer;
+
+  auto prefabLinkComponent = entity["PrefabLinkComponent"];
+  if (prefabLinkComponent) {
+    auto &plc = deserializedEntity.GetOrAddComponent<PrefabLinkComponent>();
+    plc.PrefabID = prefabLinkComponent["PrefabID"].as<UUID>();
+    plc.SourceEntityID = prefabLinkComponent["SourceEntityID"].as<UUID>();
+  }
 
   auto transformComponent = entity["TransformComponent"];
   if (transformComponent) {

@@ -1,5 +1,5 @@
-#include "CatEngine/Editor/PanelManager.h"
-#include "CatEngine/Editor/Panels/ConsolePanel.h"
+#include "CatEngine/Editor/Panels/InpectorPanel.h"
+#include "CatEngine/Editor/Panels/SceneHierarchyPanel.h"
 #include "cepch.h"
 #include "Scene.h"
 #include "CatEngine/Physics/Physics2D.h"
@@ -17,11 +17,8 @@
 #include <cstdint>
 #include <glm/glm.hpp>
 
-#include <box2d/b2_body.h>
-#include <box2d/b2_circle_shape.h>
-#include <box2d/b2_fixture.h>
-#include <box2d/b2_polygon_shape.h>
-#include <box2d/b2_world.h>
+#include "CatEngine/Editor/PanelManager.h"
+#include "CatEngine/Editor/Panels/ConsolePanel.h"
 
 #include "CatEngine/Scripting/ScriptEngine.h"
 
@@ -139,14 +136,20 @@ UUID parent = srcEntityWrapper.GetComponent<RelationshipComponent>().Parent;
         Rigidbody2DComponent,
         BoxCollider2DComponent,
         CircleCollider2DComponent,
-        ScriptComponentContainer
+        ScriptComponentContainer,
+        PrefabLinkComponent
     >(destEntityWrapper, srcEntityWrapper);
   }
 }
 
 void Scene::OnUpdateEditor(Time ts, EditorCamera &camera) {
   CE_PROFILE_FUNCTION();
-  ExecuteSceneCommandQueue();
+
+  if (!m_IsRunning) {
+    ExecuteSceneCommandQueue();
+    DeleteEntities();
+  }
+
   UpdateTransforms();
   Renderer2D::BeginScene(camera);
   const auto &rootEntities = GetRootEntities();
@@ -219,7 +222,7 @@ void Scene::OnUpdateRuntime(Time time) {
     while (m_Accumulator >= m_FixedTimeStep) {
       // Loads the delete command to run the next update frame, allowing the physics engine to catch up
       DeleteEntities();
-      
+
       // Update Scripts
       ScriptEngine::GetMutable().OnFixedUpdate(Time(m_FixedTimeStep));
       // Physics 2D
@@ -639,8 +642,28 @@ Entity Scene::InstantiatePrefab(const UUID &prefabID, const UUID &parentID) {
   if (!prefabRootEntity)
     return {};
 
-  // Map old prefab UUIDs to newly generated runtime UUIDs
-  std::unordered_map<UUID, UUID> uuidMap;
+  UUID oldUUID = prefabRootEntity.GetUUID();
+  UUID newUUID = UUID(); // Generate a fresh unique ID for this
+
+  std::string name = prefabRootEntity.GetName() + " (Prefab)";
+  Entity newEntity = CreateEntityWithUUID(newUUID, name, 0);
+  newEntity.AddComponent<PrefabLinkComponent>(prefabID, prefabRootEntity.GetUUID());
+
+  CopyComponentIfExists<
+    TagComponent,
+    LayerComponent,
+    ObjectStateComponent,
+    TransformComponent,
+    CameraComponent,
+    SpriteRendererComponent,
+    CircleRendererComponent,
+    Rigidbody2DComponent,
+    BoxCollider2DComponent,
+    CircleCollider2DComponent,
+    ScriptComponentContainer,
+    PrefabLinkComponent
+    >(newEntity, prefabRootEntity);
+
 
   // Recursive lambda to clone the prefab hierarchy
   std::function<void(Entity, UUID)> cloneEntityRecursive =
@@ -648,9 +671,8 @@ Entity Scene::InstantiatePrefab(const UUID &prefabID, const UUID &parentID) {
       UUID oldUUID = srcEntity.GetUUID();
       UUID newUUID = UUID(); // Generate a fresh unique ID for this
       // instantiation instance
-      uuidMap[oldUUID] = newUUID;
 
-      std::string name = srcEntity.GetName() + " (Prefab)";
+      std::string name = srcEntity.GetName();
       Entity newEntity = CreateEntityWithUUID(newUUID, name, currentParentUUID);
 
 
@@ -666,7 +688,8 @@ Entity Scene::InstantiatePrefab(const UUID &prefabID, const UUID &parentID) {
         Rigidbody2DComponent,
         BoxCollider2DComponent,
         CircleCollider2DComponent,
-        ScriptComponentContainer
+        ScriptComponentContainer,
+        PrefabLinkComponent
         >(newEntity, srcEntity);
 
       // Recursively clone children
@@ -679,24 +702,69 @@ Entity Scene::InstantiatePrefab(const UUID &prefabID, const UUID &parentID) {
       }
     };
 
-  // 3. Begin cloning from the prefab root, attaching to the requested parentID
-  // (defaults to 0 / root)
-  cloneEntityRecursive(prefabRootEntity, parentID);
+  auto &rc = prefabRootEntity.GetComponent<RelationshipComponent>();
+  for (UUID childOldUUID : rc.Children) {
+    Entity childSrc = prefabScene->GetEntityByUUID(childOldUUID);
+    if (childSrc) {
+      cloneEntityRecursive(childSrc, newUUID);
+    }
+  }
 
   // 4. If a valid parentID was provided, explicitly push the newly created root
   // into the parent's Children list
   if (parentID != 0) {
     Entity parentEntity = GetEntityByUUID(parentID);
-    Entity newlyCreatedRoot =
-        GetEntityByUUID(uuidMap[prefabRootEntity.GetUUID()]);
-    if (parentEntity && newlyCreatedRoot) {
-      parentEntity.GetComponent<RelationshipComponent>().Children.push_back(
-          newlyCreatedRoot.GetUUID());
+    if (parentEntity && newEntity) {
+      parentEntity.GetComponent<RelationshipComponent>().Children.push_back( newEntity.GetUUID());
     }
   }
 
   RegisterParents();
-  return GetEntityByUUID(uuidMap[prefabRootEntity.GetUUID()]);
+  return newEntity;
+}
+
+void Scene::OnPrefabReloaded(const UUID &prefabID) {
+  if (m_IsRunning)
+    return;
+
+  auto view = m_Registry.view<PrefabLinkComponent, IDComponent, RelationshipComponent>();
+
+  std::vector<UUID> instancesToRefresh;
+  for (auto e : view) {
+    auto& link = view.get<PrefabLinkComponent>(e);
+    if (link.PrefabID == prefabID) {
+      instancesToRefresh.push_back(view.get<IDComponent>(e).ID);
+    }
+  }
+
+  auto sceneHierarchy = PanelManager::Get().GetPanel<SceneHierarchyPanel>("SceneHierarchyPanel");
+  auto inspector = PanelManager::Get().GetPanel<InspectorPanel>("InspectorPanel");
+  Entity selectedEntity = sceneHierarchy->GetSelectedEntity();
+
+  for (UUID instanceUUID : instancesToRefresh) {
+    Entity instanceEntity = GetEntityByUUID(instanceUUID);
+    if (!instanceEntity) continue;
+
+    // Capture current transform, parent, and active state
+    auto transformCopy = instanceEntity.GetComponent<TransformComponent>();
+    UUID parentID = instanceEntity.GetComponent<RelationshipComponent>().Parent;
+    bool isActive = instanceEntity.GetComponent<ObjectStateComponent>().Active;
+
+    // Delete old instance hierarchy
+    DeleteEntity(instanceEntity);
+
+    // Re-instantiate fresh from the updated prefab asset
+    Entity newInstance = InstantiatePrefab(prefabID, parentID);
+    if (newInstance) {
+      // Restore world/local transform and active state
+      newInstance.GetComponent<TransformComponent>() = transformCopy;
+      SetEntityActive(newInstance, isActive);
+    }
+    if (instanceEntity == selectedEntity) {
+      sceneHierarchy->SetSelectedEntity(newInstance);
+      inspector->SetEntitySelectionContext(newInstance);
+    }
+  }
 }
 
 void Scene::DrawEntityRecursive(Entity entity,
@@ -974,6 +1042,9 @@ void Scene::OnComponentAdded<ScriptComponentContainer>(Entity entity, ScriptComp
 
   ScriptEngine::GetMutable().OnStartEntity(entity);
 }
+
+template <>
+void Scene::OnComponentAdded<PrefabLinkComponent>(Entity entity, PrefabLinkComponent &component) {}
 
 template <>
 void Scene::OnComponentAdded<IDComponent>(Entity entity, IDComponent &component) {}

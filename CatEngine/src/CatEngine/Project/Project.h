@@ -1,5 +1,6 @@
 #pragma once
 
+#include "CatEngine/AssetManager/Asset.h"
 #include "CatEngine/AssetManager/AssetManagerBase.h"
 #include "CatEngine/AssetManager/EditorAssetManager.h"
 #include "CatEngine/AssetManager/RuntimeAssetManager.h"
@@ -7,7 +8,7 @@
 namespace CatEngine {
 struct ProjectConfig {
   std::string Name = "Untitled";
-  AssetHandle StartScene;
+  std::vector<AssetHandle> OpenScenes;
   std::filesystem::path AssetDirectory;
   std::filesystem::path AssetRegistryPath; // Relative to the asset directory
 };
@@ -37,9 +38,33 @@ public:
     return GetProjectDirectory() / GetAssetDirectory() / path;
   }
 
-  static void SetCurrentScene(AssetHandle handle) {
+  static void OpenScene(AssetHandle sceneHandle) {
     CE_API_ASSERT(s_ActiveProject, "No Active Project");
-    s_ActiveProject->m_Config.StartScene = handle;
+    auto &scenes = s_ActiveProject->m_Config.OpenScenes;
+    for (auto it = scenes.begin(); it != scenes.end(); it++) {
+      auto handle = *it;
+      // If a scene gets reopened we should move it to the top of
+      // the stack
+      if (sceneHandle == handle) {
+        scenes.erase(it);
+        break;
+      }
+    }
+    s_ActiveProject->m_Config.OpenScenes.push_back(sceneHandle);
+  }
+
+  // With this scene layout, users can only close the current scene
+  // so all we have to do is pop the back
+  static void CloseScene() {
+    CE_API_ASSERT(s_ActiveProject, "No Active Project");
+    auto &scenes = s_ActiveProject->m_Config.OpenScenes;
+    if (scenes.size() > 1) // At least one scene is required to be open
+      scenes.pop_back();
+  }
+
+  static std::vector<AssetHandle> &GetOpenScenes() {
+    CE_API_ASSERT(s_ActiveProject, "No Active Project");
+    return s_ActiveProject->m_Config.OpenScenes;
   }
 
   static Ref<Project> &GetActive() { return s_ActiveProject; }
@@ -53,9 +78,10 @@ public:
   }
 
   static Ref<Project> New();
-  static Ref<Project>
-  Load(const std::filesystem::path &filePath); // TODO: Possibly make a bool
+  static Ref<Project> Load(const std::filesystem::path &filePath); // TODO: Possibly make a bool
   static bool Save(const std::filesystem::path &filePath);
+
+  static void UpdateAssetManager();
 
 private:
   ProjectConfig m_Config;

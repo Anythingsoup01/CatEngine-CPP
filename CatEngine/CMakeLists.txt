@@ -27,6 +27,7 @@ src/CatEngine/Editor/Panels/InpectorPanel.cpp
 src/CatEngine/Editor/Panels/DrawComponents.cpp
 src/CatEngine/ImGui/ImGuiBuild.cpp
 src/CatEngine/ImGui/ImGuiLayer.cpp
+src/CatEngine/AssetManager/AssetPostprocessor.cpp
 src/CatEngine/AssetManager/AssetImporter.cpp
 src/CatEngine/AssetManager/Importers/PrefabImporter.cpp
 src/CatEngine/AssetManager/Importers/TextureImporter.cpp

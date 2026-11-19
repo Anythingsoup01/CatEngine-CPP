@@ -38,6 +38,5 @@ Ref<Asset> AssetImporter::ImportAsset(const AssetHandle &handle, const Asset::Me
   }
   return s_ConstAssetImportFunctions.at(metaData.Type)(handle, metaData);
 }
-void AssetImporter::RebuildAsset(const AssetHandle &handle,
-                                 Asset::MetaData &metaData) {}
+
 }

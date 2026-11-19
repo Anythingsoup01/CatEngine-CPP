@@ -18,6 +18,7 @@ src
 ../vendor/NFD-E/src/include
 ../vendor/yaml/include
 ../vendor/ImGuizmo
+../vendor/FileWatch
 ../vendor/Box2D/include
 ../vendor/Capybara/Capybara/src
 )

@@ -307,8 +307,8 @@ void SceneHierarchyPanel::DrawEntityNode(Entity entity) {
       Ref<InspectorPanel> inspector = PanelManager::Get().GetPanel<InspectorPanel>("InspectorPanel");
       inspector->SetEntitySelectionContext({});
       m_SelectionContext = {};
-      m_Context->DeleteEntity(entity);
     }
+    m_Context->DeleteEntity(entity);
   }
 
 

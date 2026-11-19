@@ -1,8 +1,10 @@
 #pragma once
 
 #include "AssetManagerBase.h"
+#include "Capybara/JIT/FileWatcher.h"
 #include "CatEngine/AssetManager/Asset.h"
 #include <cstdint>
+#include <filesystem>
 
 namespace CatEngine {
 
@@ -12,6 +14,9 @@ using AssetRegistryFileMap = std::unordered_map<uint32_t, AssetHandle>;
 class EditorAssetManager : public AssetManagerBase {
 public:
   ~EditorAssetManager();
+  virtual void Init() override;
+  virtual void Poll() override;
+
   virtual Ref<Asset> GetAsset(AssetHandle handle) override;
   virtual bool IsAssetHandleValid(AssetHandle handle) const override;
   virtual bool IsAssetLoaded(AssetHandle handle) const override;
@@ -28,7 +33,12 @@ public:
   // Used when editing an assets metadata
   AssetHandle ReloadAssetWithNewMetaData(const AssetHandle &handle, const Asset::MetaData &metaData);
 
-  void DeleteAsset(AssetHandle handle); // TODO: WORK ON THIS
+  // Used when the asset get's a file update to it's source data
+  bool ReloadAssetFromDisk(const std::filesystem::path &filePath);
+
+  AssetHandle GetAssetIDFromPath(const std::filesystem::path &filePath);
+
+  void DeleteAsset(AssetHandle handle, bool deleteSource = true);
 
   const Asset::MetaData &GetMetaData(AssetHandle handle) const;
   const std::filesystem::path &GetFilePath(AssetHandle handle) const;
@@ -49,5 +59,7 @@ private:
   AssetRegistry m_AssetRegistry;
   AssetRegistryFileMap m_AssetRegistryFileMap;
   AssetMap m_LoadedAssets;
+
+  Capybara::FileWatcher m_FileWatcher;
 };
 } // namespace CatEngine

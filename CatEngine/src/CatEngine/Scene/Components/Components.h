@@ -5,6 +5,7 @@
 
 #include "3D/TransformComponent.h"
 
+#include "CatEngine/Scene/Components/Asset/PrefabLink.h"
 #include "Renderer/CameraComponent.h"
 
 #include "Physics/BoxCollider2D.h"
@@ -24,7 +25,8 @@ using AllComponents = ComponentGroup<
     TagComponent, LayerComponent, RelationshipComponent, ObjectStateComponent,
     TransformComponent, CameraComponent,
     SpriteRendererComponent, CircleRendererComponent, BoxCollider2DComponent,
-    CircleCollider2DComponent, Rigidbody2DComponent, ScriptComponentContainer>;
+    CircleCollider2DComponent, Rigidbody2DComponent, ScriptComponentContainer,
+    PrefabLinkComponent>;
 
 template <typename T> const char *ComponentToString() { return "NULL"; }
 

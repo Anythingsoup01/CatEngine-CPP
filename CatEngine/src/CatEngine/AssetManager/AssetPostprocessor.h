@@ -1,3 +1,14 @@
 #pragma once
 
-// TODO: MAKE THIS WORK
+#include <filesystem>
+namespace CatEngine {
+
+// Will rely on the AssetBrowserPanel for the Scene Instance
+class AssetPostprocessor {
+public:
+  static void OnFileModified(const std::filesystem::path &filePath);
+private:
+  static void ReloadPrefabAsset(const std::filesystem::path &filePath);
+};
+
+}
