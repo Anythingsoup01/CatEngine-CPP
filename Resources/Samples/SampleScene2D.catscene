@@ -1,0 +1,123 @@
+Scene: SampleScene
+Entities:
+  - Entity: 16339413074538623784
+    TagComponent:
+      Tag: None
+    LayerComponent:
+      Layer: Default
+    NameComponent:
+      Name: Player
+    TransformComponent:
+      LocalPosition: [-6.12645245, 10, 0]
+      LocalRotation: [0, 0, 0]
+      LocalScale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [0.146999747, 0.65939641, 0.953271031, 1]
+      Texture: 16634560113867345883
+      Tiling: 1
+    Rigidbody2DComponent:
+      BodyType: 2
+      FixedRotation: true
+    BoxCollider2DComponent:
+      Offset: [0, 0]
+      Size: [0.5, 0.5]
+      Rotation: 0
+      ShowColliderBounds: false
+      Density: 1
+      Friction: 0.5
+      Restitution: 0
+      RestitutionThreshold: 0.5
+    RelationshipComponent:
+      ParentID: 0
+      Children:
+        - Entity: 12179751484287750200
+          TagComponent:
+            Tag: None
+          LayerComponent:
+            Layer: Default
+          NameComponent:
+            Name: Camera
+          TransformComponent:
+            LocalPosition: [0, 0, 0]
+            LocalRotation: [0, 0, 0]
+            LocalScale: [1, 1, 1]
+          CameraComponent:
+            Camera:
+              ProjectionType: 1
+              PerspectiveFOV: 0.785398185
+              PerspectiveNear: 0.00999999978
+              PerspectiveFar: 10000
+              OrthographicSize: 25
+              OrthographicNear: -1
+              OrthographicFar: 1
+            Primary: true
+            FixedAspectRatio: false
+          RelationshipComponent:
+            ParentID: 16339413074538623784
+            Children:
+              []
+  - Entity: 1480008899337404242
+    TagComponent:
+      Tag: None
+    LayerComponent:
+      Layer: Ground
+    NameComponent:
+      Name: Ground
+    TransformComponent:
+      LocalPosition: [0, 0, 0]
+      LocalRotation: [0, 0, 0]
+      LocalScale: [42.5999985, 1, 1]
+    SpriteRendererComponent:
+      Color: [0.165798709, 0.602803707, 0.135208309, 1]
+      Texture: 7493107070100227028
+      Tiling: 1
+    Rigidbody2DComponent:
+      BodyType: 0
+      FixedRotation: false
+    BoxCollider2DComponent:
+      Offset: [0, 0]
+      Size: [0.5, 0.5]
+      Rotation: 0
+      ShowColliderBounds: false
+      Density: 1
+      Friction: 0.5
+      Restitution: 0
+      RestitutionThreshold: 0.5
+    RelationshipComponent:
+      ParentID: 0
+      Children:
+        []
+  - Entity: 8684309562073096701
+    TagComponent:
+      Tag: None
+    LayerComponent:
+      Layer: Enemy
+    NameComponent:
+      Name: Enemy (Prefab)
+    PrefabLinkComponent:
+      PrefabID: 2688644230827143704
+      SourceEntityID: 6953594429004582135
+    TransformComponent:
+      LocalPosition: [5.39058018, 2.50676417, 0]
+      LocalRotation: [0, 0, 0]
+      LocalScale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [0.757009327, 0.24054502, 0.24054502, 1]
+      Texture: 5858643685516184259
+      Tiling: 1
+    Rigidbody2DComponent:
+      BodyType: 2
+      FixedRotation: false
+    BoxCollider2DComponent:
+      Offset: [0, 0]
+      Size: [0.5, 0.5]
+      Rotation: 0
+      ShowColliderBounds: false
+      Density: 1
+      Friction: 0.5
+      Restitution: 0
+      RestitutionThreshold: 0.5
+    RelationshipComponent:
+      ParentID: 0
+      Children:
+        []
