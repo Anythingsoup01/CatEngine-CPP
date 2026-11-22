@@ -1,0 +1,47 @@
+Prefab: CatEngine Prefab
+Entities:
+  - Entity: 17917616161294619118
+    TagComponent:
+      Tag: None
+    LayerComponent:
+      Layer: Default
+    NameComponent:
+      Name: Player
+    TransformComponent:
+      LocalPosition: [0, 0, 0]
+      LocalRotation: [0, 0, 0]
+      LocalScale: [1, 1, 1]
+    Rigidbody2DComponent:
+      BodyType: 2
+      FixedRotation: false
+    BoxCollider2DComponent:
+      Offset: [0, 0]
+      Size: [0.5, 0.5]
+      Rotation: 0
+      ShowColliderBounds: false
+      Density: 1
+      Friction: 0.5
+      Restitution: 0
+      RestitutionThreshold: 0.5
+    RelationshipComponent:
+      ParentID: 0
+      Children:
+        - Entity: 8956870582982125163
+          TagComponent:
+            Tag: None
+          LayerComponent:
+            Layer: Default
+          NameComponent:
+            Name: Player Sprite
+          TransformComponent:
+            LocalPosition: [0, 0, 0]
+            LocalRotation: [0, -0, 0]
+            LocalScale: [1, 1, 1]
+          SpriteRendererComponent:
+            Color: [1, 1, 1, 1]
+            Texture: 15721212057771476663
+            Tiling: 1
+          RelationshipComponent:
+            ParentID: 17917616161294619118
+            Children:
+              []

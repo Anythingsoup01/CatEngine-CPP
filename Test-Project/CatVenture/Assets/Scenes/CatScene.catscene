@@ -1,77 +1,4 @@
 Entities:
-  - Entity: 16339413074538623784
-    TagComponent:
-      Tag: None
-    LayerComponent:
-      Layer: Default
-    NameComponent:
-      Name: Player
-    TransformComponent:
-      LocalPosition: [-6.12645245, 10, 0]
-      LocalRotation: [0, 0, 0]
-      LocalScale: [1, 1, 1]
-    SpriteRendererComponent:
-      Color: [0.146999747, 0.65939641, 0.953271031, 1]
-      Texture: 16634560113867345883
-      Tiling: 1
-    Rigidbody2DComponent:
-      BodyType: 2
-      FixedRotation: true
-    BoxCollider2DComponent:
-      Offset: [0, 0]
-      Size: [0.5, 0.5]
-      Rotation: 0
-      ShowColliderBounds: false
-      Density: 1
-      Friction: 0.5
-      Restitution: 0
-      RestitutionThreshold: 0.5
-    ScriptComponentContainer:
-      - ScriptComponent:
-          ScriptID: 1101011320
-          ClassName: PlayerController
-          Fields:
-            - FieldID: 1573751430
-              FieldName: m_SpeedScale
-              FieldType: Float
-              FieldSize: 4
-              IsVector: false
-              Value: 0.0500000007
-            - FieldID: 1733498902
-              FieldName: m_PlayerPrefab
-              FieldType: Prefab
-              FieldSize: 8
-              IsVector: false
-              Value: 2688644230827143704
-    RelationshipComponent:
-      ParentID: 0
-      Children:
-        - Entity: 12179751484287750200
-          TagComponent:
-            Tag: None
-          LayerComponent:
-            Layer: Default
-          NameComponent:
-            Name: Camera
-          TransformComponent:
-            LocalPosition: [0, 0, 0]
-            LocalRotation: [0, 0, 0]
-            LocalScale: [1, 1, 1]
-          CameraComponent:
-            Camera:
-              ProjectionType: 1
-              PerspectiveFOV: 0.785398185
-              PerspectiveNear: 0.00999999978
-              PerspectiveFar: 10000
-              OrthographicSize: 25
-              OrthographicNear: -1
-              OrthographicFar: 1
-            Primary: true
-            FixedAspectRatio: false
-          RelationshipComponent:
-            ParentID: 16339413074538623784
-            Children:
-              []
   - Entity: 1480008899337404242
     TagComponent:
       Tag: None
@@ -103,7 +30,7 @@ Entities:
       ParentID: 0
       Children:
         []
-  - Entity: 8684309562073096701
+  - Entity: 17489616644819618559
     TagComponent:
       Tag: None
     LayerComponent:
@@ -113,14 +40,191 @@ Entities:
     PrefabLinkComponent:
       PrefabID: 2688644230827143704
       SourceEntityID: 6953594429004582135
+      LastKnownUpdate: 1795330089968360983
     TransformComponent:
       LocalPosition: [5.39058018, 2.50676417, 0]
       LocalRotation: [0, 0, 0]
       LocalScale: [1, 1, 1]
-    SpriteRendererComponent:
-      Color: [0.757009327, 0.24054502, 0.24054502, 1]
-      Texture: 5858643685516184259
-      Tiling: 1
+    Rigidbody2DComponent:
+      BodyType: 2
+      FixedRotation: false
+    BoxCollider2DComponent:
+      Offset: [0, 0]
+      Size: [0.5, 0.5]
+      Rotation: 0
+      ShowColliderBounds: false
+      Density: 1
+      Friction: 0.5
+      Restitution: 0
+      RestitutionThreshold: 0.5
+    ScriptComponentContainer:
+      - ScriptComponent:
+          ScriptID: 4149576837
+          ClassName: EnemyController
+          Fields:
+            []
+    RelationshipComponent:
+      ParentID: 0
+      Children:
+        - Entity: 11908438294255270311
+          TagComponent:
+            Tag: None
+          LayerComponent:
+            Layer: Default
+          NameComponent:
+            Name: Enemy Sprite
+          TransformComponent:
+            LocalPosition: [0, 0, 0]
+            LocalRotation: [0, 0, 0]
+            LocalScale: [1, 1, 1]
+          SpriteRendererComponent:
+            Color: [1, 1, 1, 1]
+            Texture: 12997539653109632776
+            Tiling: 1
+          RelationshipComponent:
+            ParentID: 17489616644819618559
+            Children:
+              []
+        - Entity: 11908438294255270311
+          TagComponent:
+            Tag: None
+          LayerComponent:
+            Layer: Default
+          NameComponent:
+            Name: Enemy Sprite
+          TransformComponent:
+            LocalPosition: [0, 0, 0]
+            LocalRotation: [0, 0, 0]
+            LocalScale: [1, 1, 1]
+          SpriteRendererComponent:
+            Color: [1, 1, 1, 1]
+            Texture: 12997539653109632776
+            Tiling: 1
+          RelationshipComponent:
+            ParentID: 17489616644819618559
+            Children:
+              []
+        - Entity: 11908438294255270311
+          TagComponent:
+            Tag: None
+          LayerComponent:
+            Layer: Default
+          NameComponent:
+            Name: Enemy Sprite
+          TransformComponent:
+            LocalPosition: [0, 0, 0]
+            LocalRotation: [0, 0, 0]
+            LocalScale: [1, 1, 1]
+          SpriteRendererComponent:
+            Color: [1, 1, 1, 1]
+            Texture: 12997539653109632776
+            Tiling: 1
+          RelationshipComponent:
+            ParentID: 17489616644819618559
+            Children:
+              []
+        - Entity: 11908438294255270311
+          TagComponent:
+            Tag: None
+          LayerComponent:
+            Layer: Default
+          NameComponent:
+            Name: Enemy Sprite
+          TransformComponent:
+            LocalPosition: [0, 0, 0]
+            LocalRotation: [0, 0, 0]
+            LocalScale: [1, 1, 1]
+          SpriteRendererComponent:
+            Color: [1, 1, 1, 1]
+            Texture: 12997539653109632776
+            Tiling: 1
+          RelationshipComponent:
+            ParentID: 17489616644819618559
+            Children:
+              []
+  - Entity: 9266619048367480461
+    TagComponent:
+      Tag: None
+    LayerComponent:
+      Layer: Default
+    NameComponent:
+      Name: Item (Prefab)
+    PrefabLinkComponent:
+      PrefabID: 6860324237650516918
+      SourceEntityID: 4891340968737901211
+      LastKnownUpdate: 1795330097090663461
+    TransformComponent:
+      LocalPosition: [0, 1.47462273, 0]
+      LocalRotation: [0, 0, 0]
+      LocalScale: [1, 1, 1]
+    Rigidbody2DComponent:
+      BodyType: 1
+      FixedRotation: false
+    BoxCollider2DComponent:
+      Offset: [0, 0]
+      Size: [0.5, 0.5]
+      Rotation: 0
+      ShowColliderBounds: false
+      Density: 1
+      Friction: 0.5
+      Restitution: 0
+      RestitutionThreshold: 0.5
+    RelationshipComponent:
+      ParentID: 0
+      Children:
+        - Entity: 7752782907303199393
+          TagComponent:
+            Tag: None
+          LayerComponent:
+            Layer: Default
+          NameComponent:
+            Name: Item Sprite
+          TransformComponent:
+            LocalPosition: [0, 0, 0]
+            LocalRotation: [0, -0, 0]
+            LocalScale: [1, 1, 1]
+          SpriteRendererComponent:
+            Color: [1, 1, 1, 1]
+            Texture: 9011015729964880298
+            Tiling: 1
+          RelationshipComponent:
+            ParentID: 9266619048367480461
+            Children:
+              []
+        - Entity: 7752782907303199393
+          TagComponent:
+            Tag: None
+          LayerComponent:
+            Layer: Default
+          NameComponent:
+            Name: Item Sprite
+          TransformComponent:
+            LocalPosition: [0, 0, 0]
+            LocalRotation: [0, -0, 0]
+            LocalScale: [1, 1, 1]
+          SpriteRendererComponent:
+            Color: [1, 1, 1, 1]
+            Texture: 9011015729964880298
+            Tiling: 1
+          RelationshipComponent:
+            ParentID: 9266619048367480461
+            Children:
+              []
+  - Entity: 6173871838086411775
+    TagComponent:
+      Tag: None
+    LayerComponent:
+      Layer: Default
+    NameComponent:
+      Name: Player (Prefab)
+    PrefabLinkComponent:
+      PrefabID: 2805504806217325339
+      SourceEntityID: 17917616161294619118
+      LastKnownUpdate: 0
+    TransformComponent:
+      LocalPosition: [0, 0, 0]
+      LocalRotation: [0, 0, 0]
+      LocalScale: [1, 1, 1]
     Rigidbody2DComponent:
       BodyType: 2
       FixedRotation: false
@@ -136,4 +240,22 @@ Entities:
     RelationshipComponent:
       ParentID: 0
       Children:
-        []
+        - Entity: 1499854891815730749
+          TagComponent:
+            Tag: None
+          LayerComponent:
+            Layer: Default
+          NameComponent:
+            Name: Player Sprite
+          TransformComponent:
+            LocalPosition: [-2.8143959, 1.339746, 0]
+            LocalRotation: [0, 0, 0]
+            LocalScale: [1, 1, 1]
+          SpriteRendererComponent:
+            Color: [1, 1, 1, 1]
+            Texture: 15721212057771476663
+            Tiling: 1
+          RelationshipComponent:
+            ParentID: 6173871838086411775
+            Children:
+              []

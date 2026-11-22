@@ -1,0 +1,10 @@
+Handle: 9011015729964880298
+Name: car3
+FilePath: Textures/car3.cattextureasset
+SourceFilePath: /home/anyth/Doge/Dev/CatEngine/Test-Project/CatVenture/Assets/Textures/Textures/car3.png
+Type: Texture2D
+LastUpdated: 1795327662984707324
+MinFilter: Linear
+MagFilter: Linear
+WrapOption: Repeat
+ImageFormat: RGBA8

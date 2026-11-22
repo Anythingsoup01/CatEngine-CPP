@@ -6,7 +6,11 @@
 #include "CatEngine/Core/Hash.h"
 #include "CatEngine/Editor/ImGui/CEImGui.h"
 #include "CatEngine/Project/Project.h"
+#include "CatEngine/Renderer/Camera.h"
 #include "CatEngine/Scene/Components/3D/TransformComponent.h"
+#include "CatEngine/Scene/Components/Physics/BoxCollider2D.h"
+#include "CatEngine/Scene/Components/Physics/Rigidbody2D.h"
+#include "CatEngine/Scene/Components/Renderer/CameraComponent.h"
 #include "CatEngine/Scene/Components/Scripting/ScriptComponent.h"
 #include "CatEngine/Scene/Components/Scripting/ScriptComponentContainer.h"
 #include "CatEngine/Scene/Entity.h"
@@ -30,39 +34,57 @@ void DrawComponentsHelper(Entity selection) {
 }
 
 void DrawTransformComponent(Entity selection) {
+  if (!selection.HasComponent<TransformComponent>()) {
+    return;
+  }
+
+  auto &component = selection.GetComponent<TransformComponent>();
+
   const ImGuiTreeNodeFlags treeNodeFlags =
       ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed |
       ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap |
       ImGuiTreeNodeFlags_FramePadding;
+  
+  ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{8.0f, 5.0f});
+  ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.19f, 0.20f, 0.23f, 1.0f));
+  ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.24f, 0.25f, 0.29f, 1.0f));
+  ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.22f, 0.24f, 0.28f, 1.0f));
 
-  if (!selection.HasComponent<TransformComponent>()) {
-    return;
-  }
-  auto &component = selection.GetComponent<TransformComponent>();
-  ImVec2 contentRegionAvailable = ImGui::GetContentRegionAvail();
-
-  ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{10, 4});
-  float lineHeight =
-      GImGui->Font->LegacySize + GImGui->Style.FramePadding.y * 2.0f;
-  ImGui::Separator();
-  bool open = ImGui::TreeNodeEx((void *)typeid(TransformComponent).hash_code(),
+  float lineHeight = ImGui::GetFrameHeight();
+  bool open = ImGui::TreeNodeEx(reinterpret_cast<void *>(typeid(TransformComponent).hash_code()),
                                 treeNodeFlags, "Transform");
+
+  ImGui::PopStyleColor(3);
   ImGui::PopStyleVar();
-  ImGui::SameLine(contentRegionAvailable.x - lineHeight);
-  if (ImGui::Button(":", ImVec2{lineHeight, lineHeight})) {
-    ImGui::OpenPopup("Component Settings");
+
+  const float buttonSize = lineHeight;
+  const float rightEdge = ImGui::GetWindowContentRegionMax().x;
+  ImGui::SameLine(rightEdge - buttonSize);
+  ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+  ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.30f, 0.32f, 0.36f, 0.7f));
+  ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.36f, 0.38f, 0.42f, 0.9f));
+  if (ImGui::Button(":##TransformSettings", ImVec2(buttonSize, buttonSize))) {
+    ImGui::OpenPopup("TransformSettingsPopup");
   }
+  ImGui::PopStyleColor(3);
+
   bool removeComponent = false;
-  if (ImGui::BeginPopup("Component Settings")) {
-    if (ImGui::MenuItem("Reset Component")) {
+  if (ImGui::BeginPopup("TransformSettingsPopup")) {
+    if (ImGui::MenuItem("Reset")) {
       component = TransformComponent();
       ImGui::CloseCurrentPopup();
     }
-
+    ImGui::Separator();
+    if (ImGui::MenuItem("Remove Component")) {
+      removeComponent = true;
+      ImGui::CloseCurrentPopup();
+    }
     ImGui::EndPopup();
   }
 
   if (open) {
+    ImGui::Spacing();
+
     ImGuiDraw::Vec3("Position", component.LocalPosition, 0.1f, 0.0f, 0.0f);
     glm::vec3 rotation = glm::degrees(component.LocalRotation);
     ImGuiDraw::Vec3("Rotation", rotation, 0.1f, 0.0f, 0.0f);
@@ -74,133 +96,203 @@ void DrawTransformComponent(Entity selection) {
 }
 
 void DrawSpriteRendererComponent(Entity selection) {
+  if (!selection.HasComponent<SpriteRendererComponent>()) {
+    return;
+  }
+
+  auto &component = selection.GetComponent<SpriteRendererComponent>();
+
   const ImGuiTreeNodeFlags treeNodeFlags =
       ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed |
       ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap |
       ImGuiTreeNodeFlags_FramePadding;
 
-  if (!selection.HasComponent<SpriteRendererComponent>()) {
-    return;
-  }
-  auto &component = selection.GetComponent<SpriteRendererComponent>();
-  ImVec2 contentRegionAvailable = ImGui::GetContentRegionAvail();
+  ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{8.0f, 5.0f});
+  ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.19f, 0.20f, 0.23f, 1.0f));
+  ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.24f, 0.25f, 0.29f, 1.0f));
+  ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.22f, 0.24f, 0.28f, 1.0f));
 
-  ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{10, 4});
-  float lineHeight =
-      GImGui->Font->LegacySize + GImGui->Style.FramePadding.y * 2.0f;
-  ImGui::Separator();
-  bool open =
-      ImGui::TreeNodeEx((void *)typeid(SpriteRendererComponent).hash_code(),
-                        treeNodeFlags, "Sprite Renderer");
+  float lineHeight = ImGui::GetFrameHeight();
+  bool open = ImGui::TreeNodeEx(reinterpret_cast<void *>(typeid(SpriteRendererComponent).hash_code()),
+                                treeNodeFlags, "Sprite Renderer");
+
+  ImGui::PopStyleColor(3);
   ImGui::PopStyleVar();
-  ImGui::SameLine(contentRegionAvailable.x - lineHeight);
-  if (ImGui::Button(":", ImVec2{lineHeight, lineHeight})) {
-    ImGui::OpenPopup("Component Settings");
+
+  // Right-aligned settings trigger on the component header
+  const float buttonSize = lineHeight;
+  const float rightEdge = ImGui::GetWindowContentRegionMax().x;
+  ImGui::SameLine(rightEdge - buttonSize);
+  ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+  ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.30f, 0.32f, 0.36f, 0.7f));
+  ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.36f, 0.38f, 0.42f, 0.9f));
+  if (ImGui::Button(":##SpriteRendererSettings", ImVec2(buttonSize, buttonSize))) {
+    ImGui::OpenPopup("SpriteRendererSettingsPopup");
   }
+  ImGui::PopStyleColor(3);
 
   bool removeComponent = false;
-  if (ImGui::BeginPopup("Component Settings")) {
-    if (ImGui::MenuItem("Remove Component")) {
-      removeComponent = true;
+  if (ImGui::BeginPopup("SpriteRendererSettingsPopup")) {
+    if (ImGui::MenuItem("Reset")) {
+      component = SpriteRendererComponent();
       ImGui::CloseCurrentPopup();
     }
-    if (ImGui::MenuItem("Reset Component")) {
-      component = SpriteRendererComponent();
+    ImGui::Separator();
+    if (ImGui::MenuItem("Remove Component")) {
+      removeComponent = true;
       ImGui::CloseCurrentPopup();
     }
     ImGui::EndPopup();
   }
 
   if (open) {
-    ImGuiDraw::ColorEdit4("Color", component.Color);
+    ImGui::Spacing();
 
+    // Resolve sprite asset label & optional texture for thumbnail preview
     std::string label = "None";
-    AssetHandle handle = component.Texture;
-    if (handle != 0) {
-      if (AssetManager::IsAssetHandleValid(handle) &&
-          AssetManager::GetAssetType(handle) == AssetType::Texture2D) {
-        const auto &metaData =
-            Project::GetActive()->GetEditorAssetManager()->GetMetaData(handle);
-        std::string fileName = metaData.FilePath.filename().string();
-        size_t extensionLen = metaData.FilePath.extension().string().length();
-        fileName.erase(fileName.length() - extensionLen);
-        label = fileName;
-      }
+    Ref<Texture2D> previewTexture = nullptr;
+    const AssetHandle handle = component.Texture;
+    if (handle != 0 && AssetManager::IsAssetHandleValid(handle) &&
+        AssetManager::GetAssetType(handle) == AssetType::Texture2D) {
+      const auto &metaData = Project::GetActive()->GetEditorAssetManager()->GetMetaData(handle);
+      label = metaData.AssetName.empty() ? metaData.FilePath.stem().string() : metaData.AssetName;
+      previewTexture = AssetManager::GetAsset<Texture2D>(handle);
     }
 
-    ImVec2 buttonLabelSize = ImGui::CalcTextSize(label.c_str());
-    buttonLabelSize.x = glm::max<float>(100.0f, buttonLabelSize.x);
-    ImGui::Button(label.c_str(), buttonLabelSize);
+    // Sprite object field row (labeled like Unity's "Sprite" property)
+    ImGui::BeginGroup();
+    ImGui::TextUnformatted("Sprite");
+    ImGui::SameLine(110.0f); // Match your ImGuiDraw label column width
+
+    const bool hasClearButton = (handle != 0);
+    const float clearBtnWidth = hasClearButton ? (ImGui::GetFrameHeight() + 4.0f) : 0.0f;
+    const float availFieldWidth = glm::max<float>(80.0f, ImGui::GetContentRegionAvail().x - clearBtnWidth);
+
+    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.14f, 0.15f, 0.17f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.20f, 0.21f, 0.25f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.17f, 0.18f, 0.21f, 1.0f));
+
+    if (ImGui::Button((label + "##SpriteSlotButton").c_str(), ImVec2(availFieldWidth, 0.0f))) {
+      // Optional: ping/select asset in AssetBrowserPanel if desired
+    }
+    ImGui::PopStyleColor(3);
 
     if (ImGui::BeginDragDropTarget()) {
-      if (const ImGuiPayload *payload =
-              ImGui::AcceptDragDropPayload("ASSET_BROWSER_ITEM")) {
-        AssetHandle handle = *(AssetHandle *)payload->Data;
-        const AssetType type = AssetManager::GetAssetType(handle);
+      if (const ImGuiPayload *payload = ImGui::AcceptDragDropPayload("ASSET_BROWSER_ITEM")) {
+        const char *raw_str = static_cast<const char *>(payload->Data);
+        size_t len = static_cast<size_t>(payload->DataSize);
+        if (len > 0 && raw_str[len - 1] == '\0') {
+          --len;
+        }
+        std::string_view sv(raw_str, len);
+        uint64_t parsedHandle = 0;
+        auto [ptr, ec] = std::from_chars(sv.data(), sv.data() + sv.size(), parsedHandle);
 
-        if (type == AssetType::Texture2D) {
-          component.Texture = handle;
-        } else {
-          CE_API_WARN("Cannot explicitly convert {0} to Texture2D",
-                      AssetTypeToString(type));
+        // Support both raw AssetHandle binary payloads and string-encoded handles
+        AssetHandle droppedHandle = 0;
+        if (payload->DataSize == sizeof(AssetHandle)) {
+          droppedHandle = *static_cast<const AssetHandle *>(payload->Data);
+        } else if (ec == std::errc() && ptr == sv.data() + sv.size()) {
+          droppedHandle = static_cast<AssetHandle>(parsedHandle);
+        }
+
+        if (droppedHandle != 0 && AssetManager::IsAssetHandleValid(droppedHandle)) {
+          const AssetType type = AssetManager::GetAssetType(droppedHandle);
+          if (type == AssetType::Texture2D) {
+            component.Texture = droppedHandle;
+          } else {
+            CE_API_WARN("Cannot explicitly convert {0} to Texture2D", AssetTypeToString(type));
+          }
         }
       }
       ImGui::EndDragDropTarget();
     }
-    if (strncmp(label.c_str(), "None", 4) != 0) {
-      ImGui::SameLine();
-      if (ImGui::Button("X")) {
+
+    if (hasClearButton) {
+      ImGui::SameLine(0.0f, 4.0f);
+      if (ImGui::Button("x##ClearSprite", ImVec2(ImGui::GetFrameHeight(), 0.0f))) {
         component.Texture = 0;
       }
     }
+    ImGui::EndGroup();
 
-    ImGuiDraw::Vec1("Tiling Factor", component.TilingFactor, 0.1f, 0.f, 100.f);
+    ImGuiDraw::ColorEdit4("Color", component.Color);
+    ImGuiDraw::Vec1("Tiling Factor", component.TilingFactor, 0.1f, 0.0f, 100.0f);
+
+    if (previewTexture && previewTexture->GetWidth() > 0 && previewTexture->GetHeight() > 0) {
+      ImGui::Spacing();
+      const float thumbSize = 48.0f;
+      const float aspect = static_cast<float>(previewTexture->GetWidth()) / static_cast<float>(previewTexture->GetHeight());
+      ImVec2 drawSize = (aspect >= 1.0f)
+        ? ImVec2(thumbSize, thumbSize / aspect)
+        : ImVec2(thumbSize * aspect, thumbSize);
+
+      ImGui::TextDisabled("Preview");
+      ImGui::SameLine(110.0f);
+      ImGui::Image((ImTextureID)((uint64_t)(previewTexture->GetRendererID())),
+                   drawSize, ImVec2{0, 1}, ImVec2{1, 0});
+    }
+
+    ImGui::Spacing();
     ImGui::TreePop();
   }
 
-  if (removeComponent)
+  if (removeComponent) {
     selection.RemoveComponent<SpriteRendererComponent>();
+  }
 }
 
 void DrawCircleRendererComponent(Entity selection) {
+  if (!selection.HasComponent<CircleRendererComponent>()) {
+    return;
+  }
+
+  auto &component = selection.GetComponent<CircleRendererComponent>();
+
   const ImGuiTreeNodeFlags treeNodeFlags =
       ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed |
       ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap |
       ImGuiTreeNodeFlags_FramePadding;
+  
+  ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{8.0f, 5.0f});
+  ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.19f, 0.20f, 0.23f, 1.0f));
+  ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.24f, 0.25f, 0.29f, 1.0f));
+  ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.22f, 0.24f, 0.28f, 1.0f));
 
-  if (!selection.HasComponent<CircleRendererComponent>()) {
-    return;
-  }
-  auto &component = selection.GetComponent<CircleRendererComponent>();
-  ImVec2 contentRegionAvailable = ImGui::GetContentRegionAvail();
+  float lineHeight = ImGui::GetFrameHeight();
+  bool open = ImGui::TreeNodeEx(reinterpret_cast<void *>(typeid(CircleRendererComponent).hash_code()),
+                                treeNodeFlags, "Circle Renderer");
 
-  ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{10, 4});
-  float lineHeight =
-      GImGui->Font->LegacySize + GImGui->Style.FramePadding.y * 2.0f;
-  ImGui::Separator();
-  bool open =
-      ImGui::TreeNodeEx((void *)typeid(CircleRendererComponent).hash_code(),
-                        treeNodeFlags, "Circle Renderer");
+  ImGui::PopStyleColor(3);
   ImGui::PopStyleVar();
-  ImGui::SameLine(contentRegionAvailable.x - lineHeight);
-  if (ImGui::Button(":", ImVec2{lineHeight, lineHeight})) {
-    ImGui::OpenPopup("Component Settings");
+
+  const float buttonSize = lineHeight;
+  const float rightEdge = ImGui::GetWindowContentRegionMax().x;
+  ImGui::SameLine(rightEdge - buttonSize);
+  ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+  ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.30f, 0.32f, 0.36f, 0.7f));
+  ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.36f, 0.38f, 0.42f, 0.9f));
+  if (ImGui::Button(":##CircleRendererSettings", ImVec2(buttonSize, buttonSize))) {
+    ImGui::OpenPopup("CircleRendererSettingsPopup");
   }
+  ImGui::PopStyleColor(3);
 
   bool removeComponent = false;
-  if (ImGui::BeginPopup("Component Settings")) {
-    if (ImGui::MenuItem("Remove Component")) {
-      removeComponent = true;
+  if (ImGui::BeginPopup("CircleRendererSettingsPopup")) {
+    if (ImGui::MenuItem("Reset")) {
+      component = CircleRendererComponent();
       ImGui::CloseCurrentPopup();
     }
-    if (ImGui::MenuItem("Reset Component")) {
-      component = CircleRendererComponent();
+    ImGui::Separator();
+    if (ImGui::MenuItem("Remove Component")) {
+      removeComponent = true;
       ImGui::CloseCurrentPopup();
     }
     ImGui::EndPopup();
   }
 
   if (open) {
+    ImGui::Spacing();
     ImGuiDraw::ColorEdit4("Color", component.Color);
     ImGuiDraw::Vec1("Thickness", component.Thickness, 0.025f, 0.f, 1.f);
     ImGuiDraw::Vec1("Fade", component.Fade, 0.00025f, 0.f, 1.f);
@@ -212,43 +304,56 @@ void DrawCircleRendererComponent(Entity selection) {
 }
 
 void DrawCameraComponent(Entity selection) {
+  if (!selection.HasComponent<CameraComponent>()) {
+    return;
+  }
+
+  auto &component = selection.GetComponent<CameraComponent>();
+
   const ImGuiTreeNodeFlags treeNodeFlags =
       ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed |
       ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap |
       ImGuiTreeNodeFlags_FramePadding;
+  
+  ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{8.0f, 5.0f});
+  ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.19f, 0.20f, 0.23f, 1.0f));
+  ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.24f, 0.25f, 0.29f, 1.0f));
+  ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.22f, 0.24f, 0.28f, 1.0f));
 
-  if (!selection.HasComponent<CameraComponent>()) {
-    return;
-  }
-  auto &component = selection.GetComponent<CameraComponent>();
-  ImVec2 contentRegionAvailable = ImGui::GetContentRegionAvail();
-
-  ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{10, 4});
-  float lineHeight =
-      GImGui->Font->LegacySize + GImGui->Style.FramePadding.y * 2.0f;
-  ImGui::Separator();
-  bool open = ImGui::TreeNodeEx((void *)typeid(CameraComponent).hash_code(),
+  float lineHeight = ImGui::GetFrameHeight();
+  bool open = ImGui::TreeNodeEx(reinterpret_cast<void *>(typeid(CircleRendererComponent).hash_code()),
                                 treeNodeFlags, "Camera");
+
+  ImGui::PopStyleColor(3);
   ImGui::PopStyleVar();
-  ImGui::SameLine(contentRegionAvailable.x - lineHeight);
-  if (ImGui::Button(":", ImVec2{lineHeight, lineHeight})) {
-    ImGui::OpenPopup("Component Settings");
+
+  const float buttonSize = lineHeight;
+  const float rightEdge = ImGui::GetWindowContentRegionMax().x;
+  ImGui::SameLine(rightEdge - buttonSize);
+  ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+  ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.30f, 0.32f, 0.36f, 0.7f));
+  ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.36f, 0.38f, 0.42f, 0.9f));
+  if (ImGui::Button(":##CameraSettings", ImVec2(buttonSize, buttonSize))) {
+    ImGui::OpenPopup("CameraSettingsPopup");
   }
+  ImGui::PopStyleColor(3);
 
   bool removeComponent = false;
-  if (ImGui::BeginPopup("Component Settings")) {
-    if (ImGui::MenuItem("Remove Component")) {
-      removeComponent = true;
+  if (ImGui::BeginPopup("CameraSettingsPopup")) {
+    if (ImGui::MenuItem("Reset")) {
+      component = CameraComponent();
       ImGui::CloseCurrentPopup();
     }
-    if (ImGui::MenuItem("Reset Component")) {
-      component = CameraComponent();
+    ImGui::Separator();
+    if (ImGui::MenuItem("Remove Component")) {
+      removeComponent = true;
       ImGui::CloseCurrentPopup();
     }
     ImGui::EndPopup();
   }
 
   if (open) {
+    ImGui::Spacing();
     auto &camera = component.Camera;
 
     const char *projectionTypeString[] = {"Perspective", "Orthographic"};
@@ -311,45 +416,56 @@ void DrawCameraComponent(Entity selection) {
 }
 
 void DrawRigidbody2DComponent(Entity selection) {
+  if (!selection.HasComponent<Rigidbody2DComponent>()) {
+    return;
+  }
+
+  auto &component = selection.GetComponent<Rigidbody2DComponent>();
+
   const ImGuiTreeNodeFlags treeNodeFlags =
       ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed |
       ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap |
       ImGuiTreeNodeFlags_FramePadding;
 
-  if (!selection.HasComponent<Rigidbody2DComponent>()) {
-    return;
-  }
-  auto &component = selection.GetComponent<Rigidbody2DComponent>();
-  ImVec2 contentRegionAvailable = ImGui::GetContentRegionAvail();
+  ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{8.0f, 5.0f});
+  ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.19f, 0.20f, 0.23f, 1.0f));
+  ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.24f, 0.25f, 0.29f, 1.0f));
+  ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.22f, 0.24f, 0.28f, 1.0f));
 
-  ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{10, 4});
-  float lineHeight =
-      GImGui->Font->LegacySize + GImGui->Style.FramePadding.y * 2.0f;
-  ImGui::Separator();
-  bool open =
-      ImGui::TreeNodeEx((void *)typeid(Rigidbody2DComponent).hash_code(),
-                        treeNodeFlags, "Rigidbody 2D");
+  float lineHeight = ImGui::GetFrameHeight();
+  bool open = ImGui::TreeNodeEx(reinterpret_cast<void *>(typeid(CircleRendererComponent).hash_code()),
+                                treeNodeFlags, "Rigidbody2D");
+
+  ImGui::PopStyleColor(3);
   ImGui::PopStyleVar();
-  ImGui::SameLine(contentRegionAvailable.x - lineHeight);
-  if (ImGui::Button(":", ImVec2{lineHeight, lineHeight})) {
-    ImGui::OpenPopup("Component Settings");
+
+  const float buttonSize = lineHeight;
+  const float rightEdge = ImGui::GetWindowContentRegionMax().x;
+  ImGui::SameLine(rightEdge - buttonSize);
+  ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+  ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.30f, 0.32f, 0.36f, 0.7f));
+  ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.36f, 0.38f, 0.42f, 0.9f));
+  if (ImGui::Button(":##Rigidbody2DSettings", ImVec2(buttonSize, buttonSize))) {
+    ImGui::OpenPopup("Rigidbody2DSettingsPopup");
   }
+  ImGui::PopStyleColor(3);
 
   bool removeComponent = false;
-  if (ImGui::BeginPopup("Component Settings")) {
-    if (ImGui::MenuItem("Remove Component")) {
-      removeComponent = true;
+  if (ImGui::BeginPopup("Rigidbody2DSettingsPopup")) {
+    if (ImGui::MenuItem("Reset")) {
+      component = Rigidbody2DComponent();
       ImGui::CloseCurrentPopup();
     }
-    if (ImGui::MenuItem("Reset Component")) {
-      component = Rigidbody2DComponent();
+    ImGui::Separator();
+    if (ImGui::MenuItem("Remove Component")) {
+      removeComponent = true;
       ImGui::CloseCurrentPopup();
     }
     ImGui::EndPopup();
   }
 
   if (open) {
-    const char *bodyTypeString[] = {"Static", "Kinematic", "Dynamic"};
+    ImGui::Spacing();    const char *bodyTypeString[] = {"Static", "Kinematic", "Dynamic"};
     const char *currentBodyTypeString = bodyTypeString[(int)component.Type];
     if (ImGui::BeginCombo("Body Type", currentBodyTypeString)) {
       for (int i = 0; i < 3; i++) {
@@ -374,44 +490,56 @@ void DrawRigidbody2DComponent(Entity selection) {
 }
 
 void DrawBoxCollider2DComponent(Entity selection) {
+  if (!selection.HasComponent<BoxCollider2DComponent>()) {
+    return;
+  }
+
+  auto &component = selection.GetComponent<BoxCollider2DComponent>();
+
   const ImGuiTreeNodeFlags treeNodeFlags =
       ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed |
       ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap |
       ImGuiTreeNodeFlags_FramePadding;
 
-  if (!selection.HasComponent<BoxCollider2DComponent>()) {
-    return;
-  }
-  auto &component = selection.GetComponent<BoxCollider2DComponent>();
-  ImVec2 contentRegionAvailable = ImGui::GetContentRegionAvail();
+  ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{8.0f, 5.0f});
+  ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.19f, 0.20f, 0.23f, 1.0f));
+  ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.24f, 0.25f, 0.29f, 1.0f));
+  ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.22f, 0.24f, 0.28f, 1.0f));
 
-  ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{10, 4});
-  float lineHeight =
-      GImGui->Font->LegacySize + GImGui->Style.FramePadding.y * 2.0f;
-  ImGui::Separator();
-  bool open =
-      ImGui::TreeNodeEx((void *)typeid(BoxCollider2DComponent).hash_code(),
-                        treeNodeFlags, "BoxCollider 2D");
+  float lineHeight = ImGui::GetFrameHeight();
+  bool open = ImGui::TreeNodeEx(reinterpret_cast<void *>(typeid(BoxCollider2DComponent).hash_code()),
+                                treeNodeFlags, "BoxCollider2D");
+
+  ImGui::PopStyleColor(3);
   ImGui::PopStyleVar();
-  ImGui::SameLine(contentRegionAvailable.x - lineHeight);
-  if (ImGui::Button(":", ImVec2{lineHeight, lineHeight})) {
-    ImGui::OpenPopup("Component Settings");
+
+  const float buttonSize = lineHeight;
+  const float rightEdge = ImGui::GetWindowContentRegionMax().x;
+  ImGui::SameLine(rightEdge - buttonSize);
+  ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+  ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.30f, 0.32f, 0.36f, 0.7f));
+  ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.36f, 0.38f, 0.42f, 0.9f));
+  if (ImGui::Button(":##BoxCollider2DSettings", ImVec2(buttonSize, buttonSize))) {
+    ImGui::OpenPopup("BoxCollider2DSettingsPopup");
   }
+  ImGui::PopStyleColor(3);
 
   bool removeComponent = false;
-  if (ImGui::BeginPopup("Component Settings")) {
-    if (ImGui::MenuItem("Remove Component")) {
-      removeComponent = true;
+  if (ImGui::BeginPopup("BoxCollider2DSettingsPopup")) {
+    if (ImGui::MenuItem("Reset")) {
+      component = BoxCollider2DComponent();
       ImGui::CloseCurrentPopup();
     }
-    if (ImGui::MenuItem("Reset Component")) {
-      component = BoxCollider2DComponent();
+    ImGui::Separator();
+    if (ImGui::MenuItem("Remove Component")) {
+      removeComponent = true;
       ImGui::CloseCurrentPopup();
     }
     ImGui::EndPopup();
   }
 
   if (open) {
+    ImGui::Spacing();
     glm::vec2 &offset = component.Offset;
     glm::vec2 &size = component.Size;
 
@@ -438,44 +566,56 @@ void DrawBoxCollider2DComponent(Entity selection) {
 }
 
 void DrawCircleCollider2DComponent(Entity selection) {
+  if (!selection.HasComponent<CircleCollider2DComponent>()) {
+    return;
+  }
+
+  auto &component = selection.GetComponent<CircleCollider2DComponent>();
+
   const ImGuiTreeNodeFlags treeNodeFlags =
       ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed |
       ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap |
       ImGuiTreeNodeFlags_FramePadding;
 
-  if (!selection.HasComponent<CircleCollider2DComponent>()) {
-    return;
-  }
-  auto &component = selection.GetComponent<CircleCollider2DComponent>();
-  ImVec2 contentRegionAvailable = ImGui::GetContentRegionAvail();
+  ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{8.0f, 5.0f});
+  ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.19f, 0.20f, 0.23f, 1.0f));
+  ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.24f, 0.25f, 0.29f, 1.0f));
+  ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.22f, 0.24f, 0.28f, 1.0f));
 
-  ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{10, 4});
-  float lineHeight =
-      GImGui->Font->LegacySize + GImGui->Style.FramePadding.y * 2.0f;
-  ImGui::Separator();
-  bool open =
-      ImGui::TreeNodeEx((void *)typeid(CircleCollider2DComponent).hash_code(),
-                        treeNodeFlags, "CircleCollider 2D");
+  float lineHeight = ImGui::GetFrameHeight();
+  bool open = ImGui::TreeNodeEx(reinterpret_cast<void *>(typeid(CircleCollider2DComponent).hash_code()),
+                                treeNodeFlags, "CircleCollider2D");
+
+  ImGui::PopStyleColor(3);
   ImGui::PopStyleVar();
-  ImGui::SameLine(contentRegionAvailable.x - lineHeight);
-  if (ImGui::Button(":", ImVec2{lineHeight, lineHeight})) {
-    ImGui::OpenPopup("Component Settings");
+
+  const float buttonSize = lineHeight;
+  const float rightEdge = ImGui::GetWindowContentRegionMax().x;
+  ImGui::SameLine(rightEdge - buttonSize);
+  ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+  ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.30f, 0.32f, 0.36f, 0.7f));
+  ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.36f, 0.38f, 0.42f, 0.9f));
+  if (ImGui::Button(":##CircleCollider2DSettings", ImVec2(buttonSize, buttonSize))) {
+    ImGui::OpenPopup("CircleCollider2DSettingsPopup");
   }
+  ImGui::PopStyleColor(3);
 
   bool removeComponent = false;
-  if (ImGui::BeginPopup("Component Settings")) {
-    if (ImGui::MenuItem("Remove Component")) {
-      removeComponent = true;
+  if (ImGui::BeginPopup("CircleCollider2DSettingsPopup")) {
+    if (ImGui::MenuItem("Reset")) {
+      component = CircleCollider2DComponent();
       ImGui::CloseCurrentPopup();
     }
-    if (ImGui::MenuItem("Reset Component")) {
-      component = CircleCollider2DComponent();
+    ImGui::Separator();
+    if (ImGui::MenuItem("Remove Component")) {
+      removeComponent = true;
       ImGui::CloseCurrentPopup();
     }
     ImGui::EndPopup();
   }
 
   if (open) {
+    ImGui::Spacing();
     glm::vec2 &offset = component.Offset;
     float &size = component.Radius;
 
@@ -933,20 +1073,33 @@ bool DrawEditTimeScriptVector(const ScriptField &field, const int &index,
     label.append(" [" + std::to_string(index) + "]");
 
     ImGuiDraw::DataField("[" + std::to_string(index) + "]", label);
-    if (ImGui::BeginDragDropTarget()) {
-      if (const ImGuiPayload *payload =
-              ImGui::AcceptDragDropPayload("ASSET_BROWSER_ITEM")) {
-        UUID droppedAssetID = *(UUID *)payload->Data;
-        const auto &asset =
-            Project::GetActive()->GetEditorAssetManager()->GetAsset(
-                droppedAssetID);
-        if (asset && asset->GetType() == AssetType::Texture2D) {
-          *assetIDPtr = droppedAssetID.uuid();
-          interaction = true;
+      if (ImGui::BeginDragDropTarget()) {
+        if (const ImGuiPayload *payload = ImGui::AcceptDragDropPayload("ASSET_BROWSER_ITEM")) {
+          const char *raw_str = static_cast<const char *>(payload->Data);
+          size_t len = static_cast<size_t>(payload->DataSize);
+          if (len > 0 && raw_str[len - 1] == '\0') {
+            --len;
+          }
+
+          std::string_view sv(raw_str, len);
+          unsigned long value = 0;
+          auto [ptr, ec] = std::from_chars(sv.data(), sv.data() + sv.size(), value);
+          bool isAsset = (ec == std::errc() && ptr == sv.data() + sv.size());
+
+          auto assetManager = Project::GetActive()->GetEditorAssetManager();
+          if (!isAsset || !assetManager->IsAssetHandleValid(value)) {
+            ImGui::EndDragDropTarget();
+            break;
+          }
+
+          const Asset::MetaData &metaData = assetManager->GetMetaData(value);
+
+          if (metaData.Type == AssetType::Texture2D) {
+            *assetIDPtr = value;
+          }
         }
+        ImGui::EndDragDropTarget();
       }
-      ImGui::EndDragDropTarget();
-    }
     break;
   }
     case DataType::Prefab: {
@@ -964,21 +1117,35 @@ bool DrawEditTimeScriptVector(const ScriptField &field, const int &index,
     label = label.empty() ? "(empty)" : label;
     label.append(" [" + std::to_string(index) + "]");
 
-    ImGuiDraw::DataField("[" + std::to_string(index) + "]", label);
-    if (ImGui::BeginDragDropTarget()) {
-      if (const ImGuiPayload *payload =
-              ImGui::AcceptDragDropPayload("ASSET_BROWSER_ITEM")) {
-        UUID droppedAssetID = *(UUID *)payload->Data;
-        const auto &asset =
-            Project::GetActive()->GetEditorAssetManager()->GetAsset(
-                droppedAssetID);
-        if (asset && asset->GetType() == AssetType::Prefab) {
-          *assetIDPtr = droppedAssetID.uuid();
-          interaction = true;
+      ImGuiDraw::DataField("[" + std::to_string(index) + "]", label);
+      if (ImGui::BeginDragDropTarget()) {
+        if (const ImGuiPayload *payload = ImGui::AcceptDragDropPayload("ASSET_BROWSER_ITEM")) {
+          const char *raw_str = static_cast<const char *>(payload->Data);
+          size_t len = static_cast<size_t>(payload->DataSize);
+          if (len > 0 && raw_str[len - 1] == '\0') {
+            --len;
+          }
+
+          std::string_view sv(raw_str, len);
+          unsigned long value = 0;
+          auto [ptr, ec] = std::from_chars(sv.data(), sv.data() + sv.size(), value);
+          bool isAsset = (ec == std::errc() && ptr == sv.data() + sv.size());
+
+          auto assetManager = Project::GetActive()->GetEditorAssetManager();
+          if (!isAsset || !assetManager->IsAssetHandleValid(value)) {
+            ImGui::EndDragDropTarget();
+            break;
+          }
+
+          const Asset::MetaData &metaData = assetManager->GetMetaData(value);
+
+          if (metaData.Type == AssetType::Prefab) {
+            *assetIDPtr = value;
+          }
         }
+        ImGui::EndDragDropTarget();
       }
-      ImGui::EndDragDropTarget();
-    }
+
     break;
   }
   case DataType::ScriptComponent: {
@@ -1299,284 +1466,310 @@ void DrawEditTimeScriptComponents(const UUID &fieldID, const ScriptField &field,
     label = label.empty() ? "(empty)" : label;
     label.append(" (" + field.TypeName + ")");
 
-    ImGuiDraw::DataField(field.Name, label);
-    if (ImGui::BeginDragDropTarget()) {
-      if (const ImGuiPayload *payload =
-              ImGui::AcceptDragDropPayload("ASSET_BROWSER_ITEM")) {
-        UUID droppedAssetID = *(UUID *)payload->Data;
-        const auto &asset =
-            Project::GetActive()->GetEditorAssetManager()->GetAsset(
-                droppedAssetID);
-        if (asset && asset->GetType() == AssetType::Texture2D) {
-          getOrCreateInstance().SetValue(droppedAssetID.uuid());
-        }
-      }
-      ImGui::EndDragDropTarget();
-    }
-    break;
-  }
-  case DataType::Prefab: {
-    uint64_t assetID = hasInstance
-                           ? fieldMap[fieldID].GetValue<uint64_t>()
-                           : (!field.DefaultValue.empty()
-                                  ? *(uint64_t *)field.DefaultValue.data()
-                                  : 0);
-    std::string label = "";
-    if (assetID != 0 && Project::GetActive() &&
-        Project::GetActive()->GetEditorAssetManager()) {
-      label = Project::GetActive()
-                  ->GetEditorAssetManager()
-                  ->GetMetaData(assetID)
-                  .AssetName;
-    }
-    label = label.empty() ? "(empty)" : label;
-    label.append(" (" + field.TypeName + ")");
+      ImGuiDraw::DataField(field.Name, label);
+      if (ImGui::BeginDragDropTarget()) {
+        if (const ImGuiPayload *payload = ImGui::AcceptDragDropPayload("ASSET_BROWSER_ITEM")) {
+          const char *raw_str = static_cast<const char *>(payload->Data);
+          size_t len = static_cast<size_t>(payload->DataSize);
+          if (len > 0 && raw_str[len - 1] == '\0') {
+            --len;
+          }
 
-    ImGuiDraw::DataField(field.Name, label);
-    if (ImGui::BeginDragDropTarget()) {
-      if (const ImGuiPayload *payload =
-              ImGui::AcceptDragDropPayload("ASSET_BROWSER_ITEM")) {
-        UUID droppedAssetID = *(UUID *)payload->Data;
-        const auto &asset =
-            Project::GetActive()->GetEditorAssetManager()->GetAsset(
-                droppedAssetID);
-        if (asset && asset->GetType() == AssetType::Prefab) {
-          getOrCreateInstance().SetValue(droppedAssetID.uuid());
-        }
-      }
-      ImGui::EndDragDropTarget();
-    }
-    break;
-  }
-  case DataType::ScriptComponent: {
-    uint64_t currentEntityID =
-        hasInstance ? fieldMap[fieldID].GetValue<uint64_t>()
-                    : (!field.DefaultValue.empty()
-                           ? *(uint64_t *)field.DefaultValue.data()
-                           : 0);
+          std::string_view sv(raw_str, len);
+          unsigned long value = 0;
+          auto [ptr, ec] = std::from_chars(sv.data(), sv.data() + sv.size(), value);
+          bool isAsset = (ec == std::errc() && ptr == sv.data() + sv.size());
 
-    std::string label = "";
-    std::string entityName = "";
+          auto assetManager = Project::GetActive()->GetEditorAssetManager();
+          if (!isAsset || !assetManager->IsAssetHandleValid(value)) {
+            ImGui::EndDragDropTarget();
+            break;
+          }
 
-    if (currentEntityID != 0 && context->GetEntityByUUID(currentEntityID)) {
-      entityName = context->GetEntityByUUID(currentEntityID).GetName();
-      label = "(" + entityName + ") ";
-    }
+          const Asset::MetaData &metaData = assetManager->GetMetaData(value);
 
-    label = label.empty() ? "(empty) " : label;
-    label.append("(" + field.TypeName + ")");
-
-    // 1. Peek at the active drag payload to see if it matches this script
-    // type
-    bool isValidDragTarget = false;
-    if (const ImGuiPayload *activePayload = ImGui::GetDragDropPayload()) {
-      if (activePayload->IsDataType("SCENE_HIERARCHY_ITEM") &&
-          activePayload->Data) {
-        UUID draggedID = *(UUID *)activePayload->Data;
-        Entity draggedEntity = context->GetEntityByUUID(draggedID);
-
-        if (draggedEntity &&
-            draggedEntity.HasComponent<ScriptComponentContainer>() &&
-            draggedEntity.GetUUID() != selection.GetUUID()) {
-          auto &scc = draggedEntity.GetComponent<ScriptComponentContainer>();
-          for (auto &script : scc.Scripts) {
-            // Check if the dragged entity has the exact script this field
-            // expects
-            if (script.ClassName == field.TypeName) {
-              isValidDragTarget = true;
-              break;
-            }
+          if (metaData.Type == AssetType::Texture2D) {
+            getOrCreateInstance().SetValue(value);
           }
         }
+        ImGui::EndDragDropTarget();
       }
+      break;
     }
+    case DataType::Prefab: {
+      uint64_t assetID = hasInstance
+        ? fieldMap[fieldID].GetValue<uint64_t>()
+        : (!field.DefaultValue.empty()
+        ? *(uint64_t *)field.DefaultValue.data()
+        : 0);
+      std::string label = "";
+      if (assetID != 0 && Project::GetActive() &&
+        Project::GetActive()->GetEditorAssetManager()) {
+        label = Project::GetActive()
+          ->GetEditorAssetManager()
+          ->GetMetaData(assetID)
+          .AssetName;
+      }
+      label = label.empty() ? "(empty)" : label;
+      label.append(" (" + field.TypeName + ")");
 
-    // 2. Apply visual highlight if a valid entity is currently being
-    // dragged over it
-    if (isValidDragTarget) {
-      // Push a subtle green/accent tint to indicate a valid drop target
-      ImGui::PushStyleColor(ImGuiCol_FrameBg,
-                            ImVec4(0.15f, 0.55f, 0.25f, 0.8f));
+      ImGuiDraw::DataField(field.Name, label);
+      if (ImGui::BeginDragDropTarget()) {
+        if (const ImGuiPayload *payload = ImGui::AcceptDragDropPayload("ASSET_BROWSER_ITEM")) {
+          const char *raw_str = static_cast<const char *>(payload->Data);
+          size_t len = static_cast<size_t>(payload->DataSize);
+          if (len > 0 && raw_str[len - 1] == '\0') {
+            --len;
+          }
+
+          std::string_view sv(raw_str, len);
+          unsigned long value = 0;
+          auto [ptr, ec] = std::from_chars(sv.data(), sv.data() + sv.size(), value);
+          bool isAsset = (ec == std::errc() && ptr == sv.data() + sv.size());
+
+          auto assetManager = Project::GetActive()->GetEditorAssetManager();
+          if (!isAsset || !assetManager->IsAssetHandleValid(value)) {
+            ImGui::EndDragDropTarget();
+            break;
+          }
+
+          const Asset::MetaData &metaData = assetManager->GetMetaData(value);
+
+          if (metaData.Type == AssetType::Prefab) {
+            getOrCreateInstance().SetValue(value);
+          }
+        }
+        ImGui::EndDragDropTarget();
+      }
+      break;
     }
+    case DataType::ScriptComponent: {
+      uint64_t currentEntityID =
+        hasInstance ? fieldMap[fieldID].GetValue<uint64_t>()
+        : (!field.DefaultValue.empty()
+        ? *(uint64_t *)field.DefaultValue.data()
+        : 0);
 
-    ImGuiDraw::DataField(field.Name, label);
+      std::string label = "";
+      std::string entityName = "";
 
-    if (isValidDragTarget) {
-      ImGui::PopStyleColor();
-    }
+      if (currentEntityID != 0 && context->GetEntityByUUID(currentEntityID)) {
+        entityName = context->GetEntityByUUID(currentEntityID).GetName();
+        label = "(" + entityName + ") ";
+      }
 
-    // 3. Handle the drop acceptance with type validation
-    if (ImGui::BeginDragDropTarget()) {
-      if (const ImGuiPayload *payload =
-              ImGui::AcceptDragDropPayload("SCENE_HIERARCHY_ITEM")) {
-        UUID droppedEntityID = *(UUID *)payload->Data;
-        Entity droppedEntity = context->GetEntityByUUID(droppedEntityID);
+      label = label.empty() ? "(empty) " : label;
+      label.append("(" + field.TypeName + ")");
 
-        if (droppedEntity) {
-          // Double-check the script match on drop
-          bool matchesScript = false;
-          if (droppedEntity.HasComponent<ScriptComponentContainer>()) {
-            auto &scc = droppedEntity.GetComponent<ScriptComponentContainer>();
+      // 1. Peek at the active drag payload to see if it matches this script
+      // type
+      bool isValidDragTarget = false;
+      if (const ImGuiPayload *activePayload = ImGui::GetDragDropPayload()) {
+        if (activePayload->IsDataType("SCENE_HIERARCHY_ITEM") &&
+          activePayload->Data) {
+          UUID draggedID = *(UUID *)activePayload->Data;
+          Entity draggedEntity = context->GetEntityByUUID(draggedID);
+
+          if (draggedEntity &&
+            draggedEntity.HasComponent<ScriptComponentContainer>() &&
+            draggedEntity.GetUUID() != selection.GetUUID()) {
+            auto &scc = draggedEntity.GetComponent<ScriptComponentContainer>();
             for (auto &script : scc.Scripts) {
+              // Check if the dragged entity has the exact script this field
+              // expects
               if (script.ClassName == field.TypeName) {
-                matchesScript = true;
+                isValidDragTarget = true;
                 break;
               }
             }
           }
-
-          if (matchesScript) {
-            getOrCreateInstance().SetValue(droppedEntityID);
-          }
         }
       }
-      ImGui::EndDragDropTarget();
+
+      // 2. Apply visual highlight if a valid entity is currently being
+      // dragged over it
+      if (isValidDragTarget) {
+        // Push a subtle green/accent tint to indicate a valid drop target
+        ImGui::PushStyleColor(ImGuiCol_FrameBg,
+                            ImVec4(0.15f, 0.55f, 0.25f, 0.8f));
+      }
+
+      ImGuiDraw::DataField(field.Name, label);
+
+      if (isValidDragTarget) {
+        ImGui::PopStyleColor();
+      }
+
+      // 3. Handle the drop acceptance with type validation
+      if (ImGui::BeginDragDropTarget()) {
+        if (const ImGuiPayload *payload =
+          ImGui::AcceptDragDropPayload("SCENE_HIERARCHY_ITEM")) {
+          UUID droppedEntityID = *(UUID *)payload->Data;
+          Entity droppedEntity = context->GetEntityByUUID(droppedEntityID);
+
+          if (droppedEntity) {
+          // Double-check the script match on drop
+            bool matchesScript = false;
+            if (droppedEntity.HasComponent<ScriptComponentContainer>()) {
+              auto &scc = droppedEntity.GetComponent<ScriptComponentContainer>();
+              for (auto &script : scc.Scripts) {
+                if (script.ClassName == field.TypeName) {
+                  matchesScript = true;
+                  break;
+                }
+              }
+            }
+
+            if (matchesScript) {
+              getOrCreateInstance().SetValue(droppedEntityID);
+            }
+          }
+        }
+        ImGui::EndDragDropTarget();
+      }
+      break;
     }
-    break;
-  }
   }
 }
 
 void DrawScriptComponent(Entity selection) {
-  const ImGuiTreeNodeFlags treeNodeFlags =
-      ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed |
-      ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap |
-      ImGuiTreeNodeFlags_FramePadding;
-
   if (!selection.HasComponent<ScriptComponentContainer>()) {
     return;
   }
+
+  auto &component = selection.GetComponent<ScriptComponentContainer>();
+
+  const ImGuiTreeNodeFlags treeNodeFlags =
+    ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed |
+    ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap |
+    ImGuiTreeNodeFlags_FramePadding;
 
   auto &scriptEngine = ScriptEngine::GetMutable();
   auto context = scriptEngine.GetSceneContext();
 
   int idx = 0;
-  auto &component = selection.GetComponent<ScriptComponentContainer>();
 
   std::vector<int> scriptsToRemove;
 
   for (auto &sc : component.Scripts) {
     int currentIdx = idx++;
     ImGui::PushID(currentIdx);
-    ImVec2 contentRegionAvailable = ImGui::GetContentRegionAvail();
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{8.0f, 5.0f});
+    ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.19f, 0.20f, 0.23f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.24f, 0.25f, 0.29f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.22f, 0.24f, 0.28f, 1.0f));
 
-    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{10, 4});
-    float lineHeight =
-        GImGui->Font->LegacySize + GImGui->Style.FramePadding.y * 2.0f;
-    ImGui::Separator();
-    bool open = ImGui::TreeNodeEx("Script", treeNodeFlags);
+    float lineHeight = ImGui::GetFrameHeight();
+    bool open = ImGui::TreeNodeEx(&idx, treeNodeFlags, "Script");
+
+    ImGui::PopStyleColor(3);
     ImGui::PopStyleVar();
-    ImGui::SameLine(contentRegionAvailable.x - lineHeight);
-    if (ImGui::Button(":", ImVec2{lineHeight, lineHeight})) {
-      ImGui::OpenPopup("Component Settings");
-    }
 
-    bool removeComponent = false;
-    if (ImGui::BeginPopup("Component Settings")) {
-      if (ImGui::MenuItem("Remove Component")) {
-        removeComponent = true;
+    const float buttonSize = lineHeight;
+    const float rightEdge = ImGui::GetWindowContentRegionMax().x;
+    ImGui::SameLine(rightEdge - buttonSize);
+    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.30f, 0.32f, 0.36f, 0.7f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.36f, 0.38f, 0.42f, 0.9f));
+    if (ImGui::Button(":##ScriptSettings", ImVec2(buttonSize, buttonSize))) {
+      ImGui::OpenPopup("ScriptSettingsPopup");
+    }
+    ImGui::PopStyleColor(3);
+
+    if (ImGui::BeginPopup("ScriptSettingsPopup")) {
+      if (ImGui::MenuItem("Reset")) {
+        sc = ScriptComponent();
         ImGui::CloseCurrentPopup();
       }
-      if (ImGui::MenuItem("Reset Component")) {
-        sc = ScriptComponent();
-        auto &scriptFields = scriptEngine.GetScriptFieldMap(selection);
-        if (scriptFields.find(sc.ScriptID) != scriptFields.end())
-          scriptFields[sc.ScriptID.uuid()].clear();
-
+      ImGui::Separator();
+      if (ImGui::MenuItem("Remove Component")) {
+        scriptsToRemove.push_back(idx - 1);
         ImGui::CloseCurrentPopup();
       }
       ImGui::EndPopup();
     }
 
-    if (removeComponent) {
-      scriptsToRemove.push_back(currentIdx);
-      if (open)
-        ImGui::TreePop();
-      ImGui::PopID();
-      continue;
-    }
+    if (open) {
+      ImGui::Spacing();
+      const auto &entityClasses = scriptEngine.GetScriptClasses();
 
-    if (!open) {
-      ImGui::PopID();
-      continue;
-    }
-
-    const auto &entityClasses = scriptEngine.GetScriptClasses();
-
-    std::vector<std::string> classes = {"##EmptyScriptField"};
-    for (auto &[_, scriptClass] : entityClasses) {
-      std::string className = scriptClass->GetClassName();
-      bool found = false;
-      for (auto &loadedClass : component.LoadedScriptNames) {
-        if (loadedClass == className)
-          found = true;
-      }
-
-      if (!found)
-        classes.push_back(scriptClass->GetClassName());
-    }
-
-    std::sort(classes.begin(), classes.end());
-
-    std::string prevClassName = sc.ClassName;
-    if (ImGuiDraw::Combo("Script", sc.ClassName, classes)) {
-
-      if (prevClassName != sc.ClassName) {
-        for (auto it = component.LoadedScriptNames.begin();
-             it != component.LoadedScriptNames.end(); it++) {
-          if (*it == prevClassName) {
-            component.LoadedScriptNames.erase(it);
-            component.LoadedScriptNames.push_back(sc.ClassName);
-          }
+      std::vector<std::string> classes = {"##EmptyScriptField"};
+      for (auto &[_, scriptClass] : entityClasses) {
+        std::string className = scriptClass->GetClassName();
+        bool found = false;
+        for (auto &loadedClass : component.LoadedScriptNames) {
+          if (loadedClass == className)
+            found = true;
         }
-        sc.ScriptID =
-            sc.ClassName.empty() ? 0 : Hash::GenerateFNVHash(sc.ClassName);
+
+        if (!found)
+          classes.push_back(scriptClass->GetClassName());
       }
-    }
 
-    bool scriptClassExists =
+      std::sort(classes.begin(), classes.end());
+
+      std::string prevClassName = sc.ClassName;
+      if (ImGuiDraw::Combo("Script", sc.ClassName, classes)) {
+
+        if (prevClassName != sc.ClassName) {
+          for (auto it = component.LoadedScriptNames.begin();
+          it != component.LoadedScriptNames.end(); it++) {
+            if (*it == prevClassName) {
+              component.LoadedScriptNames.erase(it);
+              component.LoadedScriptNames.push_back(sc.ClassName);
+            }
+          }
+          sc.ScriptID =
+            sc.ClassName.empty() ? 0 : Hash::GenerateFNVHash(sc.ClassName);
+        }
+      }
+
+      bool scriptClassExists =
         scriptEngine.ScriptClassExists(sc.ClassName.c_str());
-    bool sceneRunning = context->IsRunning();
+      bool sceneRunning = context->IsRunning();
 
-    if (sceneRunning) {
-      Ref<ScriptInstance> scriptInstance = scriptEngine.GetEntityScriptInstance(
+      if (sceneRunning) {
+        Ref<ScriptInstance> scriptInstance = scriptEngine.GetEntityScriptInstance(
           selection.GetUUID(), sc.ScriptID);
 
-      if (!scriptInstance) {
+        if (!scriptInstance) {
+          ImGui::TreePop();
+          ImGui::PopID();
+          continue;
+        }
+
+        const auto &fields = scriptInstance->GetScriptClass()->GetFields();
+
+        for (const auto &[_, field] : fields) {
+          DrawRuntimeScriptComponents(field, scriptInstance, context);
+        }
         ImGui::TreePop();
         ImGui::PopID();
         continue;
       }
 
-      const auto &fields = scriptInstance->GetScriptClass()->GetFields();
+      if (!scriptClassExists) {
+        ImGui::TreePop();
+        ImGui::PopID();
+        continue;
+      }
 
-      for (const auto &[_, field] : fields) {
-        DrawRuntimeScriptComponents(field, scriptInstance, context);
+      Ref<ScriptClass> scriptClass =
+        scriptEngine.GetScriptClass(sc.ClassName.c_str());
+      const auto &fields = scriptClass->GetFields();
+
+      auto &scriptFields = scriptEngine.GetScriptFieldMap(selection);
+      auto &fieldInstanceMap = scriptFields[sc.ScriptID];
+
+      for (const auto &[fieldID, field] : fields) {
+        DrawEditTimeScriptComponents(fieldID, field, context, selection,
+                                     fieldInstanceMap);
       }
       ImGui::TreePop();
-      ImGui::PopID();
-      continue;
     }
 
-    if (!scriptClassExists) {
-      ImGui::TreePop();
-      ImGui::PopID();
-      continue;
-    }
-
-    Ref<ScriptClass> scriptClass =
-        scriptEngine.GetScriptClass(sc.ClassName.c_str());
-    const auto &fields = scriptClass->GetFields();
-
-    auto &scriptFields = scriptEngine.GetScriptFieldMap(selection);
-    auto &fieldInstanceMap = scriptFields[sc.ScriptID];
-
-    for (const auto &[fieldID, field] : fields) {
-      DrawEditTimeScriptComponents(fieldID, field, context, selection,
-                                   fieldInstanceMap);
-    }
-    ImGui::TreePop();
     ImGui::PopID();
+
   }
 
   for (auto it = scriptsToRemove.rbegin(); it != scriptsToRemove.rend(); ++it) {

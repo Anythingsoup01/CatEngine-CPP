@@ -11,10 +11,6 @@ Entities:
       LocalPosition: [0, 0, 0]
       LocalRotation: [0, 0, 0]
       LocalScale: [1, 1, 1]
-    SpriteRendererComponent:
-      Color: [0.953271031, 0.301659614, 0.142545223, 1]
-      Texture: 5858643685516184259
-      Tiling: 1
     Rigidbody2DComponent:
       BodyType: 2
       FixedRotation: false
@@ -36,4 +32,22 @@ Entities:
     RelationshipComponent:
       ParentID: 0
       Children:
-        []
+        - Entity: 1540758988327917754
+          TagComponent:
+            Tag: None
+          LayerComponent:
+            Layer: Default
+          NameComponent:
+            Name: Enemy Sprite
+          TransformComponent:
+            LocalPosition: [0, 0, 0]
+            LocalRotation: [0, 0, 0]
+            LocalScale: [1, 1, 1]
+          SpriteRendererComponent:
+            Color: [1, 1, 1, 1]
+            Texture: 12997539653109632776
+            Tiling: 1
+          RelationshipComponent:
+            ParentID: 6953594429004582135
+            Children:
+              []

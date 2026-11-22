@@ -465,6 +465,8 @@ void Scene::DeleteEntities() {
   m_SceneCommandQueue.push_back([this](){
     for (auto &entityID : m_DeletedEntities) {
       Entity e = this->GetEntityByUUID(entityID);
+      if (!e)
+        continue;
       m_EntityMap.erase(entityID);
       m_RootEntities.erase(std::remove(m_RootEntities.begin(), m_RootEntities.end(),
                                    entityID),
@@ -510,8 +512,8 @@ Entity Scene::GetPrimaryCameraEntity() {
   }
   return {};
 }
-Entity Scene::CreateEntity(const std::string &name) {
-  return CreateEntityWithUUID(UUID(), name);
+Entity Scene::CreateEntity(const std::string &name, UUID parent) {
+  return CreateEntityWithUUID(UUID(), name, parent);
 }
 Entity Scene::CreateEntityWithUUID(UUID uuid, const std::string &name,
                                    UUID parent) {

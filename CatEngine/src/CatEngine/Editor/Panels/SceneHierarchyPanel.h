@@ -23,6 +23,8 @@ public:
 
 private:
   void DrawEntityNode(Entity entity, bool isPrefabRoot = false);
+
+  void DrawContextMenu(Entity parent);
 private:
   Ref<Scene> m_Context;
   Entity m_SelectionContext;

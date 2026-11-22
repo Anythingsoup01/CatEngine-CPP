@@ -1,0 +1,10 @@
+Handle: 15721212057771476663
+Name: Car
+FilePath: Textures/Car.cattextureasset
+SourceFilePath: Textures/Textures/Car.png
+Type: Texture2D
+LastUpdated: 1795327286783396211
+MinFilter: Linear
+MagFilter: Linear
+WrapOption: Repeat
+ImageFormat: RGB8

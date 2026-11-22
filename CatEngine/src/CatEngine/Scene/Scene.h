@@ -22,7 +22,7 @@ public:
 
   void CopyTo(Ref<Scene> &target);
 
-  Entity CreateEntity(const std::string &name = std::string());
+  Entity CreateEntity(const std::string &name = std::string(), UUID parent = 0);
   Entity CreateEntityWithUUID(UUID uuid, const std::string &name = std::string(), UUID parent = 0);
   void DeleteEntity(Entity entity);
 

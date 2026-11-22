@@ -55,10 +55,17 @@ public:
 
   // With this scene layout, users can only close the current scene
   // so all we have to do is pop the back
-  static void CloseScene() {
+  static void CloseScene(AssetHandle closedScene) {
     CE_API_ASSERT(s_ActiveProject, "No Active Project");
     auto &scenes = s_ActiveProject->m_Config.OpenScenes;
-    if (scenes.size() > 1) // At least one scene is required to be open
+    if (closedScene) {
+      for (auto it = scenes.begin(); it != scenes.end(); it++) {
+        if (*it == closedScene) {
+          scenes.erase(it);
+          break;
+        }
+      }
+    } else if (scenes.size() > 1) // At least one scene is required to be open
       scenes.pop_back();
   }
 
