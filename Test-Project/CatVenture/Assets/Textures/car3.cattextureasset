@@ -1,9 +1,0 @@
-Handle: 9249517793672617715
-Name: car3
-FilePath: Textures/car3.cattextureasset
-SourceFilePath: Textures/car3.png
-Type: Texture2D
-MinFilter: Linear
-MagFilter: Linear
-WrapOption: Repeat
-ImageFormat: RGBA8

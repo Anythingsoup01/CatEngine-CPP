@@ -3,6 +3,8 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 
+#include <misc/cpp/imgui_stdlib.h>
+
 #include <glm/gtc/type_ptr.hpp>
 
 namespace CatEngine {
@@ -422,6 +424,60 @@ void ImGuiDraw::DataField(const std::string &label,
   }
 
   ImGui::PopID();
+}
+
+bool ImGuiDraw::TextEdit(const std::string &label, std::string &text) {
+  ImGui::PushID(label.c_str());
+  bool interacted = false;
+  if (ImGui::BeginTable("##", 2)) {
+
+    for (int i = 0; i < 2; i++) {
+      ImGui::TableSetupColumn(names[i].c_str(),
+                              ImGuiTableColumnFlags_WidthStretch);
+    }
+
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
+    ImGui::Text("%s", label.c_str());
+    ImGui::TableSetColumnIndex(1);
+
+    ImGui::PushItemWidth(-1.0f);
+    if (ImGui::InputText("##", &text, ImGuiInputTextFlags_EnterReturnsTrue)) {
+      interacted = true;
+    }
+    ImGui::PopItemWidth();
+    ImGui::EndTable();
+  }
+
+  ImGui::PopID();
+  return interacted;
+}
+
+bool ImGuiDraw::MultiLineTextEdit(const std::string &label, std::string &text, float height) {
+  ImGui::PushID(label.c_str());
+  bool interacted = false;
+  if (ImGui::BeginTable("##", 2)) {
+
+    for (int i = 0; i < 2; i++) {
+      ImGui::TableSetupColumn(names[i].c_str(),
+                              ImGuiTableColumnFlags_WidthStretch);
+    }
+
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
+    ImGui::Text("%s", label.c_str());
+    ImGui::TableSetColumnIndex(1);
+
+    ImGui::PushItemWidth(-1.0f);
+    if (ImGui::InputTextMultiline("##", &text, ImVec2(-1.0, height), ImGuiInputTextFlags_EnterReturnsTrue)) {
+      interacted = true;
+    }
+    ImGui::PopItemWidth();
+    ImGui::EndTable();
+  }
+
+  ImGui::PopID();
+  return interacted;
 }
 
 void ImGuiDraw::StaticString(const std::string &label, const std::string &str) {

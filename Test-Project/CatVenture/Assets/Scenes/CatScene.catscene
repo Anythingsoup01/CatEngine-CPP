@@ -1,4 +1,3 @@
-Scene: SampleScene
 Entities:
   - Entity: 16339413074538623784
     TagComponent:
@@ -32,18 +31,12 @@ Entities:
           ScriptID: 1101011320
           ClassName: PlayerController
           Fields:
-            - FieldID: 694375300
-              FieldName: m_JumpForce
+            - FieldID: 1573751430
+              FieldName: m_SpeedScale
               FieldType: Float
               FieldSize: 4
               IsVector: false
-              Value: 2.5
-            - FieldID: 2949236897
-              FieldName: m_PlayerTerminalVelocity
-              FieldType: Float
-              FieldSize: 4
-              IsVector: false
-              Value: 5
+              Value: 0.0500000007
             - FieldID: 1733498902
               FieldName: m_PlayerPrefab
               FieldType: Prefab
@@ -79,37 +72,6 @@ Entities:
             ParentID: 16339413074538623784
             Children:
               []
-  - Entity: 6953594429004582135
-    TagComponent:
-      Tag: None
-    LayerComponent:
-      Layer: Enemy
-    NameComponent:
-      Name: Enemy
-    TransformComponent:
-      LocalPosition: [5.39058018, 2.50676417, 0]
-      LocalRotation: [0, 0, 0]
-      LocalScale: [1, 1, 1]
-    SpriteRendererComponent:
-      Color: [0.757009327, 0.24054502, 0.24054502, 1]
-      Texture: 5858643685516184259
-      Tiling: 1
-    Rigidbody2DComponent:
-      BodyType: 2
-      FixedRotation: false
-    BoxCollider2DComponent:
-      Offset: [0, 0]
-      Size: [0.5, 0.5]
-      Rotation: 0
-      ShowColliderBounds: false
-      Density: 1
-      Friction: 0.5
-      Restitution: 0
-      RestitutionThreshold: 0.5
-    RelationshipComponent:
-      ParentID: 0
-      Children:
-        []
   - Entity: 1480008899337404242
     TagComponent:
       Tag: None
@@ -127,6 +89,40 @@ Entities:
       Tiling: 1
     Rigidbody2DComponent:
       BodyType: 0
+      FixedRotation: false
+    BoxCollider2DComponent:
+      Offset: [0, 0]
+      Size: [0.5, 0.5]
+      Rotation: 0
+      ShowColliderBounds: false
+      Density: 1
+      Friction: 0.5
+      Restitution: 0
+      RestitutionThreshold: 0.5
+    RelationshipComponent:
+      ParentID: 0
+      Children:
+        []
+  - Entity: 8684309562073096701
+    TagComponent:
+      Tag: None
+    LayerComponent:
+      Layer: Enemy
+    NameComponent:
+      Name: Enemy (Prefab)
+    PrefabLinkComponent:
+      PrefabID: 2688644230827143704
+      SourceEntityID: 6953594429004582135
+    TransformComponent:
+      LocalPosition: [5.39058018, 2.50676417, 0]
+      LocalRotation: [0, 0, 0]
+      LocalScale: [1, 1, 1]
+    SpriteRendererComponent:
+      Color: [0.757009327, 0.24054502, 0.24054502, 1]
+      Texture: 5858643685516184259
+      Tiling: 1
+    Rigidbody2DComponent:
+      BodyType: 2
       FixedRotation: false
     BoxCollider2DComponent:
       Offset: [0, 0]

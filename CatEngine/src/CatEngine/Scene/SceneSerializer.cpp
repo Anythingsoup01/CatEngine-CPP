@@ -16,6 +16,7 @@
 #include "CatEngine/Core/Formatter.h"
 
 #include "CatEngine/Scripting/ScriptEngine.h"
+#include "yaml-cpp/emittermanip.h"
 
 namespace CatEngine {
 
@@ -124,6 +125,7 @@ void SceneSerializer::SerializeEntity(YAML::Emitter &out, Entity entity) {
 
     out << YAML::Key << "PrefabID" << YAML::Value << plc.PrefabID;
     out << YAML::Key << "SourceEntityID" << YAML::Value << plc.SourceEntityID;
+    out << YAML::Key << "LastKnownUpdate" << YAML::Value << plc.LastKnownUpdate;
 
     out << YAML::EndMap; // PrefabLinkComponent
   }
@@ -360,7 +362,6 @@ void SceneSerializer::Serialize(const std::string &filepath) {
 
   YAML::Emitter out;
   out << YAML::BeginMap;
-  out << YAML::Key << "Scene" << YAML::Value << "SampleScene";
   out << YAML::Key << "Entities" << YAML::Value << YAML::BeginSeq;
   for (auto entityID : m_Scene->GetRootEntities()) {
     Entity entity = m_Scene->GetEntityByUUID(entityID);
@@ -498,6 +499,7 @@ void SceneSerializer::DeserializeEntity(YAML::Node &entity, UUID parent) {
     auto &plc = deserializedEntity.GetOrAddComponent<PrefabLinkComponent>();
     plc.PrefabID = prefabLinkComponent["PrefabID"].as<UUID>();
     plc.SourceEntityID = prefabLinkComponent["SourceEntityID"].as<UUID>();
+    plc.LastKnownUpdate = prefabLinkComponent["LastKnownUpdate"].as<uint64_t>(0);
   }
 
   auto transformComponent = entity["TransformComponent"];
@@ -709,11 +711,6 @@ bool SceneSerializer::Deserialize(const std::string &filepath) {
                  ex.what());
     return false;
   }
-
-  if (!data["Scene"])
-    return false;
-
-  std::string sceneName = data["Scene"].as<std::string>();
 
   auto entities = data["Entities"];
   if (entities) {

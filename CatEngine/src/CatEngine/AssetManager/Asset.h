@@ -3,6 +3,7 @@
 #include "CatEngine/Core/UUID.h"
 
 #include "CatEngine/Types/TextureTypes.h"
+#include <cstdint>
 
 namespace CatEngine {
 using AssetHandle = UUID;
@@ -136,6 +137,7 @@ public:
     AssetType Type = AssetType::None;
     std::filesystem::path SourceFilePath;
     std::filesystem::path FilePath;
+    uint64_t LastUpdated;
 
     // TEXTURE DATA
     TextureParameter TextureMinFilter;

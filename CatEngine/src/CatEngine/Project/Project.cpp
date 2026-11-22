@@ -34,7 +34,6 @@ bool Project::Save(const std::filesystem::path &filePath) {
   if (serializer.Serialize(filePath)) {
     s_ActiveProject->m_ActiveProjectDirectory = filePath.parent_path();
     const auto &editorAssetManager = s_ActiveProject->GetEditorAssetManager();
-    editorAssetManager->SerializeAssetRegistry();
     editorAssetManager->RebuildAssetRegistry();
     return true;
   }

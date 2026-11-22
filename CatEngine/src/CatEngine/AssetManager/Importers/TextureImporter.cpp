@@ -1,6 +1,10 @@
 #include "TextureImporter.h"
+#include "CatEngine/Editor/PanelManager.h"
+#include "CatEngine/Editor/Panels/ConsolePanel.h"
+#include "CatEngine/Types/TextureTypes.h"
 #include "cepch.h"
 
+#include <cstdint>
 #include <stb_image.h>
 
 #include "CatEngine/Project/Project.h"
@@ -45,51 +49,55 @@ Ref<Texture2D> TextureImporter::ImportIconTexture(const TextureSpecification &sp
   CE_PROFILE_FUNCTION();
   int width, height, channels;
   stbi_set_flip_vertically_on_load(1);
-  std::filesystem::path filePath =
-      Project::GetAssetDirectory() / metaData.SourceFilePath;
+
+  TextureSpecification newSpec;
   Buffer data;
+  bool defaultTexture = false;
+  std::filesystem::path filePath = Project::GetAssetDirectory() / metaData.SourceFilePath;
   {
     CE_PROFILE_SCOPE("stbi_load - TextureImporter::ImportTexture2D");
     data.Data = stbi_load(filePath.c_str(), &width, &height, &channels, 0);
   }
-  if (!data) {
-    CE_API_ASSERT(false, "Failed to load texture from filepath {}",
-                  filePath.string());
-    return nullptr;
+  if (!data.Data) {
+    auto console = PanelManager::Get().GetPanel<ConsolePanel>("ConsolePanel");
+    console->WriteError("Failed to load texture '" + metaData.AssetName + " 'from path '" + metaData.SourceFilePath.generic_string() + "'");
+    uint32_t whiteData = 0xFFFFFFFF;
+    data = Buffer(&whiteData, sizeof(uint32_t));
+    width = 1;
+    height = 1;
+    channels = 4;
+    newSpec.Format = ImageFormat::RGBA8;
+    defaultTexture = true;
+  }
+  newSpec.Width = width;
+  newSpec.Height = height;
+  newSpec.FilePath = filePath;
+  newSpec.MinFilter = spec.MinFilter == TextureParameter::NONE
+    ? TextureParameter::Linear
+    : spec.MinFilter;
+  newSpec.MagFilter = spec.MagFilter == TextureParameter::NONE
+    ? TextureParameter::Linear
+    : spec.MagFilter;
+  newSpec.WrapOption = spec.WrapOption == TextureWrapParameter::NONE
+    ? TextureWrapParameter::Repeat
+    : spec.WrapOption;
+
+  if (!defaultTexture) {
+    if (spec.Format == ImageFormat::NONE) {
+      if (channels == 3)
+      newSpec.Format = ImageFormat::RGB8;
+      else if (channels == 4)
+        newSpec.Format = ImageFormat::RGBA8;
+    } else {
+      newSpec.Format = spec.Format;
+    }
   }
 
   // TODO: Rework this when HDR gets supported!
 
   data.Size = width * height * channels;
 
-  TextureSpecification newSpec;
-  newSpec.Width = width;
-  newSpec.Height = height;
-  newSpec.FilePath = filePath;
-  newSpec.MinFilter = spec.MinFilter == TextureParameter::NONE
-                          ? TextureParameter::Linear
-                          : spec.MinFilter;
-  newSpec.MagFilter = spec.MagFilter == TextureParameter::NONE
-                          ? TextureParameter::Linear
-                          : spec.MagFilter;
-  newSpec.WrapOption = spec.WrapOption == TextureWrapParameter::NONE
-                           ? TextureWrapParameter::Repeat
-                           : spec.WrapOption;
-
   if (spec.Format == ImageFormat::NONE) {
-    if (channels == 3)
-      newSpec.Format = ImageFormat::RGB8;
-    else if (channels == 4)
-      newSpec.Format = ImageFormat::RGBA8;
-  } else {
-    newSpec.Format = spec.Format;
-  }
-
-  if (spec.Format == ImageFormat::NONE) {
-    std::filesystem::path fileName = filePath.filename();
-    fileName.replace_extension("");
-
-    metaData.AssetName = fileName.generic_string();
     metaData.TextureMinFilter = newSpec.MinFilter;
     metaData.TextureMagFilter = newSpec.MagFilter;
     metaData.TextureWrap = newSpec.WrapOption;

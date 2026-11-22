@@ -7,6 +7,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "CatEngine/AssetManager/Asset.h"
+#include "CatEngine/Core/Application.h"
 #include "CatEngine/Core/UUID.h"
 #include "CatEngine/Editor/IconManager.h"
 #include "CatEngine/Editor/PanelManager.h"
@@ -40,89 +42,112 @@ void SceneHierarchyPanel::OnImGuiRender(bool &isOpen) {
                                ImGuiTreeNodeFlags_SpanAvailWidth |
                                ImGuiTreeNodeFlags_DefaultOpen;
 
-    const Asset::MetaData &sceneMetaData =
-        Project::GetActive()->GetEditorAssetManager()->GetMetaData(
-            m_Context->m_Handle);
+    auto &activeProject = Project::GetActive();
+
+
+    const Asset::MetaData &sceneMetaData = Project::GetActive()->GetEditorAssetManager()->GetMetaData(m_Context->m_Handle);
+    bool is_Prefab = sceneMetaData.Type == AssetType::Prefab;
     std::string projName = Project::GetConfig().Name;
 
-    std::string label = projName + " (" + sceneMetaData.AssetName + ")";
+    if (ImGui::TreeNodeEx(projName.c_str(), flags)) {
 
-    if (ImGui::TreeNodeEx(label.c_str(), flags)) {
+      // Name, Visibility, Lock
+      const std::vector<AssetHandle> openedScenes = Project::GetActive()->GetOpenScenes();
+      for (auto it = openedScenes.rbegin(); it != openedScenes.rend(); it++) {
+        UUID handle = *it;
+        if (handle == m_Context->m_Handle)
+          continue;
+        const Asset::MetaData &metaData = activeProject->GetEditorAssetManager()->GetMetaData(handle);
+        if(ImGui::TreeNodeEx(metaData.AssetName.c_str(), ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_Leaf))
+          ImGui::TreePop();
+
+        if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
+          Application::Get().OpenSceneFromHandle(handle);
+        }
+      }
 
       ImGuiTableFlags tableFlags = ImGuiTableFlags_NoPadInnerX |
                                    ImGuiTableFlags_BordersInnerV |
                                    ImGuiTableFlags_ScrollY;
 
-      // Name, Visibility, Lock
-      const int numberOfCols = 3;
-      if (ImGui::BeginTable("##SceneHierarchy-Table", numberOfCols, tableFlags,
-                            ImVec2(ImGui::GetContentRegionAvail()))) {
+      std::string sceneName = sceneMetaData.AssetName;
+      if (is_Prefab) {
+        sceneName = sceneName + " (Scene)";
+      }
+      if (ImGui::TreeNodeEx(sceneName.c_str(), flags)) {
+        const int numberOfCols = 3;
+        if (ImGui::BeginTable("##SceneHierarchy-Table", numberOfCols, tableFlags,
+                              ImVec2(ImGui::GetContentRegionAvail()))) {
 
-        ImGui::TableSetupColumn("Label");
-        ImGui::TableSetupColumn("Visibility", ImGuiTableColumnFlags_WidthFixed,
-                                25.0f);
-        ImGui::TableSetupColumn("Lock", ImGuiTableColumnFlags_WidthFixed,
-                                25.0f);
-        ImGui::TableNextRow();
-        ImGui::TableSetColumnIndex(0);
+          ImGui::TableSetupColumn("Label");
+          ImGui::TableSetupColumn("Visibility", ImGuiTableColumnFlags_WidthFixed,
+                                  25.0f);
+          ImGui::TableSetupColumn("Lock", ImGuiTableColumnFlags_WidthFixed,
+                                  25.0f);
+          ImGui::TableNextRow();
+          ImGui::TableSetColumnIndex(0);
 
-        {
-          for (auto entity : m_Context->GetRootEntities()) {
-            Entity e = m_Context->GetEntityByUUID(entity);
-            auto &rel = e.GetComponent<RelationshipComponent>();
-            if (rel.Parent == 0) { // Root Node
-              DrawEntityNode(e);
+          {
+            for (auto entity : m_Context->GetRootEntities()) {
+              Entity e = m_Context->GetEntityByUUID(entity);
+              auto &rel = e.GetComponent<RelationshipComponent>();
+              if (rel.Parent == 0) { // Root Node
+                DrawEntityNode(e, is_Prefab);
+              }
             }
           }
-        }
 
-        ImGui::TableNextRow();
-        ImGui::TableSetColumnIndex(0);
-        ImGui::Spacing();
-        ImGui::Dummy(ImGui::GetContentRegionAvail());
+          ImGui::TableNextRow();
+          ImGui::TableSetColumnIndex(0);
+          ImGui::Spacing();
+          ImGui::Dummy(ImGui::GetContentRegionAvail());
 
-        if (ImGui::BeginDragDropTarget()) {
-          if (const ImGuiPayload *payload =
-                  ImGui::AcceptDragDropPayload("SCENE_HIERARCHY_ITEM")) {
-            UUID droppedEntityID = *(UUID *)payload->Data;
-            Entity droppedEntity = m_Context->GetEntityByUUID(droppedEntityID);
+          if (ImGui::BeginDragDropTarget()) {
+            if (const ImGuiPayload *payload =
+              ImGui::AcceptDragDropPayload("SCENE_HIERARCHY_ITEM")) {
+              UUID droppedEntityID = *(UUID *)payload->Data;
+              Entity droppedEntity = m_Context->GetEntityByUUID(droppedEntityID);
 
-            if (droppedEntity) {
-              // Dropped into empty space = Make it a root-level entity (Parent
-              // = 0)
-              m_Context->ReparentEntity(droppedEntity, {});
+              if (droppedEntity) {
+                // Dropped into empty space = Make it a root-level entity (Parent
+                // = 0)
+                m_Context->ReparentEntity(droppedEntity, {});
+              }
             }
+            ImGui::EndDragDropTarget();
           }
-          ImGui::EndDragDropTarget();
-        }
 
-        if (ImGui::BeginPopupContextWindow(
-                nullptr, ImGuiPopupFlags_MouseButtonRight |
-                             ImGuiPopupFlags_NoOpenOverItems)) {
-          if (ImGui::BeginMenu("Create")) {
-            if (ImGui::MenuItem("Create Empty GameObject")) {
-              const auto &entity = m_Context->CreateEntity("GameObject");
-              Ref<InspectorPanel> inspector =
+          if (ImGui::BeginPopupContextWindow(
+            nullptr, ImGuiPopupFlags_MouseButtonRight |
+            ImGuiPopupFlags_NoOpenOverItems)) {
+            if (ImGui::BeginMenu("Create")) {
+              if (ImGui::MenuItem("Create Empty GameObject")) {
+                const auto &entity = m_Context->CreateEntity("GameObject");
+                Ref<InspectorPanel> inspector =
                   PanelManager::Get().GetPanel<InspectorPanel>(
-                      "InspectorPanel");
-              inspector->SetEntitySelectionContext(entity);
-              ImGui::CloseCurrentPopup();
-            }
-            if (ImGui::MenuItem("Create Camera")) {
-              const auto &entity = m_Context->CreateEntity("Camera");
-              entity.AddComponent<CameraComponent>().Primary = false;
-              Ref<InspectorPanel> inspector =
+                    "InspectorPanel");
+                inspector->SetEntitySelectionContext(entity);
+                ImGui::CloseCurrentPopup();
+              }
+              if (ImGui::MenuItem("Create Camera")) {
+                const auto &entity = m_Context->CreateEntity("Camera");
+                entity.AddComponent<CameraComponent>().Primary = false;
+                Ref<InspectorPanel> inspector =
                   PanelManager::Get().GetPanel<InspectorPanel>(
-                      "InspectorPanel");
-              inspector->SetEntitySelectionContext(entity);
-              ImGui::CloseCurrentPopup();
+                    "InspectorPanel");
+                inspector->SetEntitySelectionContext(entity);
+                ImGui::CloseCurrentPopup();
+              }
+              ImGui::EndMenu();
             }
-            ImGui::EndMenu();
+            ImGui::EndPopup();
           }
-          ImGui::EndPopup();
+
+          ImGui::EndTable();
+
+          ImGui::TreePop();
         }
 
-        ImGui::EndTable();
       }
       ImGui::TreePop();
     }
@@ -130,13 +155,17 @@ void SceneHierarchyPanel::OnImGuiRender(bool &isOpen) {
   ImGui::End();
 }
 
-void SceneHierarchyPanel::DrawEntityNode(Entity entity) {
+void SceneHierarchyPanel::DrawEntityNode(Entity entity, bool isPrefabRoot) {
   if (!entity || !m_Context->GetReg().valid(entity))
     return;
 
   ImGui::PushID(std::to_string(entity.GetUUID()).c_str());
-  const char *name = "Unnamed Entity";
+  std::string name = "Unnamed Entity";
   name = entity.GetComponent<NameComponent>().Name.c_str();
+
+  if (isPrefabRoot) {
+    name = name + " (Root)";
+  }
 
   auto &relationship = entity.GetComponent<RelationshipComponent>();
 
@@ -185,7 +214,7 @@ void SceneHierarchyPanel::DrawEntityNode(Entity entity) {
     UUID entityID = entity.GetUUID();
     ImGui::SetDragDropPayload("SCENE_HIERARCHY_ITEM", &entityID,
                               sizeof(entityID));
-    ImGui::TextUnformatted(name);
+    ImGui::TextUnformatted(name.c_str());
     ImGui::EndDragDropSource();
   }
 

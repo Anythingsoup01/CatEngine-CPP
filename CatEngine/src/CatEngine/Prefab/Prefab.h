@@ -11,6 +11,7 @@ public:
   ~Prefab() = default;
 
   Ref<Scene> GetScene() { return m_PrefabScene; }
+  void SetScene(Ref<Scene> scene) { m_PrefabScene = scene; }
 
   static AssetType GetStaticType() { return AssetType::Prefab; }
   AssetType GetType() const override { return GetStaticType(); }

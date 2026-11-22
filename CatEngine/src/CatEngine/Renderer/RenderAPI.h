@@ -1,37 +1,34 @@
 #pragma once
 
-#include <glm/glm.hpp>
 #include "VertexArray.h"
+#include <glm/glm.hpp>
 
-namespace CatEngine
-{
-    class RenderAPI
-    {
-    public:
-        enum class API
-        {
-            None = 0,
-            OpenGL, Vulkan
-        };
-    public:
+namespace CatEngine {
+class RenderAPI {
+public:
+  enum class API { None = 0, OpenGL, Vulkan };
 
-        ~RenderAPI() = default;
+public:
+  ~RenderAPI() = default;
 
-        virtual void Init() = 0;
-        virtual void SetViewport(uint32_t width, uint32_t height) = 0;
-        virtual void Clear(const glm::vec4& clearColor) = 0;
+  virtual void Init() = 0;
+  virtual void SetViewport(uint32_t width, uint32_t height) = 0;
+  virtual void Clear(const glm::vec4 &clearColor) = 0;
 
-        virtual void DrawIndexed(const Ref<VertexArray>& vertexArray) = 0;
-        virtual void DrawIndexed(const Ref<VertexArray>& vertexArray, const uint32_t& indexCount) = 0;
+  virtual void DrawIndexed(const Ref<VertexArray> &vertexArray) = 0;
+  virtual void DrawIndexed(const Ref<VertexArray> &vertexArray,
+                           const uint32_t &indexCount) = 0;
 
-        virtual void DrawLines(const Ref<VertexArray>& vertexArray, const uint32_t vertexCount) = 0;
+  virtual void DrawLines(const Ref<VertexArray> &vertexArray,
+                         const uint32_t vertexCount) = 0;
 
-        virtual void SetLineThickness(float thickness) = 0;
+  virtual void SetLineThickness(float thickness) = 0;
 
-        static API Get() { return s_API; }
-        static void Set(API api) { s_API = api; }
-        static Scope<RenderAPI> Create();
-    private:
-        static inline API s_API = API::None;
-    };
-}
+  static API Get() { return s_API; }
+  static void Set(API api) { s_API = api; }
+  static Scope<RenderAPI> Create();
+
+private:
+  static inline API s_API = API::None;
+};
+} // namespace CatEngine

@@ -1,0 +1,10 @@
+Handle: 15721212057771476663
+Name: Test
+FilePath: Textures/Test.cattextureasset
+SourceFilePath: Textures/Textures/car.png
+Type: Texture2D
+LastUpdated: 1795309993068705175
+MinFilter: Linear
+MagFilter: Linear
+WrapOption: Repeat
+ImageFormat: RGB8

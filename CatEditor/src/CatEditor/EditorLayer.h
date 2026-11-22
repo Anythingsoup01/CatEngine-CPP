@@ -2,6 +2,7 @@
 
 #include "CatEngine.h"
 
+#include "CatEngine/Prefab/Prefab.h"
 #include "imgui.h"
 
 #include "Panels/SceneViewportPanel.h"
@@ -18,7 +19,11 @@ public:
   virtual void OnImGuiDraw() override;
   virtual void OnEvent(Event &event) override;
 
-  static EditorLayer &Get() { return *s_Instance; }
+  virtual void NewSampleScene(const std::filesystem::path &loadPath) override;
+  virtual void NewEmptyScene(const std::filesystem::path &loadPath) override;
+
+  virtual void OpenScene(const AssetHandle &handle) override;
+  virtual void OpenPreviousScene() override;
 private:
   bool OnWindowResize(WindowResizeEvent &e);
   bool OnKeyPressed(KeyPressedEvent &e);
@@ -42,9 +47,6 @@ private:
   void SaveSceneAs();
   void SaveScene();
 
-  void OpenScene(AssetHandle handle);
-
-  void NewScene();
 
   void SaveProject();
 
@@ -82,9 +84,7 @@ private:
 
   bool m_MouseInUse = false;
   bool m_MouseInUseFlag = false;
-
   bool m_IsScenePaused = false;
-
   bool m_ProjectActive = false;
 
   Ref<Scene> m_CurrentScene;
@@ -92,6 +92,7 @@ private:
   Ref<Scene> m_RuntimeScene;
   Ref<Scene> m_SimulationScene;
   Ref<Scene> m_EditorScene;
+  Ref<Prefab> m_LoadedPrefab;
 
   AssetHandle m_CurrentSceneHandle = 0;
 

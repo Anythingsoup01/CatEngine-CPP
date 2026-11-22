@@ -30,7 +30,6 @@ public:
   void SetEntityChildActiveRecursive(Entity child, bool parentActive);
 
   Entity InstantiatePrefab(const UUID &prefabID, const UUID &parentID = 0);
-  void OnPrefabReloaded(const UUID &prefabID);
 
   void DrawEntityRecursive(Entity e, const glm::mat4 &parentWorldMatrix);
 

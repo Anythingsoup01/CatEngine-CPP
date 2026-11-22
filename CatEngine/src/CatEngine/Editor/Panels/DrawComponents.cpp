@@ -134,7 +134,7 @@ void DrawSpriteRendererComponent(Entity selection) {
 
     if (ImGui::BeginDragDropTarget()) {
       if (const ImGuiPayload *payload =
-              ImGui::AcceptDragDropPayload("ASSET_BROWSER_ASSET")) {
+              ImGui::AcceptDragDropPayload("ASSET_BROWSER_ITEM")) {
         AssetHandle handle = *(AssetHandle *)payload->Data;
         const AssetType type = AssetManager::GetAssetType(handle);
 
@@ -935,7 +935,7 @@ bool DrawEditTimeScriptVector(const ScriptField &field, const int &index,
     ImGuiDraw::DataField("[" + std::to_string(index) + "]", label);
     if (ImGui::BeginDragDropTarget()) {
       if (const ImGuiPayload *payload =
-              ImGui::AcceptDragDropPayload("ASSET_BROWSER_ASSET")) {
+              ImGui::AcceptDragDropPayload("ASSET_BROWSER_ITEM")) {
         UUID droppedAssetID = *(UUID *)payload->Data;
         const auto &asset =
             Project::GetActive()->GetEditorAssetManager()->GetAsset(
@@ -967,7 +967,7 @@ bool DrawEditTimeScriptVector(const ScriptField &field, const int &index,
     ImGuiDraw::DataField("[" + std::to_string(index) + "]", label);
     if (ImGui::BeginDragDropTarget()) {
       if (const ImGuiPayload *payload =
-              ImGui::AcceptDragDropPayload("ASSET_BROWSER_ASSET")) {
+              ImGui::AcceptDragDropPayload("ASSET_BROWSER_ITEM")) {
         UUID droppedAssetID = *(UUID *)payload->Data;
         const auto &asset =
             Project::GetActive()->GetEditorAssetManager()->GetAsset(
@@ -1302,7 +1302,7 @@ void DrawEditTimeScriptComponents(const UUID &fieldID, const ScriptField &field,
     ImGuiDraw::DataField(field.Name, label);
     if (ImGui::BeginDragDropTarget()) {
       if (const ImGuiPayload *payload =
-              ImGui::AcceptDragDropPayload("ASSET_BROWSER_ASSET")) {
+              ImGui::AcceptDragDropPayload("ASSET_BROWSER_ITEM")) {
         UUID droppedAssetID = *(UUID *)payload->Data;
         const auto &asset =
             Project::GetActive()->GetEditorAssetManager()->GetAsset(
@@ -1335,7 +1335,7 @@ void DrawEditTimeScriptComponents(const UUID &fieldID, const ScriptField &field,
     ImGuiDraw::DataField(field.Name, label);
     if (ImGui::BeginDragDropTarget()) {
       if (const ImGuiPayload *payload =
-              ImGui::AcceptDragDropPayload("ASSET_BROWSER_ASSET")) {
+              ImGui::AcceptDragDropPayload("ASSET_BROWSER_ITEM")) {
         UUID droppedAssetID = *(UUID *)payload->Data;
         const auto &asset =
             Project::GetActive()->GetEditorAssetManager()->GetAsset(

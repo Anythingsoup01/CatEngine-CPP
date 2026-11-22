@@ -1,5 +1,5 @@
-#include "Application.h"
 #include "cepch.h"
+#include "Application.h"
 
 #include "CatEngine/Renderer/RenderAPI.h"
 #include "CatEngine/Renderer/Renderer.h"
@@ -92,6 +92,29 @@ void Application::PushOverlay(Layer *layer) {
   CE_PROFILE_FUNCTION();
   m_LayerStack.PushLayer(layer);
   layer->OnAttach();
+}
+void Application::CreateNewSampleScene(const std::filesystem::path &loadPath) {
+  for (auto *layer : m_LayerStack) {
+    layer->NewSampleScene(loadPath);
+  }
+}
+
+void Application::CreateNewEmptyScene(const std::filesystem::path &loadPath) {
+  for (auto *layer : m_LayerStack) {
+    layer->NewEmptyScene(loadPath);
+  }
+}
+void Application::OpenSceneFromHandle(const AssetHandle &handle) {
+  for (auto *layer : m_LayerStack) {
+    layer->OpenScene(handle);
+  }
+}
+
+void Application::OpenPreviousScene() {
+  for (auto *layer : m_LayerStack) {
+    layer->OpenPreviousScene();
+  }
+
 }
 
 void Application::PopLayer(Layer *layer) {

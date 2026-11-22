@@ -37,6 +37,13 @@ public:
   void PushLayer(Layer *layer);
   void PushOverlay(Layer *overlay);
 
+  void CreateNewSampleScene(const std::filesystem::path &loadPath);
+  void CreateNewEmptyScene(const std::filesystem::path &loadPath);
+
+  void OpenSceneFromHandle(const AssetHandle &handle);
+  void OpenPreviousScene();
+
+
   void PopLayer(Layer *layer);
   void PopOverlay(Layer *overlay);
 

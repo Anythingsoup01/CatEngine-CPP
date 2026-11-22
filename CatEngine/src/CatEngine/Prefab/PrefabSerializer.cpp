@@ -55,6 +55,7 @@ void PrefabSerializer::SerializeEntityScriptVector(YAML::Emitter &out,
     break;
   case DataType::Entity:
   case DataType::Texture2D:
+  case DataType::Prefab:
   case DataType::ScriptComponent:
     out << *reinterpret_cast<const uint64_t *>(elementPtr);
     break;
@@ -62,7 +63,7 @@ void PrefabSerializer::SerializeEntityScriptVector(YAML::Emitter &out,
     break;
   }
 }
-void PrefabSerializer::SerializeEntity(YAML::Emitter &out, Entity entity, Ref<Scene> rootScene) {
+void PrefabSerializer::SerializeEntity(YAML::Emitter &out, Entity entity) {
   CE_PROFILE_FUNCTION();
 
   out << YAML::BeginMap; // Entity
@@ -289,6 +290,7 @@ void PrefabSerializer::SerializeEntity(YAML::Emitter &out, Entity entity, Ref<Sc
             break;
           case DataType::Entity:
           case DataType::Texture2D:
+          case DataType::Prefab:
           case DataType::ScriptComponent:
             out << YAML::Value << field.GetValue<uint64_t>();
             break;
@@ -312,12 +314,9 @@ void PrefabSerializer::SerializeEntity(YAML::Emitter &out, Entity entity, Ref<Sc
     out << YAML::BeginSeq;
     for (auto &child : rc.Children) {
       Entity e;
-      if (rootScene) {
-        e = rootScene->GetEntityByUUID(child);
-      } else {
-        e = m_Prefab->m_PrefabScene->GetEntityByUUID(child);
-      }
-      SerializeEntity(out, e, rootScene);
+      auto *scene = entity.GetScene();
+      e = scene->GetEntityByUUID(child);
+      SerializeEntity(out, e);
     }
 
     out << YAML::EndSeq;
@@ -327,18 +326,18 @@ void PrefabSerializer::SerializeEntity(YAML::Emitter &out, Entity entity, Ref<Sc
   out << YAML::EndMap; // Entity
 }
 
-void PrefabSerializer::Serialize(const std::filesystem::path &filepath,
-                                 Entity rootEntity, Ref<Scene> rootScene) {
+void PrefabSerializer::Serialize(const std::filesystem::path &filepath, Entity rootEntity) {
   YAML::Emitter out;
   out << YAML::BeginMap;
   out << YAML::Key << "Prefab" << YAML::Value << "CatEngine Prefab";
-  out << YAML::Key << "Version" << YAML::Value << 1;
   out << YAML::Key << "Entities" << YAML::BeginSeq;
 
-  if (!rootEntity)
-    return;
+  if (!rootEntity) {
+    auto root = m_Prefab->m_PrefabScene->GetRootEntities()[0];
+    rootEntity = m_Prefab->m_PrefabScene->GetEntityByUUID(root);
+  }
 
-  SerializeEntity(out, rootEntity, rootScene);
+  SerializeEntity(out, rootEntity);
 
   out << YAML::EndSeq;
   out << YAML::EndMap;
@@ -422,6 +421,7 @@ void PrefabSerializer::DeserializeEntityScriptVector(YAML::Node &vectorNode,
     }
     case DataType::Entity:
     case DataType::Texture2D:
+    case DataType::Prefab:
     case DataType::ScriptComponent: {
       uint64_t value = element.as<uint64_t>();
       outVectorData.PushBack(sizeof(uint64_t), &value);
@@ -631,6 +631,7 @@ void PrefabSerializer::DeserializeEntity(YAML::Node &entity, UUID parent) {
                 break;
               case DataType::Entity:
               case DataType::Texture2D:
+              case DataType::Prefab:
               case DataType::ScriptComponent:
                 sfi.SetValue(field["Value"].as<uint64_t>());
                 break;
@@ -674,6 +675,7 @@ bool PrefabSerializer::Deserialize(const std::filesystem::path &filepath) {
     }
   }
   m_Prefab->m_PrefabScene->RegisterParents();
+  m_Prefab->m_PrefabScene->m_Handle = m_Prefab->m_Handle;
   return true;
 }
 

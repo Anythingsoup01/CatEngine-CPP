@@ -10,7 +10,7 @@ struct ProjectConfig {
   std::string Name = "Untitled";
   std::vector<AssetHandle> OpenScenes;
   std::filesystem::path AssetDirectory;
-  std::filesystem::path AssetRegistryPath; // Relative to the asset directory
+  std::filesystem::path LastLoadedAssetPath; // Relative to the asset directory
 };
 
 class Project {

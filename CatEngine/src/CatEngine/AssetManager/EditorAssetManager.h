@@ -38,9 +38,11 @@ public:
 
   AssetHandle GetAssetIDFromPath(const std::filesystem::path &filePath);
 
-  void DeleteAsset(AssetHandle handle, bool deleteSource = true);
+  void DeleteAsset(AssetHandle handle, bool deleteSource = true, bool retainSceneFocus = false);
 
   const Asset::MetaData &GetMetaData(AssetHandle handle) const;
+  Asset::MetaData &GetMetaData(AssetHandle handle);
+
   const std::filesystem::path &GetFilePath(AssetHandle handle) const;
   const std::filesystem::path &GetSourceFilePath(AssetHandle handle) const;
 
@@ -50,9 +52,7 @@ public:
 
   void SerializeAsset(const AssetHandle &handle);
 
-  void SerializeAssetRegistry();
   bool DeserializeAssetRegistry();
-
   void RebuildAssetRegistry();
 
 private:

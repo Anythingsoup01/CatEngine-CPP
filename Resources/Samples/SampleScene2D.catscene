@@ -1,4 +1,3 @@
-Scene: SampleScene
 Entities:
   - Entity: 16339413074538623784
     TagComponent:

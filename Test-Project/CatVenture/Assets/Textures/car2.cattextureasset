@@ -1,7 +1,7 @@
 Handle: 12997539653109632776
 Name: car2
 FilePath: Textures/car2.cattextureasset
-SourceFilePath: Textures/car2.jpeg
+SourceFilePath: Textures/Textures/car2.jpeg
 Type: Texture2D
 MinFilter: Linear
 MagFilter: Linear

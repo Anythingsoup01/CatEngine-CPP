@@ -19,7 +19,7 @@ bool ProjectSerializer::Serialize(const std::filesystem::path &filePath) {
   out << YAML::BeginMap; // Project
   out << YAML::Key << "Name" << YAML::Value << config.Name;
   out << YAML::Key << "AssetDirectory" << YAML::Value << config.AssetDirectory.string();
-  out << YAML::Key << "AssetRegistryPath" << YAML::Value << config.AssetRegistryPath.string();
+  out << YAML::Key << "LastLoadedAssetPath" << YAML::Value << config.LastLoadedAssetPath.string();
   out << YAML::Key << "OpenScenes" << YAML::Value;
   out << YAML::BeginSeq;
   for (auto &sceneHandle : config.OpenScenes) {
@@ -54,7 +54,7 @@ bool ProjectSerializer::Deserialize(const std::filesystem::path &filePath) {
 
   config.Name = projectNode["Name"].as<std::string>();
   config.AssetDirectory = projectNode["AssetDirectory"].as<std::string>();
-  config.AssetRegistryPath = projectNode["AssetRegistryPath"].as<std::string>();
+  config.LastLoadedAssetPath = projectNode["LastLoadedAssetPath"].as<std::string>(config.AssetDirectory.generic_string());
 
   auto openScenes = projectNode["OpenScenes"];
   if (openScenes) {
@@ -66,4 +66,5 @@ bool ProjectSerializer::Deserialize(const std::filesystem::path &filePath) {
 
   return true;
 }
+
 } // namespace CatEngine

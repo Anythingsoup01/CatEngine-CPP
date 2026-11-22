@@ -2,7 +2,7 @@
 
 #include "CatEngine/AssetManager/Asset.h"
 
-#include "CatEngine/Scene/Prefab.h"
+#include "CatEngine/Prefab/Prefab.h"
 
 namespace CatEngine {
 class PrefabImporter {
@@ -15,7 +15,7 @@ public:
   // a file
   static Ref<Prefab> ConstImportPrefab(AssetHandle handle, const Asset::MetaData &metaData);
 
-  static Ref<Prefab> LoadPrefab(const std::filesystem::path &filePath);
+  static Ref<Prefab> LoadPrefab(const AssetHandle &handle, const std::filesystem::path &filePath);
 };
 
 } // namespace CatEngine

@@ -3,8 +3,10 @@
 #include "CatEngine/AssetManager/AssetPostprocessor.h"
 #include "CatEngine/AssetManager/Importers/SceneImporter.h"
 #include "CatEngine/AssetManager/Importers/TextureImporter.h"
+#include "CatEngine/Core/Application.h"
 #include "CatEngine/Editor/PanelManager.h"
 #include "CatEngine/Editor/Panels/ConsolePanel.h"
+#include "CatEngine/Prefab/PrefabManager.h"
 #include "cepch.h"
 
 #include "AssetImporter.h"
@@ -180,7 +182,7 @@ AssetHandle EditorAssetManager::ReloadAssetWithNewMetaData(
   if (!handle)
     return 0;
 
-  DeleteAsset(handle);
+  DeleteAsset(handle, true, true);
 
   Ref<Asset> asset = AssetImporter::ImportAsset(handle, metaData);
   if (asset) {
@@ -234,12 +236,13 @@ AssetHandle EditorAssetManager::GetAssetIDFromPath(const std::filesystem::path &
   return m_AssetRegistryFileMap[pathHash];
 }
 
-void EditorAssetManager::DeleteAsset(AssetHandle handle, bool deleteSource) {
+void EditorAssetManager::DeleteAsset(AssetHandle handle, bool deleteSource, bool retainSceneFocus) {
   auto &metaData = GetMetaData(handle);
   std::filesystem::path absPath = std::filesystem::absolute(Project::GetAssetDirectory() / metaData.FilePath);
   if (std::filesystem::exists(absPath)) {
     std::filesystem::remove(absPath);
   }
+
 
   if (deleteSource) {
     switch (metaData.Type) {
@@ -249,13 +252,17 @@ void EditorAssetManager::DeleteAsset(AssetHandle handle, bool deleteSource) {
         if (std::filesystem::exists(absSourcePath))
           std::filesystem::remove(absSourcePath);
 
-        auto &openScenes = Project::GetActive()->GetOpenScenes();
-        for (auto it = openScenes.begin(); it != openScenes.end(); it++) {
-          auto sceneHandle = *it;
+        if (!retainSceneFocus) {
+          auto &openScenes = Project::GetActive()->GetOpenScenes();
+          for (auto it = openScenes.begin(); it != openScenes.end(); it++) {
+            auto sceneHandle = *it;
           if (handle == sceneHandle) {
-            openScenes.erase(it);
-            break;
+              openScenes.erase(it);
+              break;
+            }
           }
+
+          Application::Get().OpenPreviousScene();
         }
       }
       default:
@@ -294,6 +301,14 @@ const Asset::MetaData &EditorAssetManager::GetMetaData(AssetHandle handle) const
   return m_AssetRegistry.at(handle);
 }
 
+Asset::MetaData &EditorAssetManager::GetMetaData(AssetHandle handle) {
+  static Asset::MetaData s_NullMetaData;
+  if (!IsAssetHandleValid(handle))
+    return s_NullMetaData;
+
+  return m_AssetRegistry.at(handle);
+}
+
 const std::filesystem::path &EditorAssetManager::GetFilePath(AssetHandle handle) const {
   return GetMetaData(handle).FilePath;
 }
@@ -315,10 +330,13 @@ bool EditorAssetManager::IsAssetExtension(const std::string &extension) {
 
   return false;
 }
+
 void EditorAssetManager::SerializeAsset(const AssetHandle &handle) {
-  const auto &metaData = m_AssetRegistry.at(handle);
+  auto &metaData = m_AssetRegistry.at(handle);
   std::filesystem::path path = Project::GetAssetDirectory() / metaData.FilePath;
   std::ofstream fout(path);
+
+  metaData.LastUpdated = std::chrono::high_resolution_clock::now().time_since_epoch().count();
 
   YAML::Emitter out;
   out << YAML::BeginMap; // Root Begin
@@ -328,6 +346,7 @@ void EditorAssetManager::SerializeAsset(const AssetHandle &handle) {
   out << YAML::Key << "FilePath" << YAML::Value << metaData.FilePath.generic_string();
   out << YAML::Key << "SourceFilePath" << YAML::Value << metaData.SourceFilePath.generic_string();
   out << YAML::Key << "Type" << YAML::Value << AssetTypeToString(metaData.Type);
+  out << YAML::Key << "LastUpdated" << YAML::Value << metaData.LastUpdated;
   if (metaData.Type == AssetType::Texture2D) {
     out << YAML::Key << "MinFilter" << YAML::Value << TextureParameterToString(metaData.TextureMinFilter);
     out << YAML::Key << "MagFilter" << YAML::Value << TextureParameterToString(metaData.TextureMagFilter);
@@ -338,32 +357,6 @@ void EditorAssetManager::SerializeAsset(const AssetHandle &handle) {
   out << YAML::EndMap; // Root End
   fout << out.c_str();
   fout.close();
-}
-
-void EditorAssetManager::SerializeAssetRegistry() {
-  for (const auto &[handle, metaData] : m_AssetRegistry) {
-    std::filesystem::path path = Project::GetAssetDirectory() / metaData.FilePath;
-    std::ofstream fout(path);
-
-    YAML::Emitter out;
-    out << YAML::BeginMap; // Root Begin
-
-    out << YAML::Key << "Handle" << YAML::Value << handle;
-    out << YAML::Key << "Name" << YAML::Value << metaData.AssetName;
-    out << YAML::Key << "FilePath" << YAML::Value << metaData.FilePath.generic_string();
-    out << YAML::Key << "SourceFilePath" << YAML::Value << metaData.SourceFilePath.generic_string();
-    out << YAML::Key << "Type" << YAML::Value << AssetTypeToString(metaData.Type);
-    if (metaData.Type == AssetType::Texture2D) {
-      out << YAML::Key << "MinFilter" << YAML::Value << TextureParameterToString(metaData.TextureMinFilter);
-      out << YAML::Key << "MagFilter" << YAML::Value << TextureParameterToString(metaData.TextureMagFilter);
-      out << YAML::Key << "WrapOption" << YAML::Value << TextureWrapParameterToString(metaData.TextureWrap);
-      out << YAML::Key << "ImageFormat" << YAML::Value << ImageFormatToString(metaData.TextureFormat);
-    }
-
-    out << YAML::EndMap; // Root End
-    fout << out.c_str();
-    fout.close();
-  }
 }
 
 bool EditorAssetManager::DeserializeAssetRegistry() {
@@ -392,11 +385,16 @@ bool EditorAssetManager::DeserializeAssetRegistry() {
     metaData.FilePath = data["FilePath"].as<std::string>();
     metaData.SourceFilePath = data["SourceFilePath"].as<std::string>();
     metaData.Type = StringToAssetType(data["Type"].as<std::string>());
+    metaData.LastUpdated = data["LastUpdated"].as<uint64_t>(std::chrono::high_resolution_clock::now().time_since_epoch().count());
     if (metaData.Type == AssetType::Texture2D) {
       metaData.TextureMinFilter = StringToTextureParameter(data["MinFilter"].as<std::string>());
       metaData.TextureMagFilter = StringToTextureParameter(data["MagFilter"].as<std::string>());
       metaData.TextureWrap = StringToTextureWrapParameter(data["WrapOption"].as<std::string>());
       metaData.TextureFormat = StringToImageFormat(data["ImageFormat"].as<std::string>());
+    }
+
+    if (metaData.Type == AssetType::Prefab) {
+      PrefabManager::Get().AddPrefab(handle);
     }
 
     uint32_t pathHash = Hash::GenerateFNVHash(path.generic_string());

@@ -22,7 +22,7 @@ public:
   void SetSelectedEntity(Entity entity = {}) { m_SelectionContext = entity; }
 
 private:
-  void DrawEntityNode(Entity entity);
+  void DrawEntityNode(Entity entity, bool isPrefabRoot = false);
 private:
   Ref<Scene> m_Context;
   Entity m_SelectionContext;

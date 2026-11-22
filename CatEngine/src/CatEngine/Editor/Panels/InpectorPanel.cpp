@@ -1,10 +1,14 @@
 #include "InpectorPanel.h"
+#include "CatEngine/AssetManager/Asset.h"
 #include "CatEngine/Editor/ImGui/CEImGui.h"
 #include "CatEngine/Editor/Panels/DrawComponents.h"
 #include "CatEngine/Project/Project.h"
+#include "CatEngine/Prefab/Prefab.h"
 #include "CatEngine/Scene/Scene.h"
 #include "imgui.h"
 #include "imgui_internal.h"
+#include <cstdint>
+#include <filesystem>
 
 namespace CatEngine {
 
@@ -177,61 +181,315 @@ void InspectorPanel::DrawAsset(const AssetHandle &handle) {
       Project::GetActive()->GetEditorAssetManager()->GetAsset(handle);
 
   switch (asset->GetType()) {
-  case AssetType::Scene: {
-    Ref<Scene> sceneAsset = (Ref<Scene> &)asset;
-
-    if (!ImGui::BeginTable("##SceneData", 2))
+    case AssetType::Scene: {
+      DrawSceneAsset(asset, handle);
       break;
-
-    ImGui::TableSetupColumn("##INFOTAG", ImGuiTableColumnFlags_WidthStretch);
-    ImGui::TableSetupColumn("##INFODATA", ImGuiTableColumnFlags_WidthStretch);
-    ImGui::EndTable();
-    break;
-  }
-
-  case AssetType::Texture2D: {
-    static std::vector<const char *> s_TextureFormats = {
-        "R8",
-        "RGB8",
-        "RGBA8",
-    };
-
-    static std::vector<const char *> s_TextureFilters = {"Linear", "Nearest"};
-
-    static std::vector<const char *> s_TextureWrapFilters = {
-        "Repeat",
-        "Mirrored Repeat",
-        "Clamp To Edge",
-        "Clamp To Border",
-    };
-    Ref<Texture2D> textureAsset = (Ref<Texture2D> &)asset;
-
-    const Asset::MetaData &metaData = Project::GetActive()->GetEditorAssetManager()->GetMetaData(handle);
-
-    ImGuiDraw::StaticString("Name", metaData.AssetName);
-    ImGuiDraw::Combo("Min Filter", (int &)metaData.TextureMinFilter,
-                     s_TextureFilters);
-    ImGuiDraw::Combo("Mag Filter", (int &)metaData.TextureMagFilter,
-                     s_TextureFilters);
-    ImGuiDraw::Combo("Wrap Options", (int &)metaData.TextureWrap,
-                     s_TextureWrapFilters);
-    ImGuiDraw::StaticString("Format",
-                            ImageFormatToString(metaData.TextureFormat));
-
-    if (ImGui::Button("Apply")) {
-      TextureSpecification spec;
-      spec.MinFilter = metaData.TextureMinFilter;
-      spec.MagFilter = metaData.TextureMagFilter;
-      spec.WrapOption = metaData.TextureWrap;
-      spec.Format = metaData.TextureFormat;
-
-      Buffer data = TextureHelper::BufferTexture(
-          Project::GetAssetDirectory() / metaData.FilePath, (int &)spec.Width,
-          (int &)spec.Height);
-      textureAsset->RecreateTextureWithNewSpecification(spec, data);
+    }
+    case AssetType::Texture2D: {
+      DrawTexture2DAsset(asset, handle);
+      break;
+    }
+    case AssetType::Prefab: {
+      DrawPrefabAsset(asset, handle);
+      break;
     }
   }
+}
+
+void InspectorPanel::DrawSceneAsset(const Ref<Asset> &asset, const AssetHandle &handle) {
+  Ref<Scene> sceneAsset = (Ref<Scene> &)asset;
+
+  auto assetManager = Project::GetActive()->GetEditorAssetManager();
+  Asset::MetaData currentMetaData = assetManager->GetMetaData(handle);
+
+  static AssetHandle s_TrackedSceneHandle = 0;
+  static Asset::MetaData s_SceneMetaDataBuffer = currentMetaData;
+
+  if (s_TrackedSceneHandle != handle || s_SceneMetaDataBuffer.FilePath != currentMetaData.FilePath) {
+    s_TrackedSceneHandle = handle;
+    s_SceneMetaDataBuffer = currentMetaData;
   }
+
+  ImGui::SeparatorText("Scene Asset");
+  ImGuiDraw::TextEdit("Name", s_SceneMetaDataBuffer.AssetName);
+
+  if (!s_SceneMetaDataBuffer.SourceFilePath.empty()) {
+    ImGuiDraw::StaticString("Source File", s_SceneMetaDataBuffer.SourceFilePath.generic_string());
+  }
+
+  bool isDirty = (s_SceneMetaDataBuffer.AssetName != currentMetaData.AssetName);
+
+  ImGui::Spacing();
+  ImGui::Separator();
+  ImGui::Spacing();
+
+  float buttonWidth = 80.0f;
+  float spacing = ImGui::GetStyle().ItemSpacing.x;
+  float rightAlignX = ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - (buttonWidth * 2.0f + spacing);
+  if (rightAlignX > ImGui::GetCursorPosX()) {
+    ImGui::SetCursorPosX(rightAlignX);
+  }
+
+  ImGui::BeginDisabled(!isDirty);
+  if (ImGui::Button("Revert", ImVec2(buttonWidth, 0.0f))) {
+    s_SceneMetaDataBuffer = currentMetaData;
+  }
+  ImGui::SameLine();
+  if (ImGui::Button("Apply", ImVec2(buttonWidth, 0.0f))) {
+    const std::filesystem::path assetRoot = std::filesystem::absolute(Project::GetAssetDirectory());
+
+    if (!s_SceneMetaDataBuffer.FilePath.empty()) {
+      std::filesystem::path oldAssetAbs = std::filesystem::absolute(assetRoot / s_SceneMetaDataBuffer.FilePath);
+      std::filesystem::path newAssetAbs = oldAssetAbs.parent_path() / (s_SceneMetaDataBuffer.AssetName + ".catsceneasset");
+
+      if (oldAssetAbs != newAssetAbs && std::filesystem::exists(oldAssetAbs)) {
+        std::filesystem::copy_file(oldAssetAbs, newAssetAbs, std::filesystem::copy_options::overwrite_existing);
+        std::filesystem::remove(oldAssetAbs);
+        s_SceneMetaDataBuffer.FilePath = std::filesystem::relative(newAssetAbs, assetRoot);
+      }
+    }
+
+    if (!s_SceneMetaDataBuffer.SourceFilePath.empty()) {
+      std::filesystem::path oldSourceAbs = std::filesystem::absolute(assetRoot / s_SceneMetaDataBuffer.SourceFilePath);
+      std::string sourceExt = oldSourceAbs.extension().string();
+      std::filesystem::path newSourceAbs = oldSourceAbs.parent_path() / (s_SceneMetaDataBuffer.AssetName + sourceExt);
+
+      if (oldSourceAbs != newSourceAbs && std::filesystem::exists(oldSourceAbs)) {
+        std::filesystem::copy_file(oldSourceAbs, newSourceAbs, std::filesystem::copy_options::overwrite_existing);
+        std::filesystem::remove(oldSourceAbs);
+        s_SceneMetaDataBuffer.SourceFilePath = std::filesystem::relative(newSourceAbs, assetRoot);
+      }
+    }
+
+    assetManager->ReloadAssetWithNewMetaData(handle, s_SceneMetaDataBuffer);
+    s_SceneMetaDataBuffer = assetManager->GetMetaData(handle);
+  }
+  ImGui::EndDisabled();
+}
+
+void InspectorPanel::DrawTexture2DAsset(const Ref<Asset> &asset, const AssetHandle &handle) {
+  static std::vector<const char *> s_TextureFormats = {
+    "R8",
+    "RGB8",
+    "RGBA8",
+  };
+
+  static std::vector<const char *> s_TextureFilters = {"Linear", "Nearest"};
+
+  static std::vector<const char *> s_TextureWrapFilters = {
+    "Repeat",
+    "Mirrored Repeat",
+    "Clamp To Edge",
+    "Clamp To Border",
+  };
+
+  Ref<Texture2D> textureAsset = (Ref<Texture2D> &)asset;
+
+  Asset::MetaData currentMetaData = Project::GetActive()->GetEditorAssetManager()->GetMetaData(handle);
+  static AssetHandle s_TrackedHandle = 0;
+  static Asset::MetaData s_MetaDataBuffer = currentMetaData;
+
+  // Reset buffer when switching selected assets or if underlying metadata changed externally
+  if (s_TrackedHandle != handle || s_MetaDataBuffer.FilePath != currentMetaData.FilePath) {
+    s_TrackedHandle = handle;
+    s_MetaDataBuffer = currentMetaData;
+  }
+
+  ImGui::SeparatorText("Texture Settings");
+
+  ImGuiDraw::TextEdit("Name", s_MetaDataBuffer.AssetName);
+  ImGuiDraw::DataField("Source Image", s_MetaDataBuffer.SourceFilePath.generic_string());
+
+  if (ImGui::BeginDragDropTarget()) {
+    if (const ImGuiPayload *payload = ImGui::AcceptDragDropPayload("ASSET_BROWSER_ITEM")) {
+      const char *raw_str = static_cast<const char *>(payload->Data);
+      size_t len = static_cast<size_t>(payload->DataSize);
+      if (len > 0 && raw_str[len - 1] == '\0') {
+        --len;
+      }
+
+      std::string_view sv(raw_str, len);
+      unsigned long parsedID = 0;
+      auto [ptr, ec] = std::from_chars(sv.data(), sv.data() + sv.size(), parsedID);
+      bool isAssetHandle = (ec == std::errc() && ptr == sv.data() + sv.size());
+
+      if (!isAssetHandle && !sv.empty()) {
+        std::filesystem::path droppedPath(sv);
+
+        // If the payload is relative to the active asset browser directory, resolve it;
+        // if already relative to AssetDirectory or absolute, resolve appropriately.
+        std::filesystem::path candidatePath = droppedPath.is_absolute()
+          ? droppedPath
+          : (std::filesystem::exists(droppedPath)
+              ? (droppedPath)
+              : std::filesystem::absolute(droppedPath));
+
+        std::string ext = candidatePath.extension().string();
+        for (char &ch : ext) {
+          ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
+        }
+
+        const bool isSupportedImage =
+          ext == ".png" || ext == ".jpg" || ext == ".jpeg" ||
+          ext == ".tga" || ext == ".bmp" || ext == ".psd";
+
+        if (isSupportedImage && std::filesystem::exists(candidatePath)) {
+          std::filesystem::path relSource = std::filesystem::relative(candidatePath, Project::GetAssetDirectory());
+          if (!relSource.empty() && relSource.native().front() != '.') {
+            s_MetaDataBuffer.SourceFilePath = relSource;
+          } else {
+            s_MetaDataBuffer.SourceFilePath = candidatePath;
+          }
+        }
+      }
+    }
+    ImGui::EndDragDropTarget();
+  }
+
+
+  ImGuiDraw::Combo("Min Filter", (int &)s_MetaDataBuffer.TextureMinFilter, s_TextureFilters);
+  ImGuiDraw::Combo("Mag Filter", (int &)s_MetaDataBuffer.TextureMagFilter, s_TextureFilters);
+  ImGuiDraw::Combo("Wrap Mode", (int &)s_MetaDataBuffer.TextureWrap, s_TextureWrapFilters);
+  ImGuiDraw::StaticString("Format", ImageFormatToString(s_MetaDataBuffer.TextureFormat));
+ 
+  if (textureAsset) {
+    uint32_t w = textureAsset->GetWidth();
+    uint32_t h = textureAsset->GetHeight();
+    ImGui::Spacing();
+    ImGui::TextDisabled("%ux%u  |  %s", w, h, ImageFormatToString(s_MetaDataBuffer.TextureFormat).c_str());
+
+    if (w > 0 && h > 0) {
+      float availWidth = ImGui::GetContentRegionAvail().x;
+      float previewSize = std::clamp(availWidth * 0.65f, 64.0f, 192.0f);
+      float aspect = static_cast<float>(w) / static_cast<float>(h);
+      ImVec2 imageSize = (aspect >= 1.0f)
+        ? ImVec2(previewSize, previewSize / aspect)
+        : ImVec2(previewSize * aspect, previewSize);
+
+      // Center preview horizontally
+      float cursorX = ImGui::GetCursorPosX() + (availWidth - imageSize.x) * 0.5f;
+      if (cursorX > ImGui::GetCursorPosX()) {
+        ImGui::SetCursorPosX(cursorX);
+      }
+      ImGui::Image((ImTextureID)(uint64_t)(textureAsset->GetRendererID()), imageSize, {0,1}, {1,0});
+    }
+  }
+
+  // Dirty check against live metadata
+  bool isDirty =
+    (s_MetaDataBuffer.AssetName != currentMetaData.AssetName) ||
+    (s_MetaDataBuffer.SourceFilePath != currentMetaData.SourceFilePath) ||
+    (s_MetaDataBuffer.TextureMinFilter != currentMetaData.TextureMinFilter) ||
+    (s_MetaDataBuffer.TextureMagFilter != currentMetaData.TextureMagFilter) ||
+    (s_MetaDataBuffer.TextureWrap != currentMetaData.TextureWrap) ||
+    (s_MetaDataBuffer.TextureFormat != currentMetaData.TextureFormat);
+
+  ImGui::Spacing();
+  ImGui::Separator();
+  ImGui::Spacing();
+
+  // Unity-style Revert + Apply row aligned to the right
+  float buttonWidth = 80.0f;
+  float spacing = ImGui::GetStyle().ItemSpacing.x;
+  float rightAlignX = ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - (buttonWidth * 2.0f + spacing);
+  if (rightAlignX > ImGui::GetCursorPosX()) {
+    ImGui::SetCursorPosX(rightAlignX);
+  }
+
+  ImGui::BeginDisabled(!isDirty);
+  if (ImGui::Button("Revert", ImVec2(buttonWidth, 0.0f))) {
+    s_MetaDataBuffer = currentMetaData;
+    isDirty = false;
+  }
+  ImGui::SameLine();
+  if (ImGui::Button("Apply", ImVec2(buttonWidth, 0.0f))) {
+    std::filesystem::path oldAssetPath = std::filesystem::absolute(Project::GetAssetDirectory() / s_MetaDataBuffer.FilePath);
+    std::string newAssetName = s_MetaDataBuffer.AssetName + ".cattextureasset";
+    std::filesystem::path newAssetPath = std::filesystem::absolute(
+      Project::GetAssetDirectory() / s_MetaDataBuffer.FilePath.parent_path() / newAssetName
+    );
+
+    if (newAssetPath != oldAssetPath) {
+      std::filesystem::copy(oldAssetPath, newAssetPath, std::filesystem::copy_options::overwrite_existing);
+      std::filesystem::remove(oldAssetPath);
+      s_MetaDataBuffer.FilePath = std::filesystem::relative(newAssetPath, Project::GetAssetDirectory());
+    }
+
+    Project::GetActive()->GetEditorAssetManager()->ReloadAssetWithNewMetaData(handle, s_MetaDataBuffer);
+    s_MetaDataBuffer = Project::GetActive()->GetEditorAssetManager()->GetMetaData(handle);
+  }
+  ImGui::EndDisabled();
+}
+
+void InspectorPanel::DrawPrefabAsset(const Ref<Asset> &asset, const AssetHandle &handle) {
+  Ref<Prefab> prefabAsset = (Ref<Prefab> &)asset;
+
+  auto assetManager = Project::GetActive()->GetEditorAssetManager();
+  Asset::MetaData currentMetaData = assetManager->GetMetaData(handle);
+
+  static AssetHandle s_TrackedPrefabHandle = 0;
+  static Asset::MetaData s_PrefabMetaDataBuffer = currentMetaData;
+
+  if (s_TrackedPrefabHandle != handle || s_PrefabMetaDataBuffer.FilePath != currentMetaData.FilePath) {
+    s_TrackedPrefabHandle = handle;
+    s_PrefabMetaDataBuffer = currentMetaData;
+  }
+
+  ImGui::SeparatorText("Prefab Asset");
+  ImGuiDraw::TextEdit("Name", s_PrefabMetaDataBuffer.AssetName);
+
+  if (!s_PrefabMetaDataBuffer.SourceFilePath.empty()) {
+    ImGuiDraw::StaticString("Source File", s_PrefabMetaDataBuffer.SourceFilePath.generic_string());
+  }
+
+  bool isDirty = (s_PrefabMetaDataBuffer.AssetName != currentMetaData.AssetName);
+
+  ImGui::Spacing();
+  ImGui::Separator();
+  ImGui::Spacing();
+
+  float buttonWidth = 80.0f;
+  float spacing = ImGui::GetStyle().ItemSpacing.x;
+  float rightAlignX = ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - (buttonWidth * 2.0f + spacing);
+  if (rightAlignX > ImGui::GetCursorPosX()) {
+    ImGui::SetCursorPosX(rightAlignX);
+  }
+
+  ImGui::BeginDisabled(!isDirty);
+  if (ImGui::Button("Revert", ImVec2(buttonWidth, 0.0f))) {
+    s_PrefabMetaDataBuffer = currentMetaData;
+  }
+  ImGui::SameLine();
+  if (ImGui::Button("Apply", ImVec2(buttonWidth, 0.0f))) {
+    const std::filesystem::path assetRoot = std::filesystem::absolute(Project::GetAssetDirectory());
+
+    if (!s_PrefabMetaDataBuffer.FilePath.empty()) {
+      std::filesystem::path oldAssetAbs = std::filesystem::absolute(assetRoot / s_PrefabMetaDataBuffer.FilePath);
+      std::filesystem::path newAssetAbs = oldAssetAbs.parent_path() / (s_PrefabMetaDataBuffer.AssetName + ".catprefabasset");
+
+      if (oldAssetAbs != newAssetAbs && std::filesystem::exists(oldAssetAbs)) {
+        std::filesystem::copy_file(oldAssetAbs, newAssetAbs, std::filesystem::copy_options::overwrite_existing);
+        std::filesystem::remove(oldAssetAbs);
+        s_PrefabMetaDataBuffer.FilePath = std::filesystem::relative(newAssetAbs, assetRoot);
+      }
+    }
+
+    if (!s_PrefabMetaDataBuffer.SourceFilePath.empty()) {
+      std::filesystem::path oldSourceAbs = std::filesystem::absolute(assetRoot / s_PrefabMetaDataBuffer.SourceFilePath);
+      std::string sourceExt = oldSourceAbs.extension().string();
+      std::filesystem::path newSourceAbs = oldSourceAbs.parent_path() / (s_PrefabMetaDataBuffer.AssetName + sourceExt);
+
+      if (oldSourceAbs != newSourceAbs && std::filesystem::exists(oldSourceAbs)) {
+        std::filesystem::copy_file(oldSourceAbs, newSourceAbs, std::filesystem::copy_options::overwrite_existing);
+        std::filesystem::remove(oldSourceAbs);
+        s_PrefabMetaDataBuffer.SourceFilePath = std::filesystem::relative(newSourceAbs, assetRoot);
+      }
+    }
+
+    assetManager->ReloadAssetWithNewMetaData(handle, s_PrefabMetaDataBuffer);
+    s_PrefabMetaDataBuffer = assetManager->GetMetaData(handle);
+  }
+  ImGui::EndDisabled();
 }
 
 template <typename T>

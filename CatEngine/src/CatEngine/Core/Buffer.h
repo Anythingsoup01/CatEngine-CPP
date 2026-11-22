@@ -13,7 +13,10 @@ struct Buffer {
   Buffer() = default;
   Buffer(uint64_t size) { Allocate(size); }
 
-  Buffer(const void *data, uint64_t size) : Data((void *)data), Size(size) {}
+  Buffer(const void *data, uint64_t size) {
+    Allocate(size);
+    memcpy(Data, data, size);
+  }
 
   Buffer(const Buffer &) = default;
 

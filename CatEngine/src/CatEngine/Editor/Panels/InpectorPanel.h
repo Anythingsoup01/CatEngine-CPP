@@ -26,6 +26,11 @@ private:
   void DrawComponents(Entity selection);
   void DrawAsset(const AssetHandle &handle);
 
+  void DrawSceneAsset(const Ref<Asset> &asset, const AssetHandle &handle);
+  void DrawTexture2DAsset(const Ref<Asset> &asset, const AssetHandle &handle);
+  void DrawPrefabAsset(const Ref<Asset> &asset, const AssetHandle &handle);
+
+
   template <typename T>
   void DisplayAddComponentEntry(const std::string &entryName);
 

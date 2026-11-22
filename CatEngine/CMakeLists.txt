@@ -53,7 +53,6 @@ src/CatEngine/Project/Project.cpp
 src/CatEngine/Project/ProjectSerializer.cpp
 src/CatEngine/Scene/Scene.cpp
 src/CatEngine/Scene/SceneSerializer.cpp
-src/CatEngine/Scene/PrefabSerializer.cpp
 src/CatEngine/Scene/Components/Components.cpp
 src/CatEngine/Scene/SceneCamera.cpp
 src/CatEngine/Scene/ContactListener.cpp
@@ -68,6 +67,8 @@ src/CatEngine/Core/Utils.cpp
 src/CatEngine/Core/UUID.cpp
 src/CatEngine/Core/Log.cpp
 src/CatEngine/Core/Application.cpp
+src/CatEngine/Prefab/PrefabSerializer.cpp
+src/CatEngine/Prefab/PrefabManager.cpp
 ../vendor/glm/glm/vec4.hpp
 ../vendor/glm/glm/mat2x3.hpp
 ../vendor/glm/glm/glm.hpp

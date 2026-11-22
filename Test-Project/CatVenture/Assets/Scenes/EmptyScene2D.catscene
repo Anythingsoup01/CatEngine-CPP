@@ -1,19 +1,21 @@
-Prefab: CatEngine Prefab
-Version: 1
 Entities:
-  - Entity: 6953594429004582135
+  - Entity: 11454326833993399822
     TagComponent:
       Tag: None
     LayerComponent:
       Layer: Enemy
     NameComponent:
-      Name: Enemy
+      Name: Enemy (Prefab)
+    PrefabLinkComponent:
+      PrefabID: 2688644230827143704
+      SourceEntityID: 6953594429004582135
+      LastKnownUpdate: 1795309981653836758
     TransformComponent:
-      LocalPosition: [5.39058018, 2.50676417, 0]
+      LocalPosition: [0, 0, 0]
       LocalRotation: [0, 0, 0]
       LocalScale: [1, 1, 1]
     SpriteRendererComponent:
-      Color: [0.757009327, 0.24054502, 0.24054502, 1]
+      Color: [0.953271031, 0.301659614, 0.142545223, 1]
       Texture: 5858643685516184259
       Tiling: 1
     Rigidbody2DComponent:
@@ -28,6 +30,12 @@ Entities:
       Friction: 0.5
       Restitution: 0
       RestitutionThreshold: 0.5
+    ScriptComponentContainer:
+      - ScriptComponent:
+          ScriptID: 4149576837
+          ClassName: EnemyController
+          Fields:
+            []
     RelationshipComponent:
       ParentID: 0
       Children:

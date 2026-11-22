@@ -1,0 +1,17 @@
+Prefab: CatEngine Prefab
+Entities:
+  - Entity: 18012411933303629574
+    TagComponent:
+      Tag: None
+    LayerComponent:
+      Layer: Default
+    NameComponent:
+      Name: New Entity
+    TransformComponent:
+      LocalPosition: [0, 0, 0]
+      LocalRotation: [0, 0, 0]
+      LocalScale: [1, 1, 1]
+    RelationshipComponent:
+      ParentID: 0
+      Children:
+        []

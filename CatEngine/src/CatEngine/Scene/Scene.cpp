@@ -1,11 +1,14 @@
-#include "CatEngine/Editor/Panels/InpectorPanel.h"
-#include "CatEngine/Editor/Panels/SceneHierarchyPanel.h"
+#include "CatEngine/Prefab/PrefabManager.h"
 #include "cepch.h"
 #include "Scene.h"
+
+#include "CatEngine/Editor/Panels/InpectorPanel.h"
+#include "CatEngine/Editor/Panels/SceneHierarchyPanel.h"
+#include "CatEngine/Prefab/PrefabSerializer.h"
+#include "CatEngine/Prefab/Prefab.h"
 #include "CatEngine/Physics/Physics2D.h"
 #include "CatEngine/Scene/Components/Scripting/ScriptComponentContainer.h"
 #include "CatEngine/AssetManager/AssetManager.h"
-#include "CatEngine/Scene/Prefab.h"
 
 #include "Components/Components.h"
 #include "Components/Required/RelationshipComponent.h"
@@ -108,7 +111,7 @@ std::vector<entt::entity> orderedSourceEntities;
     Entity srcEntityWrapper{srcEntity, this};
     UUID uuid = srcEntityWrapper.GetUUID();
     std::string name = srcEntityWrapper.GetName();
-UUID parent = srcEntityWrapper.GetComponent<RelationshipComponent>().Parent;
+    UUID parent = srcEntityWrapper.GetComponent<RelationshipComponent>().Parent;
 
     Entity destEntityWrapper = target->CreateEntityWithUUID(uuid, name, parent);
     enttMap[uuid] = destEntityWrapper.GetEntityID();
@@ -139,6 +142,47 @@ UUID parent = srcEntityWrapper.GetComponent<RelationshipComponent>().Parent;
         ScriptComponentContainer,
         PrefabLinkComponent
     >(destEntityWrapper, srcEntityWrapper);
+  }
+
+  auto view = target->m_Registry.view<PrefabLinkComponent, IDComponent, RelationshipComponent>();
+
+  auto &prefabs = PrefabManager::Get().GetPrefabs();
+
+  std::unordered_map<UUID, AssetHandle> instancesToRefresh;
+  for (auto e : view) {
+    auto& link = view.get<PrefabLinkComponent>(e);
+    for (auto &prefab : prefabs) {
+      if (link.PrefabID == prefab) {
+        Asset::MetaData metaData = Project::GetActive()->GetEditorAssetManager()->GetMetaData(prefab);
+        if (metaData.LastUpdated > link.LastKnownUpdate) {
+          instancesToRefresh.emplace(view.get<IDComponent>(e).ID, prefab);
+        }
+      }
+    }
+  }
+
+  for (auto &[instanceUUID, prefabID] : instancesToRefresh) {
+    Entity instanceEntity = target->GetEntityByUUID(instanceUUID);
+    if (!instanceEntity) continue;
+
+    // Capture current transform, parent, and active state
+    auto transformCopy = instanceEntity.GetComponent<TransformComponent>();
+    UUID parentID = instanceEntity.GetComponent<RelationshipComponent>().Parent;
+    bool isActive = instanceEntity.GetComponent<ObjectStateComponent>().Active;
+
+    // Delete old instance hierarchy
+    target->DeleteEntity(instanceEntity);
+
+    // Re-instantiate fresh from the updated prefab asset
+    Entity newInstance = target->InstantiatePrefab(prefabID, parentID);
+    if (newInstance) {
+      Asset::MetaData metaData = Project::GetActive()->GetEditorAssetManager()->GetMetaData(prefabID);
+      // Restore world/local transform and active state
+      newInstance.GetComponent<TransformComponent>() = transformCopy;
+      auto &prefabLink = newInstance.GetComponent<PrefabLinkComponent>();
+      prefabLink.LastKnownUpdate = metaData.LastUpdated;
+      target->SetEntityActive(newInstance, isActive);
+    }
   }
 }
 
@@ -173,7 +217,6 @@ void Scene::OnUpdateMainCameraPreview(Time ts) {
     for (auto entity : view) {
       Entity e{entity, this};
       auto &camera = view.get<CameraComponent>(entity);
-      
 
       if (camera.Primary) {
         mainCamera = &camera.Camera;
@@ -417,6 +460,7 @@ void Scene::CalculateTransformRecursive(Entity entity,
     }
   }
 }
+
 void Scene::DeleteEntities() {
   m_SceneCommandQueue.push_back([this](){
     for (auto &entityID : m_DeletedEntities) {
@@ -429,7 +473,6 @@ void Scene::DeleteEntities() {
     }
     m_DeletedEntities.clear();
   });
-
 }
 
 void Scene::DuplicateEntity(Entity entity) { PasteEntity(entity); }
@@ -723,49 +766,7 @@ Entity Scene::InstantiatePrefab(const UUID &prefabID, const UUID &parentID) {
   return newEntity;
 }
 
-void Scene::OnPrefabReloaded(const UUID &prefabID) {
-  if (m_IsRunning)
-    return;
 
-  auto view = m_Registry.view<PrefabLinkComponent, IDComponent, RelationshipComponent>();
-
-  std::vector<UUID> instancesToRefresh;
-  for (auto e : view) {
-    auto& link = view.get<PrefabLinkComponent>(e);
-    if (link.PrefabID == prefabID) {
-      instancesToRefresh.push_back(view.get<IDComponent>(e).ID);
-    }
-  }
-
-  auto sceneHierarchy = PanelManager::Get().GetPanel<SceneHierarchyPanel>("SceneHierarchyPanel");
-  auto inspector = PanelManager::Get().GetPanel<InspectorPanel>("InspectorPanel");
-  Entity selectedEntity = sceneHierarchy->GetSelectedEntity();
-
-  for (UUID instanceUUID : instancesToRefresh) {
-    Entity instanceEntity = GetEntityByUUID(instanceUUID);
-    if (!instanceEntity) continue;
-
-    // Capture current transform, parent, and active state
-    auto transformCopy = instanceEntity.GetComponent<TransformComponent>();
-    UUID parentID = instanceEntity.GetComponent<RelationshipComponent>().Parent;
-    bool isActive = instanceEntity.GetComponent<ObjectStateComponent>().Active;
-
-    // Delete old instance hierarchy
-    DeleteEntity(instanceEntity);
-
-    // Re-instantiate fresh from the updated prefab asset
-    Entity newInstance = InstantiatePrefab(prefabID, parentID);
-    if (newInstance) {
-      // Restore world/local transform and active state
-      newInstance.GetComponent<TransformComponent>() = transformCopy;
-      SetEntityActive(newInstance, isActive);
-    }
-    if (instanceEntity == selectedEntity) {
-      sceneHierarchy->SetSelectedEntity(newInstance);
-      inspector->SetEntitySelectionContext(newInstance);
-    }
-  }
-}
 
 void Scene::DrawEntityRecursive(Entity entity,
                                 const glm::mat4 &parentWorldMatrix) {

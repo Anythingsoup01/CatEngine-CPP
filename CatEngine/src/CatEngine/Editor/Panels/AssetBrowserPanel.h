@@ -23,7 +23,10 @@ public:
 
 private:
   void DrawAsset(const AssetHandle &handle);
-  void DrawRegularFile(const bool &isDirectory, const std::string &fileName);
+  void DrawRegularFile(const bool &isDirectory, const std::filesystem::path &fileName);
+
+  void MoveAssetTarget(const std::filesystem::path &targetPath);
+  std::filesystem::path ResolveUniqueFilePath(const std::filesystem::path &targetPath, const std::filesystem::path &fileName);
 
 private:
   Ref<Scene> m_SceneContext;

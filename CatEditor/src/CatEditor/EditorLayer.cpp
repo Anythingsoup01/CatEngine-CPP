@@ -6,6 +6,8 @@
 #include "CatEngine/Editor/Panels/InpectorPanel.h"
 #include "CatEngine/Project/Project.h"
 #include "CatEngine/Scene/Entity.h"
+#include "CatEngine/Prefab/Prefab.h"
+#include "CatEngine/Prefab/PrefabSerializer.h"
 #include "imgui.h"
 #include <filesystem>
 #include <imgui_internal.h>
@@ -287,7 +289,11 @@ void EditorLayer::OnUpdateEditor(Time deltaTime) {
 
     m_SceneViewportPanel.BindFramebuffer();
 
-    RenderCommand::Clear({0.1, 0.1, 0.1, 1.0});
+    if (!m_LoadedPrefab)
+      RenderCommand::Clear({0.1, 0.1, 0.12, 1.0});
+    else
+      RenderCommand::Clear({0.1, 0.17, 0.3, 1.0});
+
     m_SceneViewportPanel.ClearFramebufferAttachment(1, -1);
 
     m_CurrentScene->OnUpdateEditor(deltaTime, m_EditorCamera);
@@ -401,32 +407,44 @@ void EditorLayer::UI_Viewport() {
     ImGui::Begin("Viewport");
     m_SceneViewportPanel.OnImGuiRender();
     if (ImGui::BeginDragDropTarget()) {
-      if (const ImGuiPayload *payload =
-              ImGui::AcceptDragDropPayload("ASSET_BROWSER_ASSET")) {
-        AssetHandle handle = *(AssetHandle *)payload->Data;
-        const AssetType type = AssetManager::GetAssetType(handle);
+      if (const ImGuiPayload *payload = ImGui::AcceptDragDropPayload("ASSET_BROWSER_ITEM")) {
+        const char* raw_str = static_cast<const char*>(payload->Data);
+        size_t len = static_cast<size_t>(payload->DataSize);
+        if (len > 0 && raw_str[len - 1] == '\0') {
+          --len;
+        }
+        std::string_view sv(raw_str, len);
+        unsigned long value = 0;
 
-        switch (type) {
-          case AssetType::Scene: {
-            OpenScene(handle);
-            break;
+        bool isAsset = false;
+        auto [ptr, ec] = std::from_chars(sv.data(), sv.data() + sv.size(), value);
+        if (ec == std::errc())
+          isAsset = true;
+        if (isAsset) {
+          AssetHandle handle = value;
+          const AssetType type = AssetManager::GetAssetType(handle);
+
+          switch (type) {
+            case AssetType::Scene: {
+              OpenScene(handle);
+              break;
+            }
+            case AssetType::Texture2D: {
+              if (m_HoveredEntity &&
+                m_HoveredEntity.HasComponent<SpriteRendererComponent>())
+                m_HoveredEntity.GetComponent<SpriteRendererComponent>().Texture =
+                  handle;
+              break;
+            }
+            case AssetType::Prefab: {
+              m_CurrentScene->InstantiatePrefab(handle);
+              break;
+            }
+            default:
+              break;
           }
-          case AssetType::Texture2D: {
-            if (m_HoveredEntity &&
-              m_HoveredEntity.HasComponent<SpriteRendererComponent>())
-              m_HoveredEntity.GetComponent<SpriteRendererComponent>().Texture =
-                handle;
-            break;
-          }
-          case AssetType::Prefab: {
-            m_CurrentScene->InstantiatePrefab(handle);
-            break;
-          }
-          default:
-            break;
         }
       }
-
       ImGui::EndDragDropTarget();
     }
     UI_Gizmos();
@@ -470,6 +488,9 @@ void EditorLayer::UI_Gizmos() {
 }
 
 void EditorLayer::UI_Toolbar() {
+  if (m_LoadedPrefab)
+    return;
+
   ImGuiWindowClass tabWindowClass;
   tabWindowClass.DockNodeFlagsOverrideSet =
       ImGuiDockNodeFlags_NoTabBar | ImGuiDockNodeFlags_NoResizeFlagsMask_;
@@ -549,19 +570,11 @@ void EditorLayer::UI_Toolbar() {
 void EditorLayer::UI_MenuBar() {
   if (ImGui::BeginMenuBar()) {
     if (ImGui::BeginMenu("File")) {
-      if (ImGui::MenuItem("New", "Ctrl+N"))
-        NewScene();
-
-      // if (ImGui::MenuItem("Open...", "Ctrl+O")) OpenScene();
-
-      if (ImGui::MenuItem("Save", "Ctrl+S"))
+      if (ImGui::MenuItem("Save", "Ctrl+S")) {
         SaveScene();
+        SaveProject();
+      }
 
-      if (ImGui::MenuItem("Save As...", "Ctrl+Shift+S"))
-        SaveSceneAs();
-
-      // TODO: Be able to close from here!
-      // if (ImGui::MenuItem("Exit")) Application::Get().CloseEditor();
       ImGui::EndMenu();
     }
 
@@ -602,55 +615,24 @@ void EditorLayer::SaveScene() {
   auto absPath = std::filesystem::absolute(Project::GetAssetDirectory() / sceneMetaData.SourceFilePath);
   CE_API_WARN("Attempting to save at {}", absPath.generic_string());
 
-  SceneSerializer serializer(m_CurrentScene);
-  serializer.Serialize(absPath);
-  if (!AssetManager::IsAssetHandleValid(m_CurrentSceneHandle)) {
-    CE_API_WARN("Failed to find valid asset handle for scene {}", absPath.generic_string());
+  if (m_LoadedPrefab) {
+    m_LoadedPrefab->SetScene(m_CurrentScene);
+    PrefabSerializer serializer(m_LoadedPrefab);
+    serializer.Serialize(absPath, {});
+  } else {
+    SceneSerializer serializer(m_CurrentScene);
+    serializer.Serialize(absPath);
+    if (!AssetManager::IsAssetHandleValid(m_CurrentSceneHandle)) {
+      CE_API_WARN("Failed to find valid asset handle for scene {}", absPath.generic_string());
+    }
   }
 }
 
-void EditorLayer::OpenScene(AssetHandle handle) {
-  CE_PROFILE_FUNCTION();
-
-  if (!AssetManager::IsAssetHandleValid(handle)) {
-    CE_API_ERROR("Scene Asset Handle is Invalid!");
-    auto console = m_PanelManager->GetPanel<ConsolePanel>("ConsolePanel");
-    console->WriteError("Scene Asset Handle: " + std::to_string(handle) + " is invalid!");
-    return;
-  }
-
-
-  Ref<Scene> readOnlyScene = AssetManager::GetAsset<Scene>(handle);
-  Ref<Scene> newScene = CreateRef<Scene>();
-  readOnlyScene->CopyTo(newScene);
-  Project::GetActive()->OpenScene(handle);
-
-  m_EditorScene = newScene;
-
-  m_EditorScene->OnViewportResize(m_SceneViewportPanel.GetWidth(),
-                                  m_SceneViewportPanel.GetHeight());
-
-  m_PanelManager->SetSceneContext(m_EditorScene);
-
-  m_SceneViewportPanel.SetContext(m_EditorScene);
-  m_SceneCameraPanel.SetContext(m_EditorScene);
-  ScriptEngine::GetMutable().SetSceneContext(m_EditorScene);
-
-  m_CurrentScene = m_EditorScene;
-
-  std::filesystem::path savePath =
-      Project::GetAssetDirectory() /
-      Project::GetActive()->GetEditorAssetManager()->GetSourceFilePath(handle);
-
-  m_EditorScenePath = savePath;
-  m_CurrentSceneHandle = handle;
-}
-
-void EditorLayer::NewScene() {
+void EditorLayer::NewSampleScene(const std::filesystem::path &loadPath) {
   CE_PROFILE_FUNCTION();
 
   std::filesystem::path sampleScenePath = std::filesystem::absolute(Application::Get().GetMainPath() / "Resources/Samples/SampleScene2D.catscene");
-  std::filesystem::path newSourcePath = std::filesystem::absolute(Project::GetAssetDirectory() / "SampleScene2D.catscene");
+  std::filesystem::path newSourcePath = loadPath / "SampleScene2D.catscene";
   int i = 1;
   while (std::filesystem::exists(newSourcePath)) {
     std::string fileName = newSourcePath.filename();
@@ -685,6 +667,112 @@ void EditorLayer::NewScene() {
   m_CurrentScene = m_EditorScene;
 }
 
+void EditorLayer::NewEmptyScene(const std::filesystem::path &loadPath) {
+  CE_PROFILE_FUNCTION();
+
+  std::filesystem::path sampleScenePath = std::filesystem::absolute(Application::Get().GetMainPath() / "Resources/Samples/EmptyScene2D.catscene");
+  std::filesystem::path newSourcePath = loadPath / "EmptyScene2D.catscene";
+  int i = 1;
+  while (std::filesystem::exists(newSourcePath)) {
+    std::string fileName = newSourcePath.filename();
+    std::string extension = newSourcePath.extension();
+    newSourcePath = newSourcePath.parent_path();
+
+    fileName = fileName.erase(fileName.find('.'));
+    newSourcePath = newSourcePath / (fileName + std::to_string(i) + extension);
+  }
+
+  std::filesystem::copy(sampleScenePath, newSourcePath);
+
+  auto sceneHandle = Project::GetActive()->GetEditorAssetManager()->ImportNewAsset(newSourcePath);
+
+
+  Ref<Scene> readOnlyScene = AssetManager::GetAsset<Scene>(sceneHandle);
+  Ref<Scene> newScene = CreateRef<Scene>();
+  readOnlyScene->CopyTo(newScene);
+  Project::GetActive()->OpenScene(sceneHandle);
+
+  m_EditorScene = newScene;
+
+  m_EditorScene->OnViewportResize(m_SceneViewportPanel.GetWidth(),
+                                  m_SceneViewportPanel.GetHeight());
+
+  m_PanelManager->SetSceneContext(m_EditorScene);
+
+  m_SceneViewportPanel.SetContext(m_EditorScene);
+  m_SceneCameraPanel.SetContext(m_EditorScene);
+  ScriptEngine::GetMutable().SetSceneContext(m_EditorScene);
+
+  m_CurrentScene = m_EditorScene;
+}
+
+void EditorLayer::OpenScene(const AssetHandle &handle) {
+  CE_PROFILE_FUNCTION();
+
+  if (!AssetManager::IsAssetHandleValid(handle)) {
+    CE_API_ERROR("Scene Asset Handle is Invalid!");
+    auto console = m_PanelManager->GetPanel<ConsolePanel>("ConsolePanel");
+    console->WriteError("Scene Asset Handle: " + std::to_string(handle) + " is invalid!");
+    return;
+  }
+
+  Ref<Scene> readOnlyScene = nullptr;
+  Ref<Asset> asset = Project::GetActive()->GetEditorAssetManager()->GetAsset(handle);
+  switch (asset->GetType()) {
+    case AssetType::Scene: {
+      readOnlyScene = (Ref<Scene> &)asset;
+      m_LoadedPrefab = nullptr;
+      m_SceneCameraPanel.SetActive(true);
+      break;
+    }
+    case AssetType::Prefab: {
+      Ref<Prefab> prefab = (Ref<Prefab> &)asset;
+      readOnlyScene = prefab->GetScene();
+      m_LoadedPrefab = prefab;
+      m_SceneCameraPanel.SetActive(false);
+      break;
+    }
+    default:
+      return;
+  }
+
+  Ref<Scene> newScene = CreateRef<Scene>();
+  readOnlyScene->CopyTo(newScene);
+  Project::GetActive()->OpenScene(handle);
+
+  m_EditorScene = newScene;
+
+  m_EditorScene->OnViewportResize(m_SceneViewportPanel.GetWidth(),
+                                  m_SceneViewportPanel.GetHeight());
+
+  m_PanelManager->SetSceneContext(m_EditorScene);
+
+  m_SceneViewportPanel.SetContext(m_EditorScene);
+  m_SceneCameraPanel.SetContext(m_EditorScene);
+  ScriptEngine::GetMutable().SetSceneContext(m_EditorScene);
+
+  m_CurrentScene = m_EditorScene;
+
+  std::filesystem::path savePath =
+      Project::GetAssetDirectory() /
+      Project::GetActive()->GetEditorAssetManager()->GetSourceFilePath(handle);
+
+  m_EditorScenePath = savePath;
+  m_CurrentSceneHandle = handle;
+}
+
+
+void EditorLayer::OpenPreviousScene() {
+  auto &scenes = Project::GetOpenScenes();
+  if (scenes.empty()) {
+    NewEmptyScene(Project::GetAssetDirectory());
+    return;
+  }
+
+  auto &handle = scenes.at(scenes.size() - 1);
+  OpenScene(handle);
+}
+
 void EditorLayer::SaveProject() {
   Project::Save(m_CurrentProjectPath);
 }
@@ -709,12 +797,16 @@ void EditorLayer::OpenProject(const std::filesystem::path &filePath) {
     m_CurrentProjectPath = filePath;
     m_ProjectActive = true;
     Ref<AssetBrowserPanel> assetBrowser = m_PanelManager->GetPanel<AssetBrowserPanel>("AssetBrowserPanel");
-    assetBrowser->SetCurrentDirectory(Project::GetAssetDirectory());
+    assetBrowser->SetCurrentDirectory(Project::GetConfig().LastLoadedAssetPath);
     auto &scenes = Project::GetConfig().OpenScenes;
     // We store scenes from most oldest to newest
-    auto startScenePath = scenes.at(scenes.size() - 1);
-    if (AssetManager::IsAssetHandleValid(startScenePath))
-      OpenScene(startScenePath);
+    if (!scenes.empty()) {
+      auto startScenePath = scenes.at(scenes.size() - 1);
+      if (AssetManager::IsAssetHandleValid(startScenePath))
+        OpenScene(startScenePath);
+    } else {
+      NewSampleScene(Project::GetAssetDirectory());
+    }
     ScriptEngine::GetMutable().Init();
   }
 }
@@ -910,8 +1002,12 @@ bool EditorLayer::OnKeyPressed(KeyPressedEvent &e) {
     break;
   }
   case KeyCode::N: {
-    if (control)
-      NewScene();
+      if (control) {
+        if (shift)
+          NewEmptyScene(Project::GetAssetDirectory());
+        else
+          NewSampleScene(Project::GetAssetDirectory());
+      }
     break;
   }
   case KeyCode::F5: {
