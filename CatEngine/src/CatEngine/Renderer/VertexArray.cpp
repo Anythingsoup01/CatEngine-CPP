@@ -1,20 +1,23 @@
-#include "cepch.h"
+#include "cepch.h" // IWYU pragma: keep
+
 #include "VertexArray.h"
 
 #include "RenderAPI.h"
 
 #include "CatEngine/Platform/OpenGL/OpenGLVertexArray.h"
 
-namespace CatEngine
-{
-    Ref<VertexArray> VertexArray::Create()
-    {
-        CE_PROFILE_FUNCTION();
-        switch (RenderAPI::Get())
-        {
-            case RenderAPI::API::OpenGL: return CreateRef<OpenGLVertexArray>();
-            case RenderAPI::API::Vulkan: CE_API_ASSERT(false, "Vulkan is currently unsupported!"); return nullptr;
-            default: CE_API_ASSERT(false, "CatEngine Headless is unsupported!");
-        }
-    }
+namespace CatEngine {
+Ref<VertexArray> VertexArray::Create() {
+  CE_PROFILE_FUNCTION();
+  switch (RenderAPI::Get()) {
+  case RenderAPI::API::OpenGL:
+    return CreateRef<OpenGLVertexArray>();
+  case RenderAPI::API::Vulkan:
+    CE_API_ASSERT(false, "Vulkan is currently unsupported!");
+    return nullptr;
+  default:
+    CE_API_ASSERT(false, "CatEngine Headless is unsupported!");
+    return nullptr;
+  }
 }
+} // namespace CatEngine

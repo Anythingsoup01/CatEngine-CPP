@@ -1,9 +1,7 @@
 #pragma once
 
 #include "CatEngine/AssetManager/Asset.h"
-
 #include "CatEngine/Core/Buffer.h"
-
 #include "CatEngine/Types/TextureTypes.h"
 
 namespace CatEngine {

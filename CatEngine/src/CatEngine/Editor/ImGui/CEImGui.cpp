@@ -1,3 +1,4 @@
+#include "cepch.h" // IWYU pragma: keep
 #include "CEImGui.h"
 
 #include <imgui.h>
@@ -354,7 +355,7 @@ bool ImGuiDraw::Combo(const std::string &label, std::string &currString,
     ImGui::PushItemWidth(-1.0f);
     if (ImGui::BeginCombo("##", currString.c_str())) {
       for (auto entry : list) {
-        const bool is_selected = (currString == entry);
+        bool is_selected = (currString == entry);
 
         if (ImGui::Selectable(entry.c_str(), &is_selected)) {
           currString = entry;

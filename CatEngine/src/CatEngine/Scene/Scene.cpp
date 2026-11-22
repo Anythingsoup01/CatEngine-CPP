@@ -1,45 +1,21 @@
-#include "CatEngine/Prefab/PrefabManager.h"
-#include "cepch.h"
+#include "cepch.h" // IWYU pragma: keep
 #include "Scene.h"
 
-#include "CatEngine/Editor/Panels/InpectorPanel.h"
-#include "CatEngine/Editor/Panels/SceneHierarchyPanel.h"
-#include "CatEngine/Prefab/PrefabSerializer.h"
-#include "CatEngine/Prefab/Prefab.h"
-#include "CatEngine/Physics/Physics2D.h"
-#include "CatEngine/Scene/Components/Scripting/ScriptComponentContainer.h"
-#include "CatEngine/AssetManager/AssetManager.h"
-
-#include "Components/Components.h"
-#include "Components/Required/RelationshipComponent.h"
+#include "Components/Components.h" // IWYU pragma: keep
 
 #include "Entity.h"
 
-#include "CatEngine/Renderer/Renderer2D.h"
-
-#include <cstdint>
-#include <glm/glm.hpp>
-
+#include "CatEngine/AssetManager/AssetManager.h"
 #include "CatEngine/Editor/PanelManager.h"
 #include "CatEngine/Editor/Panels/ConsolePanel.h"
-
+#include "CatEngine/Physics/Physics2D.h"
+#include "CatEngine/Prefab/Prefab.h"
+#include "CatEngine/Prefab/PrefabManager.h"
+#include "CatEngine/Project/Project.h"
+#include "CatEngine/Renderer/Renderer2D.h"
 #include "CatEngine/Scripting/ScriptEngine.h"
 
 namespace CatEngine {
-static b2BodyType
-Rigidbody2DTypeToBox2DType(Rigidbody2DComponent::BodyType bodyType) {
-  switch (bodyType) {
-  case CatEngine::Rigidbody2DComponent::BodyType::Static:
-    return b2_staticBody;
-  case CatEngine::Rigidbody2DComponent::BodyType::Kinematic:
-    return b2_kinematicBody;
-  case CatEngine::Rigidbody2DComponent::BodyType::Dynamic:
-    return b2_dynamicBody;
-  }
-
-  CE_API_ASSERT(false, "Unknown body type!");
-  return b2_staticBody;
-}
 
 Scene::Scene() {}
 
@@ -270,7 +246,7 @@ void Scene::OnUpdateRuntime(Time time) {
       ScriptEngine::GetMutable().OnFixedUpdate(Time(m_FixedTimeStep));
       // Physics 2D
       OnPhysics2DUpdate(Time(m_FixedTimeStep));
-    
+
       m_Accumulator -= m_FixedTimeStep;
     }
 

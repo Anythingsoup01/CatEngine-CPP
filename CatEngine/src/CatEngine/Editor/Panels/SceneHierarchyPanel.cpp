@@ -1,5 +1,14 @@
+#include "cepch.h" // IWYU pragma: keep
 #include "SceneHierarchyPanel.h"
-#include <cepch.h>
+
+#include "CatEngine/Core/Application.h"
+
+#include "CatEngine/Editor/IconManager.h"
+#include "CatEngine/Editor/PanelManager.h"
+#include "CatEngine/Editor/Panels/InpectorPanel.h"
+
+#include "CatEngine/Project/Project.h"
+
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -7,27 +16,6 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "CatEngine/AssetManager/Asset.h"
-#include "CatEngine/Core/Application.h"
-#include "CatEngine/Core/UUID.h"
-#include "CatEngine/Editor/IconManager.h"
-#include "CatEngine/Editor/PanelManager.h"
-#include "CatEngine/Editor/Panels/InpectorPanel.h"
-#include "CatEngine/Scene/Components/2D/CircleRenderer.h"
-#include "CatEngine/Scene/Components/Components.h"
-
-#include "CatEngine/Editor/ImGui/CEImGui.h"
-
-#include "CatEngine/Scene/Components/Required/RelationshipComponent.h"
-#include "CatEngine/Scene/Entity.h"
-#include "CatEngine/Scripting/ScriptEngine.h"
-#include "CatEngine/Scripting/ScriptEntityStorage.h"
-
-#include "CatEngine/AssetManager/AssetManager.h"
-
-#include "CatEngine/Project/Project.h"
-
-#include "DrawComponents.h"
 
 namespace CatEngine {
 SceneHierarchyPanel::SceneHierarchyPanel(const Ref<Scene> &scene) {

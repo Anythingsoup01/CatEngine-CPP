@@ -1,14 +1,16 @@
+#include "cepch.h" // IWYU pragma: keep
 #include "InpectorPanel.h"
-#include "CatEngine/AssetManager/Asset.h"
+
+#include "DrawComponents.h"
+
 #include "CatEngine/Editor/ImGui/CEImGui.h"
-#include "CatEngine/Editor/Panels/DrawComponents.h"
-#include "CatEngine/Project/Project.h"
+
 #include "CatEngine/Prefab/Prefab.h"
-#include "CatEngine/Scene/Scene.h"
-#include "imgui.h"
-#include "imgui_internal.h"
-#include <cstdint>
-#include <filesystem>
+
+#include "CatEngine/Project/Project.h"
+
+#include <imgui.h>
+#include <imgui_internal.h>
 
 namespace CatEngine {
 
@@ -193,6 +195,8 @@ void InspectorPanel::DrawAsset(const AssetHandle &handle) {
       DrawPrefabAsset(asset, handle);
       break;
     }
+    default:
+      break;
   }
 }
 

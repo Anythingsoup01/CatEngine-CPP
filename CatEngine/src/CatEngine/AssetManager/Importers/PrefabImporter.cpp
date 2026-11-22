@@ -1,4 +1,4 @@
-#include "cepch.h"
+#include "cepch.h" // IWYU pragma: keep
 #include "PrefabImporter.h"
 
 #include "CatEngine/Project/Project.h"
@@ -6,13 +6,11 @@
 
 namespace CatEngine {
 
-Ref<Prefab> PrefabImporter::ImportPrefab(AssetHandle handle,
-                                         Asset::MetaData &metaData) {
+Ref<Prefab> PrefabImporter::ImportPrefab(AssetHandle handle, Asset::MetaData &metaData) {
   CE_PROFILE_FUNCTION();
   return LoadPrefab(handle, Project::GetAssetDirectory() / metaData.SourceFilePath);
 }
-Ref<Prefab> PrefabImporter::ConstImportPrefab(AssetHandle handle,
-                                         const Asset::MetaData &metaData) {
+Ref<Prefab> PrefabImporter::ConstImportPrefab(AssetHandle handle, const Asset::MetaData &metaData) {
   CE_PROFILE_FUNCTION();
   return LoadPrefab(handle, Project::GetAssetDirectory() / metaData.SourceFilePath);
 }

@@ -1,27 +1,17 @@
+#include "cepch.h" // IWYU pragma: keep
+
 #include "ScriptEngine.h"
-#include "CatEngine/Editor/PanelManager.h"
-#include "CatEngine/Editor/Panels/ConsolePanel.h"
-#include "CatEngine/Scripting/ScriptEntityStorage.h"
-#include "cepch.h"
 
-#include <Capybara/Core/Capybara.h>
-#include <Capybara/Core/ReflectionTypes.h>
-
-#include <Capybara/JIT/JIT.h>
-
-#include "CatEngine/Scene/Entity.h"
-#include "CatEngine/Scene/Scene.h"
-
-#include <cstdint>
-#include <glm/glm.hpp>
+#include "ScriptGlue.h"
 
 #include "CatEngine/Core/Application.h"
 #include "CatEngine/Core/Hash.h"
-
-#include "CatEngine/Scene/Components/Components.h"
-
+#include "CatEngine/Editor/PanelManager.h"
+#include "CatEngine/Editor/Panels/ConsolePanel.h"
 #include "CatEngine/Project/Project.h"
-#include "CatEngine/Scripting/ScriptGlue.h"
+
+#include <Capybara/Core/Capybara.h>
+#include <Capybara/JIT/JIT.h>
 
 namespace CatEngine {
 static std::unordered_map<std::string, DataType> s_DataTypeLookup = {

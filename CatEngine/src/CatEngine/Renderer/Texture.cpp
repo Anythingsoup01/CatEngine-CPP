@@ -1,5 +1,6 @@
+#include "cepch.h" // IWYU pragma: keep
+
 #include "Texture.h"
-#include "cepch.h"
 
 #include "RenderAPI.h"
 
@@ -8,6 +9,7 @@
 #include <stb_image.h>
 
 namespace CatEngine {
+
 Ref<Texture2D> Texture2D::Create(const TextureSpecification &specification,
                                  Buffer data) {
   CE_PROFILE_FUNCTION();
@@ -44,4 +46,5 @@ Buffer TextureHelper::BufferTexture(const std::filesystem::path &filePath,
 
   return data;
 }
+
 } // namespace CatEngine

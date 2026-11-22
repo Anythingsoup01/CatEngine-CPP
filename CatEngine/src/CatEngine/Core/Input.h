@@ -5,28 +5,32 @@
 
 namespace CatEngine {
 
-	class Input {
-	protected:
-		Input() = default;
-	public:
-		Input(const Input&) = delete;
-		Input& operator=(const Input&) = delete;
+class Input {
+protected:
+  Input() = default;
 
-		static bool IsKeyPressed(KeyCode keycode);
-		static bool IsKeyReleased(KeyCode keycode);
+public:
+  Input(const Input &) = delete;
+  Input &operator=(const Input &) = delete;
 
-		static bool IsMouseButtonPressed(MouseCode button);
-		static bool IsMouseButtonReleased(MouseCode button);
-		static std::pair<float, float> GetMousePosition();
-		static float GetMouseX();
-		static float GetMouseY();
+  static bool IsKeyPressed(KeyCode keycode);
+  static bool IsKeyReleased(KeyCode keycode);
 
-		static float GetMouseXOffset();
-		static float GetMouseYOffset();
+  static bool IsMouseButtonPressed(MouseCode button);
+  static bool IsMouseButtonReleased(MouseCode button);
+  static std::pair<float, float> GetMousePosition();
+  static float GetMouseX();
+  static float GetMouseY();
 
-		static void ResetMouseOffset() { m_MouseOffsetX = 0; m_MouseOffsetY = 0; }
+  static float GetMouseXOffset();
+  static float GetMouseYOffset();
 
-	private:
-		static inline float m_MouseOffsetX = 0, m_MouseOffsetY = 0;
-	};
-}
+  static void ResetMouseOffset() {
+    m_MouseOffsetX = 0;
+    m_MouseOffsetY = 0;
+  }
+
+private:
+  static inline float m_MouseOffsetX = 0, m_MouseOffsetY = 0;
+};
+} // namespace CatEngine

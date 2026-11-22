@@ -1,14 +1,12 @@
 #pragma once
-#include "CatEngine/Core/Buffer.h"
-#include "cepch.h"
 
-#include "CatEngine/Core/UUID.h"
 #include "ScriptEntityStorage.h"
 
-#include "Capybara/Core/ReflectionTypes.h"
+#include "CatEngine/Core/Buffer.h"
+#include "CatEngine/Core/UUID.h"
 #include "CatEngine/Scene/Entity.h"
-#include <cstdint>
-#include <unordered_map>
+
+#include <Capybara/Core/ReflectionTypes.h>
 
 namespace CatEngine {
 

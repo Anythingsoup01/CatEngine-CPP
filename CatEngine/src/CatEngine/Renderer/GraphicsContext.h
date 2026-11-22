@@ -3,6 +3,7 @@
 #include <GLFW/glfw3.h>
 
 namespace CatEngine {
+
 class GraphicsContext {
 public:
   ~GraphicsContext() = default;
@@ -13,4 +14,5 @@ public:
 
   static Scope<GraphicsContext> Create();
 };
+
 } // namespace CatEngine

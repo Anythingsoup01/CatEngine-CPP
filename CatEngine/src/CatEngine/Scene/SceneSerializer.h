@@ -1,8 +1,12 @@
 #pragma once
+
+#include "Scene.h"
+
 #include "CatEngine/Core/Buffer.h"
 #include "CatEngine/Scripting/ScriptEntityStorage.h"
-#include "Scene.h"
-#include "yaml-cpp/emitter.h"
+
+#include <yaml-cpp/emitter.h>
+
 namespace CatEngine {
 
 class SceneSerializer {

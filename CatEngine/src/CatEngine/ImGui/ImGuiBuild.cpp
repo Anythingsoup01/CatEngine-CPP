@@ -1,4 +1,4 @@
-#include "cepch.h"
+#include "cepch.h" // IWYU pragma: keep
 
 #include <glad/glad.h>
 

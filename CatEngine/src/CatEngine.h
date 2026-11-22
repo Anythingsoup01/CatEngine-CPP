@@ -1,8 +1,8 @@
 #pragma once
 
 #include "CatEngine/Core/Application.h"
-#include "CatEngine/Core/Log.h"
 #include "CatEngine/Core/Input.h"
+#include "CatEngine/Core/Log.h"
 
 #include "CatEngine/Event/ApplicationEvent.h"
 #include "CatEngine/Event/Event.h"
@@ -13,31 +13,29 @@
 
 #include "CatEngine/Math/Math.h"
 
+#include "CatEngine/Renderer/RenderCommand.h"
 #include "CatEngine/Renderer/Renderer.h"
 #include "CatEngine/Renderer/Renderer2D.h"
-#include "CatEngine/Renderer/RenderCommand.h"
 
 #include "CatEngine/Renderer/Buffer.h"
-#include "CatEngine/Renderer/VertexArray.h"
+#include "CatEngine/Renderer/Framebuffer.h"
 #include "CatEngine/Renderer/Shader.h"
 #include "CatEngine/Renderer/Texture.h"
-#include "CatEngine/Renderer/Framebuffer.h"
 #include "CatEngine/Renderer/UniformBuffer.h"
+#include "CatEngine/Renderer/VertexArray.h"
 
 #include "CatEngine/Renderer/Camera.h"
 #include "CatEngine/Renderer/EditorCamera.h"
 
 #include "CatEngine/Project/Project.h"
 
+#include "CatEngine/Scene/Entity.h"
 #include "CatEngine/Scene/Scene.h"
 #include "CatEngine/Scene/SceneCamera.h"
 #include "CatEngine/Scene/SceneSerializer.h"
-#include "CatEngine/Scene/Entity.h"
-#include "CatEngine/Scene/ScriptObject.h"
 
 #include "CatEngine/Scene/Components/Components.h"
 
 #include "CatEngine/FileDialog/FileDialog.h"
 
 #include "CatEngine/Debug/Instrumentor.h"
-

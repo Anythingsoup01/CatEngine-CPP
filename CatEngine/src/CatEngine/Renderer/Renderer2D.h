@@ -3,14 +3,13 @@
 #include "Camera.h"
 #include "EditorCamera.h"
 
-#include "Texture.h"
-
-#include <glm/glm.hpp>
-
 #include "CatEngine/Scene/Components/2D/CircleRenderer.h"
 #include "CatEngine/Scene/Components/2D/SpriteRenderer.h"
 
+#include <glm/glm.hpp>
+
 namespace CatEngine {
+
 class Renderer2D {
 public:
   static void Init();
@@ -48,4 +47,5 @@ public:
 private:
   static inline bool m_SceneActive = false;
 };
+
 }; // namespace CatEngine

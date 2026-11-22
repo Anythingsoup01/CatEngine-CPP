@@ -1,8 +1,9 @@
+#include "cepch.h" // IWYU pragma: keep
+
 #include "TextureImporter.h"
 #include "CatEngine/Editor/PanelManager.h"
 #include "CatEngine/Editor/Panels/ConsolePanel.h"
 #include "CatEngine/Types/TextureTypes.h"
-#include "cepch.h"
 
 #include <cstdint>
 #include <stb_image.h>

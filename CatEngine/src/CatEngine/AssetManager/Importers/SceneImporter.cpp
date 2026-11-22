@@ -1,4 +1,4 @@
-#include "cepch.h"
+#include "cepch.h" // IWYU pragma: keep
 #include "SceneImporter.h"
 
 #include "CatEngine/Project/Project.h"

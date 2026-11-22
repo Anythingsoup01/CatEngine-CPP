@@ -1,16 +1,16 @@
 #pragma once
 
-#include "CatEngine/Event/ApplicationEvent.h"
-#include "CatEngine/Event/Event.h"
-
 #include "Window.h"
 
+#include "CatEngine/Event/ApplicationEvent.h"
+#include "CatEngine/Event/Event.h"
 #include "CatEngine/ImGui/ImGuiLayer.h"
+#include "CatEngine/Layer/Layer.h"
 #include "CatEngine/Layer/LayerStack.h"
-
 #include "CatEngine/Scripting/ScriptEngine.h"
 
 namespace CatEngine {
+
 struct ApplicationCommandLineArgs {
   int Count = 0;
   char **Args = nullptr;
@@ -26,6 +26,7 @@ struct ApplicationSpecification {
   std::string WorkingDirectory;
   ApplicationCommandLineArgs CommandlineArgs;
 };
+
 class Application {
 public:
   Application(const ApplicationSpecification &spec);
@@ -42,7 +43,6 @@ public:
 
   void OpenSceneFromHandle(const AssetHandle &handle);
   void OpenPreviousScene();
-
 
   void PopLayer(Layer *layer);
   void PopOverlay(Layer *overlay);

@@ -1,8 +1,8 @@
-#include "cepch.h"
-
-#include "CatEngine/Core/Application.h"
+#include "cepch.h" // IWYU pragma: keep
 
 #include "PanelManager.h"
+
+#include "CatEngine/Core/Application.h"
 
 #include <yaml-cpp/yaml.h>
 

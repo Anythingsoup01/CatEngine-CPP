@@ -1,7 +1,5 @@
 #pragma once
 
-#include "CatEngine/Renderer/Texture.h"
-
 #include "CatEngine/Editor/EditorPanel.h"
 
 namespace CatEngine {

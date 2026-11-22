@@ -1,10 +1,13 @@
-#include "ProjectSerializer.h"
-#include "cepch.h"
+#include "cepch.h" // IWYU pragma: keep
 
-#include <yaml-cpp/yaml.h>
+#include "ProjectSerializer.h"
+
+#include "Project.h"
 
 #include "CatEngine/Core/Formatter.h"
-#include "yaml-cpp/emittermanip.h"
+
+#include <yaml-cpp/emittermanip.h>
+#include <yaml-cpp/yaml.h>
 
 namespace CatEngine {
 

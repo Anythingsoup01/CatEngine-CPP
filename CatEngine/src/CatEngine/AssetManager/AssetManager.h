@@ -1,7 +1,5 @@
 #pragma once
 
-#include "AssetManagerBase.h"
-
 #include "CatEngine/Project/Project.h"
 
 namespace CatEngine {

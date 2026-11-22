@@ -13,32 +13,32 @@
 
 #ifdef CE_PLATFORM_LINUX
 
-#include <signal.h>
+#include <signal.h> // IWYU pragma: keep
 
 #endif 
 
-#include <iostream>
-#include <memory>
-#include <utility>
-#include <algorithm>
-#include <functional>
-#include <filesystem>
+#include <iostream> // IWYU pragma: keep
+#include <memory> // IWYU pragma: keep
+#include <utility> // IWYU pragma: keep
+#include <algorithm> // IWYU pragma: keep
+#include <functional> // IWYU pragma: keep
+#include <filesystem> // IWYU pragma: keep
 
-#include <string>
-#include <sstream>
-#include <array>
-#include <vector>
-#include <unordered_map>
-#include <unordered_set>
+#include <string> // IWYU pragma: keep
+#include <sstream> // IWYU pragma: keep
+#include <array> // IWYU pragma: keep
+#include <vector> // IWYU pragma: keep
+#include <unordered_map> // IWYU pragma: keep
+#include <unordered_set> // IWYU pragma: keep
 
-#include "CatEngine/Core/Core.h"
-#include "CatEngine/Core/Log.h"
-#include "CatEngine/Core/Buffer.h"
+#include "CatEngine/Core/Core.h" // IWYU pragma: keep
+#include "CatEngine/Core/Log.h" // IWYU pragma: keep
+#include "CatEngine/Core/Buffer.h" // IWYU pragma: keep
 #ifndef CE_SCRIPT_COMPILATION
-#include "CatEngine/Core/Utils.h"
-#include "CatEngine/Debug/Instrumentor.h"
+#include "CatEngine/Core/Utils.h" // IWYU pragma: keep
+#include "CatEngine/Debug/Instrumentor.h" // IWYU pragma: keep
 #endif
 
 #ifdef CE_PLATFORM_WINDOWS
-#include <Windows.h>
+#include <Windows.h> // IWYU pragma: keep
 #endif

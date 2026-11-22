@@ -1,3 +1,5 @@
+#include "cepch.h" // IWYU pragma: keep
+
 #include "ConsolePanel.h"
 #include "CatEngine/Editor/ImGui/CEImGui.h"
 #include "imgui.h"

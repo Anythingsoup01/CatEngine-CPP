@@ -1,4 +1,5 @@
-#include "cepch.h"
+#include "cepch.h" // IWYU pragma: keep
+
 #include "GraphicsContext.h"
 
 #include "RenderAPI.h"

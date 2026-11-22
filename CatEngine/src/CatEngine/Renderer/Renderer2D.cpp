@@ -1,4 +1,5 @@
-#include "cepch.h"
+#include "cepch.h" // IWYU pragma: keep
+
 #include "Renderer2D.h"
 
 #include "Buffer.h"
@@ -9,9 +10,6 @@
 #include "RenderCommand.h"
 
 #include "CatEngine/AssetManager/AssetManager.h"
-
-// TODO REMOVE
-#include <glm/gtc/matrix_transform.hpp>
 
 namespace CatEngine {
 
@@ -400,4 +398,5 @@ void Renderer2D::SetLineThickness(float thickness) {
 void Renderer2D::ResetStats() { memset(&s_Data.Stats, 0, sizeof(Statistics)); }
 
 Renderer2D::Statistics Renderer2D::GetStats() { return s_Data.Stats; }
+
 } // namespace CatEngine

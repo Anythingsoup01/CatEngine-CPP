@@ -1,22 +1,23 @@
+#include "cepch.h" // IWYU pragma: keep
+
 #include "ContactListener.h"
-#include "cepch.h"
 
 #include "CatEngine/Scripting/ScriptEngine.h"
 
 namespace CatEngine {
+
 void ContactListener::BeginContact(b2Contact *contact) {
   const auto &handleA = static_cast<UUID>(contact->GetFixtureA()->GetUserData().pointer);
   const auto &handleB = static_cast<UUID>(contact->GetFixtureB()->GetUserData().pointer);
 
   ScriptEngine::GetMutable().DispatchCollisionEvent(handleA, handleB, CollisionType::Begin);
 }
-void ContactListener::EndContact(b2Contact *contact) {
-  const auto &handleA =
-      static_cast<UUID>(contact->GetFixtureA()->GetUserData().pointer);
-  const auto &handleB =
-      static_cast<UUID>(contact->GetFixtureB()->GetUserData().pointer);
 
-  ScriptEngine::GetMutable().DispatchCollisionEvent(handleA, handleB,
-                                                    CollisionType::End);
+void ContactListener::EndContact(b2Contact *contact) {
+  const auto &handleA = static_cast<UUID>(contact->GetFixtureA()->GetUserData().pointer);
+  const auto &handleB = static_cast<UUID>(contact->GetFixtureB()->GetUserData().pointer);
+
+  ScriptEngine::GetMutable().DispatchCollisionEvent(handleA, handleB, CollisionType::End);
 }
+
 } // namespace CatEngine

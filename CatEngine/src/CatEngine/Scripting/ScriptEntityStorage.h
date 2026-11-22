@@ -1,11 +1,8 @@
 #pragma once
 
 #include <Capybara/Core/ReflectionTypes.h>
-#include <cstdint>
-#include <glm/glm.hpp>
-#include <unordered_map>
 
-#include "CatEngine/Core/UUID.h"
+#include <glm/glm.hpp>
 
 namespace CatEngine {
 

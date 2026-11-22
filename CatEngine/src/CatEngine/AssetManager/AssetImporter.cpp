@@ -1,5 +1,6 @@
+#include "cepch.h" // IWYU pragma: keep
+
 #include "CatEngine/AssetManager/Importers/PrefabImporter.h"
-#include "cepch.h"
 #include "AssetImporter.h"
 
 #include "Importers/TextureImporter.h"

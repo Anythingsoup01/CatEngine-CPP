@@ -1,18 +1,15 @@
+#include "cepch.h" // IWYU pragma: keep
+
 #include "ImGuiLayer.h"
-#include "cepch.h"
-
-#include "CatEngine/Core/Core.h"
-
-#include <backends/imgui_impl_glfw.h>
-#include <backends/imgui_impl_opengl3.h>
-#include <imgui.h>
-
-#include <GLFW/glfw3.h>
 
 #include "CatEngine/Core/Application.h"
 
-#include <ImGuizmo.h>
+#include <imgui.h>
 #include <imgui_internal.h>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_opengl3.h>
+
+#include <ImGuizmo.h>
 
 namespace CatEngine {
 

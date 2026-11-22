@@ -1,9 +1,8 @@
 #pragma once
 
-#include "CatEngine/Core/Hash.h"
-#include "CatEngine/Scene/Components/Scripting/ScriptComponentContainer.h"
-#include "Components/Components.h"
 #include "Scene.h"
+
+#include "Components/Components.h" // IWYU pragma: keep
 
 #include <cstdint>
 #include <entt.hpp>
@@ -120,6 +119,8 @@ public:
       }
     }
     CE_API_ASSERT(false, "ScriptComponentContainer has no script with hash!");
+    static ScriptComponent s_NullComponent;
+    return s_NullComponent;
   }
 
   template <typename T> T &GetOrAddComponent() const {

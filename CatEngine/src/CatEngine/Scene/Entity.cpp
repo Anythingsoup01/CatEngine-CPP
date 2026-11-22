@@ -1,5 +1,4 @@
-#include "CatEngine/Scene/Components/Scripting/ScriptComponent.h"
-#include "cepch.h"
+#include "cepch.h" // IWYU pragma: keep
 
 #include "Entity.h"
 

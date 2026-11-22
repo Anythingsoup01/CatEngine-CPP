@@ -1,24 +1,13 @@
+#include "cepch.h" // IWYU pragma: keep
+
 #include "DrawComponents.h"
-#include "Capybara/Core/ReflectionTypes.h"
+
 #include "CatEngine/AssetManager/AssetManager.h"
-#include "CatEngine/Core/Application.h"
-#include "CatEngine/Core/Buffer.h"
 #include "CatEngine/Core/Hash.h"
 #include "CatEngine/Editor/ImGui/CEImGui.h"
-#include "CatEngine/Project/Project.h"
-#include "CatEngine/Renderer/Camera.h"
-#include "CatEngine/Scene/Components/3D/TransformComponent.h"
-#include "CatEngine/Scene/Components/Physics/BoxCollider2D.h"
-#include "CatEngine/Scene/Components/Physics/Rigidbody2D.h"
-#include "CatEngine/Scene/Components/Renderer/CameraComponent.h"
-#include "CatEngine/Scene/Components/Scripting/ScriptComponent.h"
-#include "CatEngine/Scene/Components/Scripting/ScriptComponentContainer.h"
-#include "CatEngine/Scene/Entity.h"
 #include "CatEngine/Scripting/ScriptEngine.h"
-#include "CatEngine/Scripting/ScriptEntityStorage.h"
-#include "imgui.h"
-#include "imgui_internal.h"
-#include <cstdint>
+
+#include <imgui.h>
 
 namespace CatEngine {
 
@@ -647,140 +636,141 @@ void DrawRuntimeScriptVector(const ScriptField &field, const int &index,
   ImGui::BeginDisabled(true);
 
   switch (field.ElementType) {
-  case DataType::Short: {
-    int16_t val = *reinterpret_cast<int16_t *>(elementPtr);
-    int intVal = static_cast<int>(val);
-    ImGuiDraw::Int1("[" + std::to_string(index) + "]", intVal);
-    break;
-  }
-  case DataType::UShort: {
-    uint16_t val = *reinterpret_cast<uint16_t *>(elementPtr);
-    int intVal = static_cast<int>(val);
-    ImGuiDraw::Int1("[" + std::to_string(index) + "]", intVal);
-    break;
-  }
-  case DataType::Int: {
-    int32_t val = *reinterpret_cast<int32_t *>(elementPtr);
-    int intVal = static_cast<int>(val);
-    ImGuiDraw::Int1("[" + std::to_string(index) + "]", intVal);
-    break;
-  }
-  case DataType::UInt: {
-    uint32_t val = *reinterpret_cast<uint32_t *>(elementPtr);
-    int intVal = static_cast<int>(val);
-    ImGuiDraw::Int1("[" + std::to_string(index) + "]", intVal);
-    break;
-  }
-  case DataType::Long: {
-    int64_t val = *reinterpret_cast<int64_t *>(elementPtr);
-    int intVal = static_cast<int>(val);
-    ImGuiDraw::Int1("[" + std::to_string(index) + "]", intVal);
-    break;
-  }
-  case DataType::ULong: {
-    uint64_t val = *reinterpret_cast<uint64_t *>(elementPtr);
-    int intVal = static_cast<int>(val);
-    ImGuiDraw::Int1("[" + std::to_string(index) + "]", intVal);
-    break;
-  }
-  case DataType::Float: {
-    float val = *reinterpret_cast<float *>(elementPtr);
-    ImGuiDraw::Vec1("[" + std::to_string(index) + "]", val);
-    break;
-  }
-  case DataType::Double: {
-    double val = *reinterpret_cast<double *>(elementPtr);
-    float floatVal = static_cast<float>(val);
-    ImGuiDraw::Vec1("[" + std::to_string(index) + "]", floatVal);
-    break;
-  }
-  case DataType::Bool: {
-    bool val = *reinterpret_cast<bool *>(elementPtr);
-    ImGuiDraw::CheckBox("[" + std::to_string(index) + "]", val);
-    break;
-  }
-  case DataType::Vector2: {
-    glm::vec2 val = *reinterpret_cast<glm::vec2 *>(elementPtr);
-    ImGuiDraw::Vec2("[" + std::to_string(index) + "]", val);
-    break;
-  }
-  case DataType::Vector3: {
-    glm::vec3 val = *reinterpret_cast<glm::vec3 *>(elementPtr);
-    ImGuiDraw::Vec3("[" + std::to_string(index) + "]", val);
-    break;
-  }
-  case DataType::Vector4: {
-    glm::vec4 val = *reinterpret_cast<glm::vec4 *>(elementPtr);
-    ImGuiDraw::Vec4("[" + std::to_string(index) + "]", val);
-    break;
-  }
-  case DataType::Entity: {
-    uint64_t entityID = *reinterpret_cast<uint64_t *>(elementPtr);
-    std::string labelName = (entityID != 0 && context)
-                                ? context->GetEntityByUUID(entityID).GetName()
-                                : "";
-    labelName = labelName.empty() ? "(empty)" : labelName;
-    labelName.append(" [" + std::to_string(index) + "]");
+    case DataType::Short: {
+      int16_t val = *reinterpret_cast<int16_t *>(elementPtr);
+      int intVal = static_cast<int>(val);
+      ImGuiDraw::Int1("[" + std::to_string(index) + "]", intVal);
+      break;
+    }
+    case DataType::UShort: {
+      uint16_t val = *reinterpret_cast<uint16_t *>(elementPtr);
+      int intVal = static_cast<int>(val);
+      ImGuiDraw::Int1("[" + std::to_string(index) + "]", intVal);
+      break;
+    }
+    case DataType::Int: {
+      int32_t val = *reinterpret_cast<int32_t *>(elementPtr);
+      int intVal = static_cast<int>(val);
+      ImGuiDraw::Int1("[" + std::to_string(index) + "]", intVal);
+      break;
+    }
+    case DataType::UInt: {
+      uint32_t val = *reinterpret_cast<uint32_t *>(elementPtr);
+      int intVal = static_cast<int>(val);
+      ImGuiDraw::Int1("[" + std::to_string(index) + "]", intVal);
+      break;
+    }
+    case DataType::Long: {
+      int64_t val = *reinterpret_cast<int64_t *>(elementPtr);
+      int intVal = static_cast<int>(val);
+      ImGuiDraw::Int1("[" + std::to_string(index) + "]", intVal);
+      break;
+    }
+    case DataType::ULong: {
+      uint64_t val = *reinterpret_cast<uint64_t *>(elementPtr);
+      int intVal = static_cast<int>(val);
+      ImGuiDraw::Int1("[" + std::to_string(index) + "]", intVal);
+      break;
+    }
+    case DataType::Float: {
+      float val = *reinterpret_cast<float *>(elementPtr);
+      ImGuiDraw::Vec1("[" + std::to_string(index) + "]", val);
+      break;
+    }
+    case DataType::Double: {
+      double val = *reinterpret_cast<double *>(elementPtr);
+      float floatVal = static_cast<float>(val);
+      ImGuiDraw::Vec1("[" + std::to_string(index) + "]", floatVal);
+      break;
+    }
+    case DataType::Bool: {
+      bool val = *reinterpret_cast<bool *>(elementPtr);
+      ImGuiDraw::CheckBox("[" + std::to_string(index) + "]", val);
+      break;
+    }
+    case DataType::Vector2: {
+      glm::vec2 val = *reinterpret_cast<glm::vec2 *>(elementPtr);
+      ImGuiDraw::Vec2("[" + std::to_string(index) + "]", val);
+      break;
+    }
+    case DataType::Vector3: {
+      glm::vec3 val = *reinterpret_cast<glm::vec3 *>(elementPtr);
+      ImGuiDraw::Vec3("[" + std::to_string(index) + "]", val);
+      break;
+    }
+    case DataType::Vector4: {
+      glm::vec4 val = *reinterpret_cast<glm::vec4 *>(elementPtr);
+      ImGuiDraw::Vec4("[" + std::to_string(index) + "]", val);
+      break;
+    }
+    case DataType::Entity: {
+      uint64_t entityID = *reinterpret_cast<uint64_t *>(elementPtr);
+      std::string labelName = (entityID != 0 && context)
+        ? context->GetEntityByUUID(entityID).GetName()
+        : "";
+      labelName = labelName.empty() ? "(empty)" : labelName;
+      labelName.append(" [" + std::to_string(index) + "]");
 
-    ImGuiDraw::DataField("[" + std::to_string(index) + "]", labelName);
-    break;
-  }
-  case DataType::Texture2D: {
+      ImGuiDraw::DataField("[" + std::to_string(index) + "]", labelName);
+      break;
+    }
+    case DataType::Texture2D: {
     uint64_t assetID = *reinterpret_cast<uint64_t *>(elementPtr);
-    std::string label = "";
-    if (assetID != 0 && Project::GetActive() &&
+      std::string label = "";
+      if (assetID != 0 && Project::GetActive() &&
         Project::GetActive()->GetEditorAssetManager()) {
-      label = Project::GetActive()
-                  ->GetEditorAssetManager()
-                  ->GetMetaData(assetID)
-                  .AssetName;
+        label = Project::GetActive()
+          ->GetEditorAssetManager()
+          ->GetMetaData(assetID)
+          .AssetName;
+      }
+      label = label.empty() ? "(empty)" : label;
+      label.append(" (" + field.TypeName + ")");
+      ImGuiDraw::DataField("[" + std::to_string(index) + "]", label);
+      break;
     }
-    label = label.empty() ? "(empty)" : label;
-    label.append(" (" + field.TypeName + ")");
-    ImGuiDraw::DataField("[" + std::to_string(index) + "]", label);
-    break;
-  }
-  case DataType::Prefab: {
-    uint64_t assetID = *reinterpret_cast<uint64_t *>(elementPtr);
-    std::string label = "";
-    if (assetID != 0 && Project::GetActive() &&
+    case DataType::Prefab: {
+      uint64_t assetID = *reinterpret_cast<uint64_t *>(elementPtr);
+      std::string label = "";
+      if (assetID != 0 && Project::GetActive() &&
         Project::GetActive()->GetEditorAssetManager()) {
-      label = Project::GetActive()
-                  ->GetEditorAssetManager()
-                  ->GetMetaData(assetID)
-                  .AssetName;
+        label = Project::GetActive()
+          ->GetEditorAssetManager()
+          ->GetMetaData(assetID)
+          .AssetName;
+      }
+      label = label.empty() ? "(empty)" : label;
+      label.append(" (" + field.TypeName + ")");
+      ImGuiDraw::DataField("[" + std::to_string(index) + "]", label);
+      break;
     }
-    label = label.empty() ? "(empty)" : label;
-    label.append(" (" + field.TypeName + ")");
-    ImGuiDraw::DataField("[" + std::to_string(index) + "]", label);
-    break;
-  }
-  case DataType::ScriptComponent: {
-    void *scriptMemory = *reinterpret_cast<void **>(elementPtr);
+    case DataType::ScriptComponent: {
+      void *scriptMemory = *reinterpret_cast<void **>(elementPtr);
 
-    uint64_t currentEntityID = 0;
-    if (scriptMemory) {
-      currentEntityID = *reinterpret_cast<uint64_t *>(scriptMemory);
-    }
+      uint64_t currentEntityID = 0;
+      if (scriptMemory) {
+        currentEntityID = *reinterpret_cast<uint64_t *>(scriptMemory);
+      }
 
-    std::string entityName = "";
-    std::string label = "";
+      std::string entityName = "";
+      std::string label = "";
 
-    if (currentEntityID != 0 && context &&
+      if (currentEntityID != 0 && context &&
         context->GetEntityByUUID(currentEntityID)) {
-      entityName = context->GetEntityByUUID(currentEntityID).GetName();
-      label = "(" + entityName + ") ";
-    }
+        entityName = context->GetEntityByUUID(currentEntityID).GetName();
+        label = "(" + entityName + ") ";
+      }
 
-    label = label.empty() ? "(empty) " : label;
-    label.append(" (" + field.ElementTypeName + ") [" + std::to_string(index) +
+      label = label.empty() ? "(empty) " : label;
+      label.append(" (" + field.ElementTypeName + ") [" + std::to_string(index) +
                  "]");
 
-    ImGuiDraw::DataField("[" + std::to_string(index) + "]", label);
-    break;
+      ImGuiDraw::DataField("[" + std::to_string(index) + "]", label);
+      break;
+    }
+    default:
+      break;
   }
-  }
-
   ImGui::EndDisabled();
 }
 
@@ -928,151 +918,151 @@ bool DrawEditTimeScriptVector(const ScriptField &field, const int &index,
                               Entity selection) {
   bool interaction = false;
   switch (field.ElementType) {
-  case DataType::Short: {
-    int16_t *data = reinterpret_cast<int16_t *>(elementPtr);
-    int16_t val = *data;
-    if (ImGuiDraw::Int1("[" + std::to_string(index) + "]", (int &)val)) {
-      *data = val;
-      interaction = true;
-    }
-    break;
-  }
-  case DataType::UShort: {
-    uint16_t *data = reinterpret_cast<uint16_t *>(elementPtr);
-    uint16_t val = *data;
-    if (ImGuiDraw::Int1("[" + std::to_string(index) + "]", (int &)val)) {
-      *data = val;
-      interaction = true;
-    }
-    break;
-  }
-  case DataType::Int: {
-    int32_t *data = reinterpret_cast<int32_t *>(elementPtr);
-    int32_t val = *data;
-    if (ImGuiDraw::Int1("[" + std::to_string(index) + "]", (int &)val)) {
-      *data = val;
-      interaction = true;
-    }
-    break;
-  }
-  case DataType::UInt: {
-    uint32_t *data = reinterpret_cast<uint32_t *>(elementPtr);
-    uint32_t val = *data;
-    if (ImGuiDraw::Int1("[" + std::to_string(index) + "]", (int &)val)) {
-      *data = val;
-      interaction = true;
-    }
-    break;
-  }
-  case DataType::Long: {
-    int64_t *data = reinterpret_cast<int64_t *>(elementPtr);
-    int64_t val = *data;
-    if (ImGuiDraw::Int1("[" + std::to_string(index) + "]", (int &)val)) {
-      *data = val;
-      interaction = true;
-    }
-    break;
-  }
-  case DataType::ULong: {
-    uint64_t *data = reinterpret_cast<uint64_t *>(elementPtr);
-    uint64_t val = *data;
-    if (ImGuiDraw::Int1("[" + std::to_string(index) + "]", (int &)val)) {
-      *data = val;
-      interaction = true;
-    }
-    break;
-  }
-  case DataType::Float: {
-    float *data = reinterpret_cast<float *>(elementPtr);
-    float val = *data;
-    if (ImGuiDraw::Vec1("[" + std::to_string(index) + "]", val)) {
-      *data = val;
-      interaction = true;
-    }
-    break;
-  }
-  case DataType::Double: {
-    double *data = reinterpret_cast<double *>(elementPtr);
-    double val = *data;
-    if (ImGuiDraw::Vec1("[" + std::to_string(index) + "]", (float &)val)) {
-      *data = val;
-      interaction = true;
-    }
-    break;
-  }
-  case DataType::Bool: {
-    bool *data = reinterpret_cast<bool *>(elementPtr);
-    bool val = *data;
-    if (ImGuiDraw::CheckBox("[" + std::to_string(index) + "]", val)) {
-      *data = val;
-      interaction = true;
-    }
-    break;
-  }
-  case DataType::Vector2: {
-    glm::vec2 *data = reinterpret_cast<glm::vec2 *>(elementPtr);
-    glm::vec2 val = *data;
-    if (ImGuiDraw::Vec2("[" + std::to_string(index) + "]", val)) {
-      *data = val;
-      interaction = true;
-    }
-    break;
-  }
-  case DataType::Vector3: {
-    glm::vec3 *data = reinterpret_cast<glm::vec3 *>(elementPtr);
-    glm::vec3 val = *data;
-    if (ImGuiDraw::Vec3("[" + std::to_string(index) + "]", val)) {
-      *data = val;
-      interaction = true;
-    }
-    break;
-  }
-  case DataType::Vector4: {
-    glm::vec4 *data = reinterpret_cast<glm::vec4 *>(elementPtr);
-    glm::vec4 val = *data;
-    if (ImGuiDraw::Vec4("[" + std::to_string(index) + "]", val)) {
-      *data = val;
-      interaction = true;
-    }
-    break;
-  }
-  case DataType::Entity: {
-    uint64_t *entityIDPtr = reinterpret_cast<uint64_t *>(elementPtr);
-    uint64_t entityID = *entityIDPtr;
-
-    std::string labelName = (entityID != 0 && context)
-                                ? context->GetEntityByUUID(entityID).GetName()
-                                : "";
-    labelName = labelName.empty() ? "(empty)" : labelName;
-
-    ImGuiDraw::DataField("[" + std::to_string(index) + "]", labelName);
-    if (ImGui::BeginDragDropTarget()) {
-      if (const ImGuiPayload *payload =
-              ImGui::AcceptDragDropPayload("SCENE_HIERARCHY_ITEM")) {
-        UUID droppedEntityID = *(UUID *)payload->Data;
-        *entityIDPtr = droppedEntityID.uuid();
+    case DataType::Short: {
+      int16_t *data = reinterpret_cast<int16_t *>(elementPtr);
+      int16_t val = *data;
+      if (ImGuiDraw::Int1("[" + std::to_string(index) + "]", (int &)val)) {
+        *data = val;
         interaction = true;
       }
-      ImGui::EndDragDropTarget();
+      break;
     }
-    break;
-  }
-  case DataType::Texture2D: {
-    uint64_t *assetIDPtr = reinterpret_cast<uint64_t *>(elementPtr);
-    uint64_t assetID = *assetIDPtr;
+    case DataType::UShort: {
+      uint16_t *data = reinterpret_cast<uint16_t *>(elementPtr);
+      uint16_t val = *data;
+      if (ImGuiDraw::Int1("[" + std::to_string(index) + "]", (int &)val)) {
+        *data = val;
+        interaction = true;
+      }
+      break;
+    }
+    case DataType::Int: {
+      int32_t *data = reinterpret_cast<int32_t *>(elementPtr);
+      int32_t val = *data;
+      if (ImGuiDraw::Int1("[" + std::to_string(index) + "]", (int &)val)) {
+        *data = val;
+        interaction = true;
+      }
+      break;
+    }
+    case DataType::UInt: {
+      uint32_t *data = reinterpret_cast<uint32_t *>(elementPtr);
+      uint32_t val = *data;
+      if (ImGuiDraw::Int1("[" + std::to_string(index) + "]", (int &)val)) {
+        *data = val;
+        interaction = true;
+      }
+      break;
+    }
+    case DataType::Long: {
+      int64_t *data = reinterpret_cast<int64_t *>(elementPtr);
+      int64_t val = *data;
+      if (ImGuiDraw::Int1("[" + std::to_string(index) + "]", (int &)val)) {
+        *data = val;
+        interaction = true;
+      }
+      break;
+    }
+    case DataType::ULong: {
+      uint64_t *data = reinterpret_cast<uint64_t *>(elementPtr);
+      uint64_t val = *data;
+      if (ImGuiDraw::Int1("[" + std::to_string(index) + "]", (int &)val)) {
+        *data = val;
+        interaction = true;
+      }
+      break;
+    }
+    case DataType::Float: {
+      float *data = reinterpret_cast<float *>(elementPtr);
+      float val = *data;
+      if (ImGuiDraw::Vec1("[" + std::to_string(index) + "]", val)) {
+        *data = val;
+        interaction = true;
+      }
+      break;
+    }
+    case DataType::Double: {
+      double *data = reinterpret_cast<double *>(elementPtr);
+      double val = *data;
+      if (ImGuiDraw::Vec1("[" + std::to_string(index) + "]", (float &)val)) {
+        *data = val;
+        interaction = true;
+      }
+      break;
+    }
+    case DataType::Bool: {
+      bool *data = reinterpret_cast<bool *>(elementPtr);
+      bool val = *data;
+      if (ImGuiDraw::CheckBox("[" + std::to_string(index) + "]", val)) {
+        *data = val;
+        interaction = true;
+      }
+      break;
+    }
+    case DataType::Vector2: {
+      glm::vec2 *data = reinterpret_cast<glm::vec2 *>(elementPtr);
+      glm::vec2 val = *data;
+      if (ImGuiDraw::Vec2("[" + std::to_string(index) + "]", val)) {
+        *data = val;
+        interaction = true;
+      }
+      break;
+    }
+    case DataType::Vector3: {
+      glm::vec3 *data = reinterpret_cast<glm::vec3 *>(elementPtr);
+      glm::vec3 val = *data;
+      if (ImGuiDraw::Vec3("[" + std::to_string(index) + "]", val)) {
+        *data = val;
+        interaction = true;
+      }
+      break;
+    }
+    case DataType::Vector4: {
+      glm::vec4 *data = reinterpret_cast<glm::vec4 *>(elementPtr);
+      glm::vec4 val = *data;
+      if (ImGuiDraw::Vec4("[" + std::to_string(index) + "]", val)) {
+        *data = val;
+        interaction = true;
+      }
+      break;
+    }
+    case DataType::Entity: {
+      uint64_t *entityIDPtr = reinterpret_cast<uint64_t *>(elementPtr);
+      uint64_t entityID = *entityIDPtr;
 
-    std::string label = "";
-    if (assetID != 0 && Project::GetActive() &&
+      std::string labelName = (entityID != 0 && context)
+        ? context->GetEntityByUUID(entityID).GetName()
+        : "";
+      labelName = labelName.empty() ? "(empty)" : labelName;
+
+      ImGuiDraw::DataField("[" + std::to_string(index) + "]", labelName);
+      if (ImGui::BeginDragDropTarget()) {
+        if (const ImGuiPayload *payload =
+          ImGui::AcceptDragDropPayload("SCENE_HIERARCHY_ITEM")) {
+          UUID droppedEntityID = *(UUID *)payload->Data;
+          *entityIDPtr = droppedEntityID.uuid();
+          interaction = true;
+        }
+        ImGui::EndDragDropTarget();
+      }
+      break;
+    }
+    case DataType::Texture2D: {
+      uint64_t *assetIDPtr = reinterpret_cast<uint64_t *>(elementPtr);
+      uint64_t assetID = *assetIDPtr;
+
+      std::string label = "";
+      if (assetID != 0 && Project::GetActive() &&
         Project::GetActive()->GetEditorAssetManager()) {
-      label = Project::GetActive()
-                  ->GetEditorAssetManager()
-                  ->GetMetaData(assetID)
-                  .AssetName;
-    }
-    label = label.empty() ? "(empty)" : label;
-    label.append(" [" + std::to_string(index) + "]");
+        label = Project::GetActive()
+          ->GetEditorAssetManager()
+          ->GetMetaData(assetID)
+          .AssetName;
+      }
+      label = label.empty() ? "(empty)" : label;
+      label.append(" [" + std::to_string(index) + "]");
 
-    ImGuiDraw::DataField("[" + std::to_string(index) + "]", label);
+      ImGuiDraw::DataField("[" + std::to_string(index) + "]", label);
       if (ImGui::BeginDragDropTarget()) {
         if (const ImGuiPayload *payload = ImGui::AcceptDragDropPayload("ASSET_BROWSER_ITEM")) {
           const char *raw_str = static_cast<const char *>(payload->Data);
@@ -1100,22 +1090,22 @@ bool DrawEditTimeScriptVector(const ScriptField &field, const int &index,
         }
         ImGui::EndDragDropTarget();
       }
-    break;
-  }
-    case DataType::Prefab: {
-    uint64_t *assetIDPtr = reinterpret_cast<uint64_t *>(elementPtr);
-    uint64_t assetID = *assetIDPtr;
-
-    std::string label = "";
-    if (assetID != 0 && Project::GetActive() &&
-        Project::GetActive()->GetEditorAssetManager()) {
-      label = Project::GetActive()
-                  ->GetEditorAssetManager()
-                  ->GetMetaData(assetID)
-                  .AssetName;
+      break;
     }
-    label = label.empty() ? "(empty)" : label;
-    label.append(" [" + std::to_string(index) + "]");
+    case DataType::Prefab: {
+      uint64_t *assetIDPtr = reinterpret_cast<uint64_t *>(elementPtr);
+      uint64_t assetID = *assetIDPtr;
+
+      std::string label = "";
+      if (assetID != 0 && Project::GetActive() &&
+        Project::GetActive()->GetEditorAssetManager()) {
+        label = Project::GetActive()
+          ->GetEditorAssetManager()
+          ->GetMetaData(assetID)
+          .AssetName;
+      }
+      label = label.empty() ? "(empty)" : label;
+      label.append(" [" + std::to_string(index) + "]");
 
       ImGuiDraw::DataField("[" + std::to_string(index) + "]", label);
       if (ImGui::BeginDragDropTarget()) {
@@ -1146,86 +1136,88 @@ bool DrawEditTimeScriptVector(const ScriptField &field, const int &index,
         ImGui::EndDragDropTarget();
       }
 
-    break;
-  }
-  case DataType::ScriptComponent: {
-    uint64_t *currentEntityID = reinterpret_cast<uint64_t *>(elementPtr);
+      break;
+    }
+    case DataType::ScriptComponent: {
+      uint64_t *currentEntityID = reinterpret_cast<uint64_t *>(elementPtr);
 
-    std::string entityName = "";
-    std::string label = "";
+      std::string entityName = "";
+      std::string label = "";
 
-    if (*currentEntityID != 0 && context &&
+      if (*currentEntityID != 0 && context &&
         context->GetEntityByUUID(*currentEntityID)) {
-      entityName = context->GetEntityByUUID(*currentEntityID).GetName();
-      label = "(" + entityName + ") ";
-    }
-
-    label = label.empty() ? "(empty)" : label;
-    label.append(" (" + field.ElementTypeName + ")");
-    // 1. Peek at the active drag payload to see if it matches this script type
-    bool isValidDragTarget = false;
-    if (const ImGuiPayload *activePayload = ImGui::GetDragDropPayload()) {
-      if (activePayload->IsDataType("SCENE_HIERARCHY_ITEM") &&
-          activePayload->Data) {
-        UUID draggedID = *(UUID *)activePayload->Data;
-        Entity draggedEntity = context->GetEntityByUUID(draggedID);
-
-        // Note: Ensure 'selection' is passed into DrawEditTimeScriptVector if
-        // you need it, or omit selection check if not required here.
-        if (draggedEntity &&
-            draggedEntity.HasComponent<ScriptComponentContainer>()) {
-          auto &scc = draggedEntity.GetComponent<ScriptComponentContainer>();
-          for (auto &script : scc.Scripts) {
-            if (script.ClassName == field.ElementTypeName) {
-              isValidDragTarget = true;
-              break;
-            }
-          }
-        }
+        entityName = context->GetEntityByUUID(*currentEntityID).GetName();
+        label = "(" + entityName + ") ";
       }
-    }
 
-    // 2. Apply visual highlight if a valid entity is being dragged over it
-    if (isValidDragTarget) {
-      ImGui::PushStyleColor(ImGuiCol_FrameBg,
-                            ImVec4(0.15f, 0.55f, 0.25f, 0.8f));
-    }
+      label = label.empty() ? "(empty)" : label;
+      label.append(" (" + field.ElementTypeName + ")");
+      // 1. Peek at the active drag payload to see if it matches this script type
+      bool isValidDragTarget = false;
+      if (const ImGuiPayload *activePayload = ImGui::GetDragDropPayload()) {
+        if (activePayload->IsDataType("SCENE_HIERARCHY_ITEM") &&
+          activePayload->Data) {
+          UUID draggedID = *(UUID *)activePayload->Data;
+          Entity draggedEntity = context->GetEntityByUUID(draggedID);
 
-    // Draw ONCE using the index label
-    ImGuiDraw::DataField("[" + std::to_string(index) + "]", label);
-
-    if (isValidDragTarget) {
-      ImGui::PopStyleColor();
-    }
-
-    // 3. Handle the drop acceptance with type validation
-    if (ImGui::BeginDragDropTarget()) {
-      if (const ImGuiPayload *payload =
-              ImGui::AcceptDragDropPayload("SCENE_HIERARCHY_ITEM")) {
-        UUID droppedEntityID = *(UUID *)payload->Data;
-        Entity droppedEntity = context->GetEntityByUUID(droppedEntityID);
-
-        if (droppedEntity) {
-          bool matchesScript = false;
-          if (droppedEntity.HasComponent<ScriptComponentContainer>()) {
-            auto &scc = droppedEntity.GetComponent<ScriptComponentContainer>();
+          // Note: Ensure 'selection' is passed into DrawEditTimeScriptVector if
+          // you need it, or omit selection check if not required here.
+          if (draggedEntity &&
+            draggedEntity.HasComponent<ScriptComponentContainer>()) {
+            auto &scc = draggedEntity.GetComponent<ScriptComponentContainer>();
             for (auto &script : scc.Scripts) {
               if (script.ClassName == field.ElementTypeName) {
-                matchesScript = true;
+                isValidDragTarget = true;
                 break;
               }
             }
           }
-          if (matchesScript) {
-            *currentEntityID = droppedEntityID.uuid();
-            interaction = true;
-          }
         }
       }
-      ImGui::EndDragDropTarget();
+
+      // 2. Apply visual highlight if a valid entity is being dragged over it
+      if (isValidDragTarget) {
+        ImGui::PushStyleColor(ImGuiCol_FrameBg,
+                            ImVec4(0.15f, 0.55f, 0.25f, 0.8f));
+      }
+
+      // Draw ONCE using the index label
+      ImGuiDraw::DataField("[" + std::to_string(index) + "]", label);
+
+      if (isValidDragTarget) {
+        ImGui::PopStyleColor();
+      }
+
+      // 3. Handle the drop acceptance with type validation
+      if (ImGui::BeginDragDropTarget()) {
+        if (const ImGuiPayload *payload =
+          ImGui::AcceptDragDropPayload("SCENE_HIERARCHY_ITEM")) {
+          UUID droppedEntityID = *(UUID *)payload->Data;
+          Entity droppedEntity = context->GetEntityByUUID(droppedEntityID);
+
+          if (droppedEntity) {
+            bool matchesScript = false;
+            if (droppedEntity.HasComponent<ScriptComponentContainer>()) {
+              auto &scc = droppedEntity.GetComponent<ScriptComponentContainer>();
+              for (auto &script : scc.Scripts) {
+                if (script.ClassName == field.ElementTypeName) {
+                  matchesScript = true;
+                  break;
+                }
+              }
+            }
+            if (matchesScript) {
+              *currentEntityID = droppedEntityID.uuid();
+              interaction = true;
+            }
+          }
+        }
+        ImGui::EndDragDropTarget();
+      }
+      break;
     }
-    break;
-  }
+    default:
+      break;
   }
   return interaction;
 }

@@ -1,5 +1,5 @@
 #pragma once
-#include "cepch.h"
+#include "cepch.h" // IWYU pragma: keep
 
 namespace CatEngine {
 

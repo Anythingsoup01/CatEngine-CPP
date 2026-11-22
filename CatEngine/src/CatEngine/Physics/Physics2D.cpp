@@ -1,6 +1,7 @@
+#include "cepch.h" // IWYU pragma: keep
+
 #include "Physics2D.h"
 #include "CatEngine/Scene/Components/Physics/BoxCollider2D.h"
-#include "cepch.h"
 
 #include "CatEngine/Scene/Components/Physics/Rigidbody2D.h"
 #include "CatEngine/Scene/Entity.h"
@@ -8,8 +9,7 @@
 
 namespace CatEngine {
 
-static b2BodyType
-Rigidbody2DTypeToBox2DType(Rigidbody2DComponent::BodyType bodyType) {
+static b2BodyType Rigidbody2DTypeToBox2DType(Rigidbody2DComponent::BodyType bodyType) {
   switch (bodyType) {
   case Rigidbody2DComponent::BodyType::Static:
     return b2_staticBody;

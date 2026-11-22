@@ -1,8 +1,7 @@
+#include "cepch.h" // IWYU pragma: keep
+
 #include "AssetPostprocessor.h"
-#include "CatEngine/Editor/PanelManager.h"
-#include "CatEngine/Editor/Panels/AssetBrowserPanel.h"
 #include "CatEngine/Project/Project.h"
-#include <filesystem>
 
 namespace CatEngine {
 

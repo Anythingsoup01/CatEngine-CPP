@@ -1,4 +1,4 @@
-#include "cepch.h"
+#include "cepch.h" // IWYU pragma: keep
 #include "Application.h"
 
 #include "CatEngine/Renderer/RenderAPI.h"
@@ -6,12 +6,12 @@
 
 #include "CatEngine/Scripting/ScriptEngine.h"
 
-#include "Input.h"
 #include "TimeStep.h"
 
 extern bool g_ApplicationRunning;
 
 namespace CatEngine {
+
 Application::Application(const ApplicationSpecification &spec)
     : m_Specification(spec) {
   CE_PROFILE_FUNCTION();
@@ -162,4 +162,5 @@ void Application::ExecuteMainThreadQueue() {
   for (auto &function : copy)
     function();
 }
+
 } // namespace CatEngine

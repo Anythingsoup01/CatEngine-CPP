@@ -1,9 +1,11 @@
 #pragma once
 
 #include "VertexArray.h"
+
 #include <glm/glm.hpp>
 
 namespace CatEngine {
+
 class RenderAPI {
 public:
   enum class API { None = 0, OpenGL, Vulkan };
@@ -31,4 +33,5 @@ public:
 private:
   static inline API s_API = API::None;
 };
+
 } // namespace CatEngine

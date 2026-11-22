@@ -1,5 +1,6 @@
+#include "cepch.h" // IWYU pragma: keep
+
 #include "IconManager.h"
-#include <cepch.h>
 
 #include <stb_image.h>
 

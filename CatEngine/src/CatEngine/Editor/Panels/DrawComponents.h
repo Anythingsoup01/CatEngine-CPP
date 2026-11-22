@@ -1,7 +1,6 @@
 #pragma once
 
 #include "CatEngine/Scene/Entity.h"
-#include "CatEngine/Scripting/ScriptEntityStorage.h"
 namespace CatEngine {
 
 void DrawComponentsHelper(Entity selection);

@@ -1,5 +1,6 @@
+#include "cepch.h" // IWYU pragma: keep
+
 #include "Window.h"
-#include "cepch.h"
 
 // Event
 #include "CatEngine/Event/ApplicationEvent.h"

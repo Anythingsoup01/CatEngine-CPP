@@ -1,7 +1,5 @@
 #pragma once
 
-#include "CatEngine/Core/UUID.h"
-
 #include "Asset.h"
 
 namespace CatEngine {

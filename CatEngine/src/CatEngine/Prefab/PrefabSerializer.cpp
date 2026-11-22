@@ -1,9 +1,9 @@
-#include "cepch.h"
+#include "cepch.h" // IWYU pragma: keep
+
 #include "PrefabSerializer.h"
+
 #include "CatEngine/Core/Formatter.h"
 #include "CatEngine/Scripting/ScriptEngine.h"
-#include "yaml-cpp/yaml.h"
-#include <fstream>
 
 namespace CatEngine {
 
@@ -252,48 +252,50 @@ void PrefabSerializer::SerializeEntity(YAML::Emitter &out, Entity entity) {
         } else {
           out << YAML::Key << "Value";
           switch (field.Field.Type) {
-          case DataType::Short:
-            out << YAML::Value << field.GetValue<int16_t>();
-            break;
-          case DataType::UShort:
-            out << YAML::Value << field.GetValue<uint16_t>();
-            break;
-          case DataType::Int:
-            out << YAML::Value << field.GetValue<int32_t>();
-            break;
-          case DataType::UInt:
-            out << YAML::Value << field.GetValue<uint32_t>();
-            break;
-          case DataType::Long:
-            out << YAML::Value << field.GetValue<int64_t>();
-            break;
-          case DataType::ULong:
-            out << YAML::Value << field.GetValue<uint64_t>();
-            break;
-          case DataType::Float:
-            out << YAML::Value << field.GetValue<float>();
-            break;
-          case DataType::Double:
-            out << YAML::Value << field.GetValue<double>();
-            break;
-          case DataType::Bool:
-            out << YAML::Value << field.GetValue<bool>();
-            break;
-          case DataType::Vector2:
-            out << YAML::Value << field.GetValue<glm::vec2>();
-            break;
-          case DataType::Vector3:
-            out << YAML::Value << field.GetValue<glm::vec3>();
-            break;
-          case DataType::Vector4:
-            out << YAML::Value << field.GetValue<glm::vec4>();
-            break;
-          case DataType::Entity:
-          case DataType::Texture2D:
-          case DataType::Prefab:
-          case DataType::ScriptComponent:
-            out << YAML::Value << field.GetValue<uint64_t>();
-            break;
+            case DataType::Short:
+              out << YAML::Value << field.GetValue<int16_t>();
+              break;
+            case DataType::UShort:
+              out << YAML::Value << field.GetValue<uint16_t>();
+              break;
+            case DataType::Int:
+              out << YAML::Value << field.GetValue<int32_t>();
+              break;
+            case DataType::UInt:
+              out << YAML::Value << field.GetValue<uint32_t>();
+              break;
+            case DataType::Long:
+              out << YAML::Value << field.GetValue<int64_t>();
+              break;
+            case DataType::ULong:
+              out << YAML::Value << field.GetValue<uint64_t>();
+              break;
+            case DataType::Float:
+              out << YAML::Value << field.GetValue<float>();
+              break;
+            case DataType::Double:
+              out << YAML::Value << field.GetValue<double>();
+              break;
+            case DataType::Bool:
+              out << YAML::Value << field.GetValue<bool>();
+              break;
+            case DataType::Vector2:
+              out << YAML::Value << field.GetValue<glm::vec2>();
+              break;
+            case DataType::Vector3:
+              out << YAML::Value << field.GetValue<glm::vec3>();
+              break;
+            case DataType::Vector4:
+              out << YAML::Value << field.GetValue<glm::vec4>();
+              break;
+            case DataType::Entity:
+            case DataType::Texture2D:
+            case DataType::Prefab:
+            case DataType::ScriptComponent:
+              out << YAML::Value << field.GetValue<uint64_t>();
+              break;
+            default:
+              break;
           }
         }
         out << YAML::EndMap; // Field Map End

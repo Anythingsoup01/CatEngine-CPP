@@ -1,7 +1,8 @@
+#include "cepch.h" // IWYU pragma: keep
+
 #include "ScriptGlue.h"
 #include "CatEngine/Editor/PanelManager.h"
 #include "CatEngine/Editor/Panels/ConsolePanel.h"
-#include "cepch.h"
 
 #include "CatEngine/Core/Input.h"
 #include "CatEngine/Core/KeyCodes.h"

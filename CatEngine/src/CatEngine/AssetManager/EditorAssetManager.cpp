@@ -1,23 +1,17 @@
+#include "cepch.h" // IWYU pragma: keep
 #include "EditorAssetManager.h"
-#include "CatEngine/AssetManager/Asset.h"
-#include "CatEngine/AssetManager/AssetPostprocessor.h"
-#include "CatEngine/AssetManager/Importers/SceneImporter.h"
-#include "CatEngine/AssetManager/Importers/TextureImporter.h"
+
+#include "AssetImporter.h"
+#include "AssetPostprocessor.h"
+
 #include "CatEngine/Core/Application.h"
+#include "CatEngine/Core/Formatter.h"
 #include "CatEngine/Editor/PanelManager.h"
 #include "CatEngine/Editor/Panels/ConsolePanel.h"
 #include "CatEngine/Prefab/PrefabManager.h"
-#include "cepch.h"
-
-#include "AssetImporter.h"
-
 #include "CatEngine/Project/Project.h"
-#include <cstdint>
-#include <filesystem>
-#include <yaml-cpp/yaml.h>
 
-#include "CatEngine/Core/Formatter.h"
-#include "yaml-cpp/emittermanip.h"
+#include <yaml-cpp/yaml.h>
 
 namespace CatEngine {
 

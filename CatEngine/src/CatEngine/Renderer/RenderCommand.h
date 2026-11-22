@@ -4,6 +4,7 @@
 #include "VertexArray.h"
 
 namespace CatEngine {
+
 class RenderCommand {
 public:
   static void Init();
@@ -40,4 +41,5 @@ public:
 private:
   static inline Scope<RenderAPI> s_RenderAPI = nullptr;
 };
+
 } // namespace CatEngine

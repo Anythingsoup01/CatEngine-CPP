@@ -1,32 +1,22 @@
 #include "EditorLayer.h"
 
-#include "CatEngine/Core/Application.h"
-#include "CatEngine/Core/Log.h"
-#include "CatEngine/Editor/Panels/ConsolePanel.h"
-#include "CatEngine/Editor/Panels/InpectorPanel.h"
-#include "CatEngine/Project/Project.h"
-#include "CatEngine/Scene/Entity.h"
-#include "CatEngine/Prefab/Prefab.h"
-#include "CatEngine/Prefab/PrefabSerializer.h"
-#include "imgui.h"
-#include <filesystem>
-#include <imgui_internal.h>
-
-#include "glm/glm.hpp"
-#include "glm/gtc/type_ptr.hpp"
-
-#include "ImGuizmo.h"
-
-#include <glad/glad.h>
-
-#include "CatEngine/Scripting/ScriptEngine.h"
-
 #include "CatEngine/AssetManager/AssetManager.h"
 
+#include "CatEngine/Editor/IconManager.h"
+#include "CatEngine/Editor/PanelManager.h"
 #include "CatEngine/Editor/Panels/AssetBrowserPanel.h"
+#include "CatEngine/Editor/Panels/ConsolePanel.h"
+#include "CatEngine/Editor/Panels/InpectorPanel.h"
 #include "CatEngine/Editor/Panels/SceneHierarchyPanel.h"
 
-#include "CatEngine/Editor/IconManager.h"
+#include "CatEngine/Prefab/PrefabSerializer.h"
+
+#include <glm/gtc/type_ptr.hpp>
+
+#include <imgui.h>
+#include <imgui_internal.h>
+
+#include <ImGuizmo.h>
 
 namespace CatEngine {
 void EditorLayer::OnAttach() {

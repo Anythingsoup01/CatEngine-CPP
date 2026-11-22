@@ -1,5 +1,6 @@
+#include "cepch.h" // IWYU pragma: keep
+
 #include "OpenGLGraphicsContext.h"
-#include "cepch.h"
 
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>

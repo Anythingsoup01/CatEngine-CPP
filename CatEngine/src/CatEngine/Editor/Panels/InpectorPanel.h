@@ -39,7 +39,6 @@ private:
                                   const std::string &entryTwoName);
 
   void DisplayAddScriptComponent(const std::string &name);
-
 private:
   Ref<Scene> m_Context;
   Entity m_EntitySelection = {};

@@ -1,5 +1,6 @@
+#include "cepch.h" // IWYU pragma: keep
+
 #include "Project.h"
-#include "cepch.h"
 
 #include "ProjectSerializer.h"
 
