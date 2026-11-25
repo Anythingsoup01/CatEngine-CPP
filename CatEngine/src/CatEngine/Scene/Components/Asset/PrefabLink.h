@@ -12,8 +12,8 @@ struct PrefabLinkComponent {
   uint64_t LastKnownUpdate = 0;
 
   PrefabLinkComponent() = default;
-  PrefabLinkComponent(AssetHandle prefabID, UUID sourceEntityID)
-    : PrefabID(prefabID), SourceEntityID(sourceEntityID) {}
+  PrefabLinkComponent(AssetHandle prefabID, UUID sourceEntityID, uint64_t lastKnownUpdate)
+    : PrefabID(prefabID), SourceEntityID(sourceEntityID), LastKnownUpdate(lastKnownUpdate) {}
 };
 
 }

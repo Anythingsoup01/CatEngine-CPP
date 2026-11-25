@@ -74,6 +74,8 @@ public:
 
   void RegisterParents();
 
+  void UpdateAllPrefabs();
+
   std::vector<UUID> &GetRootEntities() { return m_RootEntities; }
 
   static AssetType GetStaticType() { return AssetType::Scene; }
@@ -84,6 +86,12 @@ private:
 
 
 private:
+  void RecursiveCopyTo(Ref<Scene> &target, const UUID &entityID);
+
+  void SyncEntityComponentsFromPrefab(Entity dstEntity, Entity srcPrefabEntity, bool preserveInstanceTransform);
+  void SyncPrefabHierarchyRecursive(Entity dstEntity, Entity srcPrefabEntity, AssetHandle prefabID, uint64_t prefabVersion);
+  void RecursiveUpdatePrefabs(const UUID &entityID);
+
   void OnPhysics2DStart();
   void OnPhysics2DUpdate(Time ts);
   void OnPhysics2DStop();

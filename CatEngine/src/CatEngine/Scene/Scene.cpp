@@ -22,8 +22,7 @@ Scene::Scene() {}
 Scene::~Scene() { ShutdownRuntime(); }
 
 template <typename T>
-static void
-CopyComponent(entt::registry &dstRegistry, entt::registry &srcRegistry,
+static void CopyComponent(entt::registry &dstRegistry, entt::registry &srcRegistry,
               const std::unordered_map<UUID, entt::entity> &enttMap) {
   auto srcEntities = srcRegistry.view<T>();
   for (auto srcEntity : srcEntities) {
@@ -62,6 +61,40 @@ static void CopyComponentIfExistsForEntity(entt::registry &dstRegistry,
   }
 }
 
+void Scene::RecursiveCopyTo(Ref<Scene> &target, const UUID &entityID) {
+  if (!target)
+    return;
+
+  Entity srcEntityWrapper = GetEntityByUUID(entityID);
+  UUID uuid = srcEntityWrapper.GetUUID();
+  std::string name = srcEntityWrapper.GetName();
+  UUID parent = srcEntityWrapper.GetComponent<RelationshipComponent>().Parent;
+  Entity destEntityWrapper = target->CreateEntityWithUUID(uuid, name, parent);
+
+  if (!destEntityWrapper)
+    return;
+
+  CopyComponentIfExists<
+    TagComponent,
+    LayerComponent,
+    ObjectStateComponent,
+    TransformComponent,
+    CameraComponent,
+    SpriteRendererComponent,
+    CircleRendererComponent,
+    Rigidbody2DComponent,
+    BoxCollider2DComponent,
+    CircleCollider2DComponent,
+    ScriptComponentContainer,
+    PrefabLinkComponent
+    >(destEntityWrapper, srcEntityWrapper);
+
+  auto &rc = srcEntityWrapper.GetComponent<RelationshipComponent>();
+  for (auto &child : rc.Children) {
+    RecursiveCopyTo(target, child);
+  }
+}
+
 void Scene::CopyTo(Ref<Scene> &target) {
   CE_PROFILE_FUNCTION();
 
@@ -69,97 +102,12 @@ void Scene::CopyTo(Ref<Scene> &target) {
   target->m_ViewportHeight = m_ViewportHeight;
   target->m_Handle = m_Handle;
 
-  auto &srcRegistry = m_Registry;
-
-  // 1) Gather source entities into a vector to lock in their exact editor order
-std::vector<entt::entity> orderedSourceEntities;
-  auto idView = srcRegistry.view<IDComponent>();
-  for (auto e : idView) {
-    orderedSourceEntities.push_back(e);
-  }
-
-  std::reverse(orderedSourceEntities.begin(), orderedSourceEntities.end());
-
-  std::unordered_map<UUID, entt::entity> enttMap;
-
-  // 2) Create empty entities in the target registry using CreateEntityWithUUID
-  for (auto srcEntity : orderedSourceEntities) {
-    Entity srcEntityWrapper{srcEntity, this};
-    UUID uuid = srcEntityWrapper.GetUUID();
-    std::string name = srcEntityWrapper.GetName();
-    UUID parent = srcEntityWrapper.GetComponent<RelationshipComponent>().Parent;
-
-    Entity destEntityWrapper = target->CreateEntityWithUUID(uuid, name, parent);
-    enttMap[uuid] = destEntityWrapper.GetEntityID();
+  for (auto &parent : m_RootEntities) {
+    RecursiveCopyTo(target, parent);
   }
 
   target->RegisterParents();
-
-  // 3) Copy components per entity using Entity wrapper and AddOrReplaceComponent
-  for (auto srcEntity : orderedSourceEntities) {
-    Entity srcEntityWrapper{srcEntity, this};
-    UUID uuid = srcEntityWrapper.GetUUID();
-    Entity destEntityWrapper = target->GetEntityByUUID(uuid);
-
-    if (!destEntityWrapper)
-      continue;
-
-    CopyComponentIfExists<
-        TagComponent,
-        LayerComponent,
-        ObjectStateComponent,
-        TransformComponent,
-        CameraComponent,
-        SpriteRendererComponent,
-        CircleRendererComponent,
-        Rigidbody2DComponent,
-        BoxCollider2DComponent,
-        CircleCollider2DComponent,
-        ScriptComponentContainer,
-        PrefabLinkComponent
-    >(destEntityWrapper, srcEntityWrapper);
-  }
-
-  auto view = target->m_Registry.view<PrefabLinkComponent, IDComponent, RelationshipComponent>();
-
-  auto &prefabs = PrefabManager::Get().GetPrefabs();
-
-  std::unordered_map<UUID, AssetHandle> instancesToRefresh;
-  for (auto e : view) {
-    auto& link = view.get<PrefabLinkComponent>(e);
-    for (auto &prefab : prefabs) {
-      if (link.PrefabID == prefab) {
-        Asset::MetaData metaData = Project::GetActive()->GetEditorAssetManager()->GetMetaData(prefab);
-        if (metaData.LastUpdated > link.LastKnownUpdate) {
-          instancesToRefresh.emplace(view.get<IDComponent>(e).ID, prefab);
-        }
-      }
-    }
-  }
-
-  for (auto &[instanceUUID, prefabID] : instancesToRefresh) {
-    Entity instanceEntity = target->GetEntityByUUID(instanceUUID);
-    if (!instanceEntity) continue;
-
-    // Capture current transform, parent, and active state
-    auto transformCopy = instanceEntity.GetComponent<TransformComponent>();
-    UUID parentID = instanceEntity.GetComponent<RelationshipComponent>().Parent;
-    bool isActive = instanceEntity.GetComponent<ObjectStateComponent>().Active;
-
-    // Delete old instance hierarchy
-    target->DeleteEntity(instanceEntity);
-
-    // Re-instantiate fresh from the updated prefab asset
-    Entity newInstance = target->InstantiatePrefab(prefabID, parentID);
-    if (newInstance) {
-      Asset::MetaData metaData = Project::GetActive()->GetEditorAssetManager()->GetMetaData(prefabID);
-      // Restore world/local transform and active state
-      newInstance.GetComponent<TransformComponent>() = transformCopy;
-      auto &prefabLink = newInstance.GetComponent<PrefabLinkComponent>();
-      prefabLink.LastKnownUpdate = metaData.LastUpdated;
-      target->SetEntityActive(newInstance, isActive);
-    }
-  }
+  target->UpdateAllPrefabs();
 }
 
 void Scene::OnUpdateEditor(Time ts, EditorCamera &camera) {
@@ -526,16 +474,18 @@ void Scene::DeleteEntity(Entity entity) {
       DeleteEntity(GetEntityByUUID(child));
     }
 
-    if (entity.HasComponent<BoxCollider2DComponent>() || entity.HasComponent<CircleCollider2DComponent>()) {
-      Physics2D::Get().EnableCollider(entity, false);
-    }
+    if (m_IsRunning) {
+      if (entity.HasComponent<BoxCollider2DComponent>() || entity.HasComponent<CircleCollider2DComponent>()) {
+        Physics2D::Get().EnableCollider(entity, false);
+      }
 
-    if (entity.HasComponent<Rigidbody2DComponent>()) {
-      Physics2D::Get().EnableRigidbody(entity, false);
-    }
+      if (entity.HasComponent<Rigidbody2DComponent>()) {
+        Physics2D::Get().EnableRigidbody(entity, false);
+      }
 
-    if (entity.HasComponent<ScriptComponentContainer>()) {
-      ScriptEngine::GetMutable().DeleteEntity(entity);
+      if (entity.HasComponent<ScriptComponentContainer>()) {
+        ScriptEngine::GetMutable().DeleteEntity(entity);
+      }
     }
 
     m_DeletedEntities.push_back(entity.GetUUID());
@@ -647,6 +597,8 @@ Entity Scene::InstantiatePrefab(const UUID &prefabID, const UUID &parentID) {
     return {};
   }
 
+  Asset::MetaData metaData = Project::GetActive()->GetEditorAssetManager()->GetMetaData(prefabID);
+
   Ref<Scene> prefabScene = prefab->GetScene();
   auto &srcRegistry = prefabScene->GetReg();
   auto &dstRegistry = m_Registry;
@@ -668,7 +620,7 @@ Entity Scene::InstantiatePrefab(const UUID &prefabID, const UUID &parentID) {
 
   std::string name = prefabRootEntity.GetName() + " (Prefab)";
   Entity newEntity = CreateEntityWithUUID(newUUID, name, 0);
-  newEntity.AddComponent<PrefabLinkComponent>(prefabID, prefabRootEntity.GetUUID());
+  newEntity.AddComponent<PrefabLinkComponent>(prefabID, prefabRootEntity.GetUUID(), metaData.LastUpdated);
 
   CopyComponentIfExists<
     TagComponent,
@@ -681,8 +633,7 @@ Entity Scene::InstantiatePrefab(const UUID &prefabID, const UUID &parentID) {
     Rigidbody2DComponent,
     BoxCollider2DComponent,
     CircleCollider2DComponent,
-    ScriptComponentContainer,
-    PrefabLinkComponent
+    ScriptComponentContainer
     >(newEntity, prefabRootEntity);
 
 
@@ -921,22 +872,187 @@ void Scene::MoveEntityAfter(Entity entityToMove, Entity targetEntity) {
 void Scene::RegisterParents() {
   auto view = m_Registry.view<IDComponent, RelationshipComponent>();
 
-  // 1) Gather entities into a vector and reverse to match the forward sequence
-  // order
-  std::vector<entt::entity> orderedEntities;
+  // 1) Clear stale child lists first so no parent is wiped mid-build
   for (auto entity : view) {
-    orderedEntities.push_back(entity);
+    view.get<RelationshipComponent>(entity).Children.clear();
   }
+
+  // 2) Gather and reverse to preserve forward creation order
+  std::vector<entt::entity> orderedEntities(view.begin(), view.end());
   std::reverse(orderedEntities.begin(), orderedEntities.end());
 
-  // 2) Process parent/child relationships in the correct order
+  // 3) Re-link children to parents
   for (auto entity : orderedEntities) {
     auto [id, relation] = view.get<IDComponent, RelationshipComponent>(entity);
-
     if (relation.Parent != 0) {
-      Entity parent = GetEntityByUUID(relation.Parent);
-      parent.GetComponent<RelationshipComponent>().Children.push_back(id.ID);
+      if (Entity parent = GetEntityByUUID(relation.Parent)) {
+        parent.GetComponent<RelationshipComponent>().Children.push_back(id.ID);
+      }
     }
+  }
+}
+
+void Scene::SyncEntityComponentsFromPrefab(Entity dstEntity, Entity srcPrefabEntity, bool preserveInstanceTransform) {
+  TransformComponent savedTransform;
+  bool savedSelfActive = true;
+  if (dstEntity.HasComponent<TransformComponent>()) {
+    savedTransform = dstEntity.GetComponent<TransformComponent>();
+  }
+  if (dstEntity.HasComponent<ObjectStateComponent>()) {
+    savedSelfActive = dstEntity.GetComponent<ObjectStateComponent>().SelfActive;
+  }
+
+  // Copy/overwrite components present on the prefab entity (preserving IDComponent and RelationshipComponent)
+  CopyComponentIfExists<
+      TagComponent,
+      LayerComponent,
+      ObjectStateComponent,
+      TransformComponent,
+      CameraComponent,
+      SpriteRendererComponent,
+      CircleRendererComponent,
+      Rigidbody2DComponent,
+      BoxCollider2DComponent,
+      CircleCollider2DComponent,
+      ScriptComponentContainer
+  >(dstEntity, srcPrefabEntity);
+
+  if (preserveInstanceTransform && dstEntity.HasComponent<TransformComponent>()) {
+    dstEntity.GetComponent<TransformComponent>() = savedTransform;
+  }
+
+  if (dstEntity.HasComponent<ObjectStateComponent>()) {
+    dstEntity.GetComponent<ObjectStateComponent>().SelfActive = savedSelfActive;
+  }
+
+  // Remove components that exist on dstEntity but were removed from srcPrefabEntity
+  auto removeIfMissingOnPrefab = [&]<typename T>() {
+    if constexpr (!std::is_same_v<T, IDComponent> &&
+                  !std::is_same_v<T, RelationshipComponent> &&
+                  !std::is_same_v<T, PrefabLinkComponent>) {
+      if (dstEntity.HasComponent<T>() && !srcPrefabEntity.HasComponent<T>()) {
+        dstEntity.RemoveComponent<T>();
+      }
+    }
+  };
+
+  removeIfMissingOnPrefab.template operator()<TagComponent>();
+  removeIfMissingOnPrefab.template operator()<LayerComponent>();
+  removeIfMissingOnPrefab.template operator()<ObjectStateComponent>();
+  removeIfMissingOnPrefab.template operator()<TransformComponent>();
+  removeIfMissingOnPrefab.template operator()<CameraComponent>();
+  removeIfMissingOnPrefab.template operator()<SpriteRendererComponent>();
+  removeIfMissingOnPrefab.template operator()<CircleRendererComponent>();
+  removeIfMissingOnPrefab.template operator()<Rigidbody2DComponent>();
+  removeIfMissingOnPrefab.template operator()<BoxCollider2DComponent>();
+  removeIfMissingOnPrefab.template operator()<CircleCollider2DComponent>();
+  removeIfMissingOnPrefab.template operator()<ScriptComponentContainer>();
+}
+
+void Scene::SyncPrefabHierarchyRecursive(Entity dstEntity, Entity srcPrefabEntity, AssetHandle prefabID, uint64_t prefabVersion) {
+  if (!dstEntity || !srcPrefabEntity)
+    return;
+
+  SyncEntityComponentsFromPrefab(dstEntity, srcPrefabEntity, /*preserveInstanceTransform=*/true);
+
+  if (dstEntity.HasComponent<PrefabLinkComponent>()) {
+    auto &link = dstEntity.GetComponent<PrefabLinkComponent>();
+    link.PrefabID = prefabID;
+    link.LastKnownUpdate = prefabVersion;
+  }
+
+  auto &dstRel = dstEntity.GetComponent<RelationshipComponent>();
+  auto &srcRel = srcPrefabEntity.GetComponent<RelationshipComponent>();
+
+  // Match/create child entities in prefab child order while preserving existing child UUIDs/order where possible
+  std::vector<UUID> updatedChildren;
+  updatedChildren.reserve(srcRel.Children.size());
+
+  std::vector<UUID> unmatchedExistingChildren = dstRel.Children;
+
+  for (UUID srcChildUUID : srcRel.Children) {
+    Entity srcChild = srcPrefabEntity.GetScene()->GetEntityByUUID(srcChildUUID);
+    if (!srcChild)
+      continue;
+
+    const std::string &srcChildName = srcChild.GetComponent<TagComponent>().Tag;
+
+    // Try matching an existing child by name first
+    UUID matchedUUID = 0;
+    for (auto it = unmatchedExistingChildren.begin(); it != unmatchedExistingChildren.end(); ++it) {
+      Entity candidate = GetEntityByUUID(*it);
+      if (candidate && candidate.GetComponent<TagComponent>().Tag == srcChildName) {
+        matchedUUID = *it;
+        unmatchedExistingChildren.erase(it);
+        break;
+      }
+    }
+
+    Entity dstChild;
+    if (matchedUUID != 0) {
+      dstChild = GetEntityByUUID(matchedUUID);
+    } else {
+      dstChild = CreateEntity(srcChildName, dstEntity.GetUUID());
+    }
+
+    if (dstChild) {
+      dstChild.GetComponent<RelationshipComponent>().Parent = dstEntity.GetUUID();
+      updatedChildren.push_back(dstChild.GetUUID());
+      SyncPrefabHierarchyRecursive(dstChild, srcChild, prefabID, prefabVersion);
+    }
+  }
+
+  // Delete child entities that were removed from the prefab
+  for (UUID leftoverChildUUID : unmatchedExistingChildren) {
+    Entity leftoverChild = GetEntityByUUID(leftoverChildUUID);
+    if (leftoverChild) {
+      DeleteEntity(leftoverChild);
+    }
+  }
+
+  dstRel.Children = std::move(updatedChildren);
+}
+
+void Scene::RecursiveUpdatePrefabs(const UUID &entityID) {
+  Entity entity = GetEntityByUUID(entityID);
+  if (!entity)
+    return;
+
+  // Snapshot children before potential structural changes
+  std::vector<UUID> childSnapshot = entity.GetComponent<RelationshipComponent>().Children;
+
+  bool updatedThisNode = false;
+  if (entity.HasComponent<PrefabLinkComponent>()) {
+    auto &link = entity.GetComponent<PrefabLinkComponent>();
+    Asset::MetaData metaData = Project::GetActive()->GetEditorAssetManager()->GetMetaData(link.PrefabID);
+
+    if (metaData.LastUpdated > link.LastKnownUpdate) {
+      // Load/fetch the prefab's template scene & root entity for link.PrefabID
+      Ref<Prefab> prefab = AssetManager::GetAsset<Prefab>(link.PrefabID); // adapt to your PrefabManager API
+      Ref<Scene> prefabScene = prefab->GetScene();
+      if (prefabScene) {
+        UUID rootEntityID = prefabScene->m_RootEntities[0];
+        Entity prefabRoot = prefabScene->GetEntityByUUID(rootEntityID); // adapt to your prefab root lookup
+        if (prefabRoot) {
+          SyncPrefabHierarchyRecursive(entity, prefabRoot, link.PrefabID, metaData.LastUpdated);
+          updatedThisNode = true;
+        }
+      }
+    }
+  }
+
+  // If this node wasn't just synced from its own prefab root, recurse into existing children
+  // (or still recurse if nested prefabs can have independent PrefabLinkComponents)
+  if (!updatedThisNode) {
+    for (const UUID &childID : childSnapshot) {
+      RecursiveUpdatePrefabs(childID);
+    }
+  }
+}
+
+void Scene::UpdateAllPrefabs() {
+  for (auto &entity : m_RootEntities) {
+    RecursiveUpdatePrefabs(entity);
   }
 }
 
