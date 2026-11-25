@@ -48,6 +48,7 @@ src/CatEngine/Layer/Layer.cpp
 src/CatEngine/Layer/LayerStack.cpp
 src/CatEngine/FileDialog/FileDialog.cpp
 src/CatEngine/Physics/Physics2D.cpp
+src/CatEngine/Physics/ContactListener.cpp
 src/CatEngine/Math/Math.cpp
 src/CatEngine/Project/Project.cpp
 src/CatEngine/Project/ProjectSerializer.cpp
@@ -55,7 +56,6 @@ src/CatEngine/Scene/Scene.cpp
 src/CatEngine/Scene/SceneSerializer.cpp
 src/CatEngine/Scene/Components/Components.cpp
 src/CatEngine/Scene/SceneCamera.cpp
-src/CatEngine/Scene/ContactListener.cpp
 src/CatEngine/Scene/Entity.cpp
 src/CatEngine/Core/Hash.cpp
 src/CatEngine/Core/Input.cpp

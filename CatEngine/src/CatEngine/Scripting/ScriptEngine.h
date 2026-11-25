@@ -60,6 +60,8 @@ public:
   ScriptFieldMap &GetScriptFieldMap(Entity entity);
   ScriptFieldMap &GetScriptFieldMap(UUID entity);
 
+  void CopyScriptFields(Entity src, Entity dst);
+
   static ScriptEngine &GetMutable() { return *s_Instance; }
 
 private:

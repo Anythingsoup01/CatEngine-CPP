@@ -925,6 +925,10 @@ void Scene::SyncEntityComponentsFromPrefab(Entity dstEntity, Entity srcPrefabEnt
     dstEntity.GetComponent<ObjectStateComponent>().SelfActive = savedSelfActive;
   }
 
+  if (dstEntity.HasComponent<ScriptComponentContainer>()) {
+    ScriptEngine::GetMutable().CopyScriptFields(srcPrefabEntity, dstEntity);
+  }
+
   // Remove components that exist on dstEntity but were removed from srcPrefabEntity
   auto removeIfMissingOnPrefab = [&]<typename T>() {
     if constexpr (!std::is_same_v<T, IDComponent> &&

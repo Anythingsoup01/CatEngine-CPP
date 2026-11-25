@@ -375,8 +375,11 @@ void ScriptEngine::DeleteEntity(Entity entity) {
     }
     entityInstances.clear();
 
-    auto &entityFieldInstances = s_ScriptData->EntityScriptFields[entity.GetUUID()];
-    entityFieldInstances.clear();
+    // Entity Field Instances are an Edit time variable
+    if (!s_ScriptData->SceneContext->IsRunning()) {
+      auto &entityFieldInstances = s_ScriptData->EntityScriptFields[entity.GetUUID()];
+      entityFieldInstances.clear();
+    }
   });
 }
 
@@ -524,6 +527,13 @@ ScriptFieldMap &ScriptEngine::GetScriptFieldMap(Entity entity) {
 ScriptFieldMap &ScriptEngine::GetScriptFieldMap(UUID uuid) {
   CE_API_ASSERT(uuid, "Invalid Entity!");
   return s_ScriptData->EntityScriptFields[uuid];
+}
+void ScriptEngine::CopyScriptFields(Entity src, Entity dst) {
+  if (!s_ScriptData->EntityScriptFields.contains(src.GetUUID())) {
+    return;
+  }
+
+  s_ScriptData->EntityScriptFields[dst.GetUUID()] = s_ScriptData->EntityScriptFields[src.GetUUID()];
 }
 
 void ScriptEngine::CapyInit() {
