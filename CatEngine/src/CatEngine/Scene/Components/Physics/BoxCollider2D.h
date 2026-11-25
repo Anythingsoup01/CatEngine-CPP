@@ -9,6 +9,7 @@ struct BoxCollider2DComponent {
   glm::vec2 Size = {0.5f, 0.5f};
   float Rotation = 0.0f;
   bool ShowColliderBounds = false;
+  bool IsTrigger = false;
 
   // TODO: Possibly make physics material
   float Density = 1.0f;

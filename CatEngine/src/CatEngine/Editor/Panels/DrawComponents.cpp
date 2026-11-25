@@ -529,18 +529,12 @@ void DrawBoxCollider2DComponent(Entity selection) {
 
   if (open) {
     ImGui::Spacing();
-    glm::vec2 &offset = component.Offset;
-    glm::vec2 &size = component.Size;
-
-    float &density = component.Density;
-    float &friction = component.Friction;
-    float &restitution = component.Restitution;
-    float &restitutionThreshold = component.RestitutionThreshold;
 
     ImGuiDraw::Vec2("Offset", component.Offset);
     ImGuiDraw::Vec2("Size", component.Size, 0.025f, 0.0001f, 100000.f);
     ImGuiDraw::Vec1("Rotation", component.Rotation, 0.025f, 0, 0);
     ImGuiDraw::CheckBox("Show Collider", component.ShowColliderBounds);
+    ImGuiDraw::CheckBox("IsTrigger", component.IsTrigger);
     ImGuiDraw::Vec1("Density", component.Density, 0.025f, 0.0001f, 100000.f);
     ImGuiDraw::Vec1("Friction", component.Friction, 0.025f, 0.0001f, 100000.f);
     ImGuiDraw::Vec1("Restitution", component.Restitution, 0.025f, 0.0001f,

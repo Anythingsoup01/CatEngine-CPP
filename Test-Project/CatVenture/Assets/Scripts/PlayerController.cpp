@@ -14,15 +14,6 @@ PlayerController::PlayerController() {}
 PlayerController::~PlayerController() {}
 
 void PlayerController::Start() {
-  if (m_PlayerPrefab) {
-    for (int i = 0; i < 10; i++) {
-      Object prefab = Scene::Instantiate(m_PlayerPrefab);
-      if (prefab) {
-        prefab.transform().local_position() = Vector3(i + 1, i + 1, 0);
-        m_Enemies.push_back(prefab);
-      }
-    }
-  }
 }
 
 void PlayerController::FixedUpdate(float ts) {
@@ -56,23 +47,19 @@ void PlayerController::OnCollisionEnter(Object other) {
     m_Grounded = true;
     m_CanJump = true;
   }
-
-  if (other.layer() == "Enemy") {
-    for (auto it = m_Enemies.begin(); it != m_Enemies.end(); it++) {
-      Object o = *it;
-      if (o == other) {
-        m_Enemies.erase(it);
-        break;
-      }
-    }
-
-    Scene::Destroy(other);
-  }
 }
 
 void PlayerController::OnCollisionExit(Object other) {
   if (other.layer() == "Ground" && !m_CanJump) {
     m_Grounded = false;
+  }
+}
+void PlayerController::ApplyHealth(const float &health) {
+  m_PlayerHealth += health;
+  if (m_PlayerHealth > 100) {
+    m_PlayerHealth = 100;
+  } else if (m_PlayerHealth < 0) {
+    m_PlayerHealth = 0;
   }
 }
 } // namespace CatRuntime

@@ -124,6 +124,9 @@ private:
   bool m_HasDelete = false;
   bool m_HasOnCollisionEnter = false;
   bool m_HasOnCollisionExit = false;
+  bool m_HasOnTriggerEnter = false;
+  bool m_HasOnTriggerExit = false;
+
 
   std::unordered_map<UUID, ScriptField> m_Fields;
   Ref<Capybara::CapyObject> m_ClassObject;
@@ -150,6 +153,10 @@ public:
 
   void InvokeOnCollisionEnter(const UUID &other);
   void InvokeOnCollisionExit(const UUID &other);
+
+  void InvokeOnTriggerEnter(const UUID &other);
+  void InvokeOnTriggerExit(const UUID &other);
+
 
   Ref<ScriptClass> GetScriptClass() { return m_ScriptClass; }
 

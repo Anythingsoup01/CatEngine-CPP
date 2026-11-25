@@ -1,12 +1,11 @@
 #pragma once
 
-#include <glm/glm.hpp>
-
-#include <box2d/b2_body.h>
+#include "ContactListener.h"
 
 #include "CatEngine/Core/TimeStep.h"
 
-#include "CatEngine/Scene/ContactListener.h"
+#include <glm/glm.hpp>
+#include <box2d/b2_body.h>
 
 namespace CatEngine {
 

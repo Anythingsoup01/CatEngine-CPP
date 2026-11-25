@@ -199,8 +199,8 @@ void SceneSerializer::SerializeEntity(YAML::Emitter &out, Entity entity) {
     out << YAML::Key << "Offset" << YAML::Value << bc2d.Offset;
     out << YAML::Key << "Size" << YAML::Value << bc2d.Size;
     out << YAML::Key << "Rotation" << YAML::Value << bc2d.Rotation;
-    out << YAML::Key << "ShowColliderBounds" << YAML::Value
-        << bc2d.ShowColliderBounds;
+    out << YAML::Key << "ShowColliderBounds" << YAML::Value << bc2d.ShowColliderBounds;
+    out << YAML::Key << "IsTrigger" << YAML::Value << bc2d.IsTrigger;
     out << YAML::Key << "Density" << YAML::Value << bc2d.Density;
     out << YAML::Key << "Friction" << YAML::Value << bc2d.Friction;
     out << YAML::Key << "Restitution" << YAML::Value << bc2d.Restitution;
@@ -215,8 +215,8 @@ void SceneSerializer::SerializeEntity(YAML::Emitter &out, Entity entity) {
     out << YAML::BeginMap; // CircleCollider2DComponent
     out << YAML::Key << "Offset" << YAML::Value << cc2d.Offset;
     out << YAML::Key << "Radius" << YAML::Value << cc2d.Radius;
-    out << YAML::Key << "ShowColliderBounds" << YAML::Value
-        << cc2d.ShowColliderBounds;
+    out << YAML::Key << "ShowColliderBounds" << YAML::Value << cc2d.ShowColliderBounds;
+    out << YAML::Key << "IsTrigger" << YAML::Value << cc2d.IsTrigger;
     out << YAML::Key << "Density" << YAML::Value << cc2d.Density;
     out << YAML::Key << "Friction" << YAML::Value << cc2d.Friction;
     out << YAML::Key << "Restitution" << YAML::Value << cc2d.Restitution;
@@ -559,6 +559,7 @@ void SceneSerializer::DeserializeEntity(YAML::Node &entity, UUID parent) {
     bc2d.Size = boxCollider2D["Size"].as<glm::vec2>();
     bc2d.Rotation = boxCollider2D["Rotation"].as<float>();
     bc2d.ShowColliderBounds = boxCollider2D["ShowColliderBounds"].as<bool>();
+    bc2d.IsTrigger = boxCollider2D["IsTrigger"].as<bool>(false);
     bc2d.Density = boxCollider2D["Density"].as<float>();
     bc2d.Friction = boxCollider2D["Friction"].as<float>();
     bc2d.Restitution = boxCollider2D["Restitution"].as<float>();
@@ -573,6 +574,7 @@ void SceneSerializer::DeserializeEntity(YAML::Node &entity, UUID parent) {
     cc2d.Offset = circleCollider2D["Offset"].as<glm::vec2>();
     cc2d.Radius = circleCollider2D["Radius"].as<float>();
     cc2d.ShowColliderBounds = circleCollider2D["ShowColliderBounds"].as<bool>();
+    cc2d.IsTrigger = circleCollider2D["IsTrigger"].as<bool>(false);
     cc2d.Density = circleCollider2D["Density"].as<float>();
     cc2d.Friction = circleCollider2D["Friction"].as<float>();
     cc2d.Restitution = circleCollider2D["Restitution"].as<float>();

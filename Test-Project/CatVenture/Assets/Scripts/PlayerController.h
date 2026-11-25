@@ -18,9 +18,10 @@ public:
   void OnCollisionEnter(Object other);
   void OnCollisionExit(Object other);
 
+  void ApplyHealth(const float &health);
+
 public:
-  std::vector<Object> m_Enemies;
-  Prefab m_PlayerPrefab;
+  float m_PlayerHealth = 0.0f;
   float m_PlayerTerminalVelocity = 25.0f;
   float m_PlayerSpeed = 10;
   float m_JumpForce = 25.0f;

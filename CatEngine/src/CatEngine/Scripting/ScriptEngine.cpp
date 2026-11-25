@@ -382,45 +382,87 @@ void ScriptEngine::DeleteEntity(Entity entity) {
 
 void ScriptEngine::DispatchCollisionEvent(UUID uuidA, UUID uuidB, CollisionType type) {
   auto &instances = s_ScriptData->EntityInstances;
-  EntityScriptInstanceMap entityA, entityB;
+  EntityScriptInstanceMap scriptInstanceA, scriptInstanceB;
+  Entity entityA, entityB;
 
-  if (!s_ScriptData->SceneContext->GetEntityByUUID(uuidA))
+  if (!(entityA = s_ScriptData->SceneContext->GetEntityByUUID(uuidA)))
     uuidA = 0;
 
-  if (!s_ScriptData->SceneContext->GetEntityByUUID(uuidB))
+  if (!(entityB = s_ScriptData->SceneContext->GetEntityByUUID(uuidB)))
     uuidB = 0;
 
 
   if (instances.find(uuidA) != instances.end())
-    entityA = instances[uuidA];
+    scriptInstanceA = instances[uuidA];
 
   if (instances.find(uuidB) != instances.end())
-    entityB = instances[uuidB];
+    scriptInstanceB = instances[uuidB];
 
-  for (auto &[scriptID, script] : entityA) {
+  for (auto &[scriptID, script] : scriptInstanceA) {
     switch (type) {
       case CollisionType::Begin: {
-        script->InvokeOnCollisionEnter(uuidB);
+        bool isTrigger = false;
+        if (entityA.HasComponent<BoxCollider2DComponent>()) {
+          isTrigger = entityA.GetComponent<BoxCollider2DComponent>().IsTrigger;
+        } else {
+          isTrigger = entityA.GetComponent<CircleCollider2DComponent>().IsTrigger;
+        }
+        if (isTrigger) {
+          script->InvokeOnTriggerEnter(uuidB);
+        } else {
+          script->InvokeOnCollisionEnter(uuidB);
+        }
       }
-      case CollisionType::End:
-        script->InvokeOnCollisionExit(uuidB);
-      break;
+      case CollisionType::End: {
+        bool isTrigger = false;
+        if (entityA.HasComponent<BoxCollider2DComponent>()) {
+          isTrigger = entityA.GetComponent<BoxCollider2DComponent>().IsTrigger;
+        } else {
+          isTrigger = entityA.GetComponent<CircleCollider2DComponent>().IsTrigger;
+        }
+        if (isTrigger) {
+          script->InvokeOnTriggerExit(uuidB);
+        } else {
+          script->InvokeOnCollisionExit(uuidB);
+        }
+        break;
+      }
     default:
       break;
     }
   }
 
-  for (auto &[scriptID, script] : entityB) {
+ for (auto &[scriptID, script] : scriptInstanceB) {
     switch (type) {
-    case CollisionType::Begin:
-      script->InvokeOnCollisionEnter(uuidA);
-      break;
-    case CollisionType::End:
-      if (script)
-        script->InvokeOnCollisionExit(uuidA);
-      break;
+      case CollisionType::Begin: {
+        bool isTrigger = false;
+        if (entityB.HasComponent<BoxCollider2DComponent>()) {
+          isTrigger = entityB.GetComponent<BoxCollider2DComponent>().IsTrigger;
+        } else {
+          isTrigger = entityB.GetComponent<CircleCollider2DComponent>().IsTrigger;
+        }
+        if (isTrigger) {
+          script->InvokeOnTriggerEnter(uuidA);
+        } else {
+          script->InvokeOnCollisionEnter(uuidA);
+        }
+      }
+      case CollisionType::End: {
+        bool isTrigger = false;
+        if (entityB.HasComponent<BoxCollider2DComponent>()) {
+          isTrigger = entityB.GetComponent<BoxCollider2DComponent>().IsTrigger;
+        } else {
+          isTrigger = entityB.GetComponent<CircleCollider2DComponent>().IsTrigger;
+        }
+        if (isTrigger) {
+          script->InvokeOnTriggerExit(uuidA);
+        } else {
+          script->InvokeOnCollisionExit(uuidA);
+        }
+        break;
+      }
     default:
-      break;
+        break;
     }
   }
 }
@@ -654,6 +696,10 @@ ScriptClass::ScriptClass(const std::string &className)
       m_HasOnCollisionEnter = true;
     } else if (method.Name == "OnCollisionExit") {
       m_HasOnCollisionExit = true;
+    } else if (method.Name == "OnTriggerEnter") {
+      m_HasOnTriggerEnter = true;
+    } else if (method.Name == "OnTriggerExit") {
+      m_HasOnTriggerExit = true;
     }
   }
 }
@@ -721,6 +767,18 @@ void ScriptInstance::InvokeOnCollisionEnter(const UUID &other) {
 void ScriptInstance::InvokeOnCollisionExit(const UUID &other) {
   if (m_ScriptClass->m_HasOnCollisionExit)
     m_ScriptClass->InvokeMethod<void>("OnCollisionExit", m_Instance,
+                                      (uint64_t)other.uuid());
+}
+
+void ScriptInstance::InvokeOnTriggerEnter(const UUID &other) {
+  if (m_ScriptClass->m_HasOnTriggerEnter)
+    m_ScriptClass->InvokeMethod<void>("OnTriggerEnter", m_Instance,
+                                      (uint64_t)other.uuid());
+}
+
+void ScriptInstance::InvokeOnTriggerExit(const UUID &other) {
+  if (m_ScriptClass->m_HasOnTriggerExit)
+    m_ScriptClass->InvokeMethod<void>("OnTriggerExit", m_Instance,
                                       (uint64_t)other.uuid());
 }
 

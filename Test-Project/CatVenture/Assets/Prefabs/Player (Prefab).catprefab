@@ -13,16 +13,34 @@ Entities:
       LocalScale: [1, 1, 1]
     Rigidbody2DComponent:
       BodyType: 2
-      FixedRotation: false
+      FixedRotation: true
     BoxCollider2DComponent:
       Offset: [0, 0]
       Size: [0.5, 0.5]
       Rotation: 0
       ShowColliderBounds: false
+      IsTrigger: false
       Density: 1
       Friction: 0.5
       Restitution: 0
       RestitutionThreshold: 0.5
+    ScriptComponentContainer:
+      - ScriptComponent:
+          ScriptID: 1101011320
+          ClassName: PlayerController
+          Fields:
+            - FieldID: 490718930
+              FieldName: m_PlayerHealth
+              FieldType: Float
+              FieldSize: 4
+              IsVector: false
+              Value: 50
+            - FieldID: 1573751430
+              FieldName: m_SpeedScale
+              FieldType: Float
+              FieldSize: 4
+              IsVector: false
+              Value: 0.0500000007
     RelationshipComponent:
       ParentID: 0
       Children:
@@ -34,13 +52,39 @@ Entities:
           NameComponent:
             Name: Player Sprite
           TransformComponent:
+            LocalPosition: [2.98023224e-08, 0, 0]
+            LocalRotation: [0, 0, 0]
+            LocalScale: [1, 1, 1]
+          SpriteRendererComponent:
+            Color: [0.328712553, 0.943925261, 0.141147733, 1]
+            Texture: 15721212057771476663
+            Tiling: 1
+          RelationshipComponent:
+            ParentID: 17917616161294619118
+            Children:
+              []
+        - Entity: 2774478371075942326
+          TagComponent:
+            Tag: None
+          LayerComponent:
+            Layer: Default
+          NameComponent:
+            Name: Camera
+          TransformComponent:
             LocalPosition: [0, 0, 0]
             LocalRotation: [0, -0, 0]
             LocalScale: [1, 1, 1]
-          SpriteRendererComponent:
-            Color: [1, 1, 1, 1]
-            Texture: 15721212057771476663
-            Tiling: 1
+          CameraComponent:
+            Camera:
+              ProjectionType: 1
+              PerspectiveFOV: 0.785398185
+              PerspectiveNear: 0.00999999978
+              PerspectiveFar: 10000
+              OrthographicSize: 10
+              OrthographicNear: -1
+              OrthographicFar: 1
+            Primary: true
+            FixedAspectRatio: false
           RelationshipComponent:
             ParentID: 17917616161294619118
             Children:

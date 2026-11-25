@@ -9,6 +9,7 @@ struct CircleCollider2DComponent {
   glm::vec2 Offset = {0.0f, 0.0f};
   float Radius = 0.5f;
   bool ShowColliderBounds = false;
+  bool IsTrigger = false;
 
   // TODO: Possibly make physics material
   float Density = 1.0f;

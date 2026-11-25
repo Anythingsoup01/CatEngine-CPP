@@ -67,6 +67,7 @@ void Physics2D::Start(Scene *context) {
 
       b2FixtureDef fixtureDef;
       fixtureDef.shape = &boxShape;
+      fixtureDef.isSensor = bc2d.IsTrigger;
       fixtureDef.density = bc2d.Density;
       fixtureDef.friction = bc2d.Friction;
       fixtureDef.restitution = bc2d.Restitution;
@@ -85,6 +86,7 @@ void Physics2D::Start(Scene *context) {
 
       b2FixtureDef fixtureDef;
       fixtureDef.shape = &circleShape;
+      fixtureDef.isSensor = cc2d.IsTrigger;
       fixtureDef.density = cc2d.Density;
       fixtureDef.friction = cc2d.Friction;
       fixtureDef.restitution = cc2d.Restitution;
