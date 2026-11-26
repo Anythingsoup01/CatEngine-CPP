@@ -8,6 +8,10 @@ struct Rigidbody2DComponent {
   BodyType Type = BodyType::Static;
   bool FixedRotation = false;
 
+  bool RuntimeDirty = false;
+  bool EditDirty = false;
+  bool PrefabDirty = false;
+
   // Storage for runtime
   void *RuntimeBody = nullptr;
 

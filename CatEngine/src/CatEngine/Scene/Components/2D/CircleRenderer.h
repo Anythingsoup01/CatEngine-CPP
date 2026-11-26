@@ -9,6 +9,10 @@ struct CircleRendererComponent {
   float Thickness = 1.0f;
   float Fade = 0.005f;
 
+  bool RuntimeDirty = false;
+  bool EditDirty = false;
+  bool PrefabDirty = false;
+
   CircleRendererComponent() = default;
   CircleRendererComponent(const CircleRendererComponent &) = default;
 

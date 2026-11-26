@@ -439,8 +439,7 @@ Entity Scene::GetPrimaryCameraEntity() {
 Entity Scene::CreateEntity(const std::string &name, UUID parent) {
   return CreateEntityWithUUID(UUID(), name, parent);
 }
-Entity Scene::CreateEntityWithUUID(UUID uuid, const std::string &name,
-                                   UUID parent) {
+Entity Scene::CreateEntityWithUUID(UUID uuid, const std::string &name, UUID parent) {
   CE_PROFILE_FUNCTION();
   Entity entity = {m_Registry.create(), this};
 
@@ -452,13 +451,23 @@ Entity Scene::CreateEntityWithUUID(UUID uuid, const std::string &name,
   auto &entityName = entity.AddComponent<NameComponent>();
   entityName.Name = name.empty() ? "GameObject" : name;
   auto &relationship = entity.AddComponent<RelationshipComponent>();
+  auto &osc = entity.AddComponent<ObjectStateComponent>();
   if (parent.uuid() != 0) { // Child
     relationship.Parent = parent;
+    UUID rootParentID = relationship.Parent;
+    Entity parent = GetEntityByUUID(rootParentID);
+    while (rootParentID != 0) {
+      parent = GetEntityByUUID(rootParentID);
+      auto &prc = parent.GetComponent<RelationshipComponent>();
+      rootParentID = prc.Parent;
+    }
+
+    if (parent.HasComponent<PrefabLinkComponent>()) {
+      osc.PrefabAdded = true;
+    }
   } else {
     m_RootEntities.push_back(uuid);
   }
-
-  entity.AddComponent<ObjectStateComponent>();
 
   entity.AddComponent<TransformComponent>();
 
@@ -470,6 +479,20 @@ Entity Scene::CreateEntityWithUUID(UUID uuid, const std::string &name,
 void Scene::DeleteEntity(Entity entity) {
   m_SceneCommandQueue.push_back([this, entity](){
     auto &rc = entity.GetComponent<RelationshipComponent>();
+    UUID rootParentID = rc.Parent;
+    Entity parent = GetEntityByUUID(rootParentID);
+    while (rootParentID != 0) {
+      parent = GetEntityByUUID(rootParentID);
+      auto &prc = parent.GetComponent<RelationshipComponent>();
+      rootParentID = prc.Parent;
+    }
+
+    if (parent.HasComponent<PrefabLinkComponent>()) {
+      auto &plc = parent.GetComponent<PrefabLinkComponent>();
+      std::string name = entity.GetComponent<NameComponent>().Name;
+      plc.DeletedEntities.push_back(name);
+    }
+
     for (auto &child : rc.Children) {
       DeleteEntity(GetEntityByUUID(child));
     }
@@ -488,8 +511,49 @@ void Scene::DeleteEntity(Entity entity) {
       }
     }
 
+
     m_DeletedEntities.push_back(entity.GetUUID());
   });
+}
+
+void Scene::SetEntityLocked(Entity entity, bool locked) {
+  auto& state = entity.GetComponent<ObjectStateComponent>();
+  state.SelfLocked = locked;
+
+  // Evaluate against parent hierarchy
+  bool parentActive = true;
+  auto& rel = entity.GetComponent<RelationshipComponent>();
+  if (rel.Parent != 0) {
+    Entity parent = GetEntityByUUID(rel.Parent);
+    if (parent) {
+      parentActive = parent.GetComponent<ObjectStateComponent>().HierarchyLocked
+        && parent.GetComponent<ObjectStateComponent>().Locked;
+    }
+  }
+
+  state.Locked = state.SelfLocked && state.HierarchyLocked;
+
+  // Propagate down to all children immediately
+  for (UUID childUUID : rel.Children) {
+    Entity child = GetEntityByUUID(childUUID);
+    if (child) {
+      SetEntityChildLockedRecursive(child, state.Locked);
+    }
+  }
+}
+
+void Scene::SetEntityChildLockedRecursive(Entity entity, bool parentLocked) {
+  auto& state = entity.GetComponent<ObjectStateComponent>();
+  state.HierarchyLocked = parentLocked;
+  bool effectiveLocked = state.SelfLocked && state.HierarchyLocked;
+
+  auto& rel = entity.GetComponent<RelationshipComponent>();
+  for (UUID childUUID : rel.Children) {
+    Entity c = GetEntityByUUID(childUUID);
+    if (c) {
+      SetEntityChildLockedRecursive(c, effectiveLocked);
+    }
+  }
 }
 
 void Scene::SetEntityActive(Entity entity, bool active) {

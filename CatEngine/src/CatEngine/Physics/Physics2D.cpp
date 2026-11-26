@@ -338,7 +338,7 @@ void Physics2D::SyncColliders() {
 
     if (!rb2d.RuntimeBody || !bc2d.RuntimeFixture)
       continue;
-    if (!bc2d.IsDirty)
+    if (!bc2d.RuntimeDirty)
       continue; // Skip if nothing changed
 
     b2Fixture *fixture = (b2Fixture *)bc2d.RuntimeFixture;
@@ -366,7 +366,7 @@ void Physics2D::SyncColliders() {
     body->ResetMassData();
 
     // Clear the dirty flag
-    bc2d.IsDirty = false;
+    bc2d.RuntimeDirty = false;
   }
 
   // --- 2. Sync CircleCollider2D components (repeat the same logic) ---
@@ -385,7 +385,7 @@ void Physics2D::SyncColliders() {
 
     if (!rb2d.RuntimeBody || !cc2d.RuntimeFixture)
       continue;
-    if (!cc2d.IsDirty)
+    if (!cc2d.RuntimeDirty)
       continue;
 
     b2Fixture *fixture = (b2Fixture *)cc2d.RuntimeFixture;
@@ -406,7 +406,7 @@ void Physics2D::SyncColliders() {
     fixture->SetRestitution(cc2d.Restitution);
 
     body->ResetMassData();
-    cc2d.IsDirty = false;
+    cc2d.RuntimeDirty = false;
   }
 }
 

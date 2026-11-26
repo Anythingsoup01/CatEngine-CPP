@@ -10,6 +10,11 @@ struct CameraComponent {
   bool Primary = true;
   bool FixedAspectRatio = false;
 
+  bool RuntimeDirty = false;
+  bool EditDirty = false;
+  bool PrefabDirty = false;
+
+
   CameraComponent() = default;
   CameraComponent(const CameraComponent &) = default;
   ~CameraComponent() = default;

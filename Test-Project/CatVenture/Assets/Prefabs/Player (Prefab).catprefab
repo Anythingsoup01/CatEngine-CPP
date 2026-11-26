@@ -29,18 +29,18 @@ Entities:
           ScriptID: 1101011320
           ClassName: PlayerController
           Fields:
-            - FieldID: 490718930
-              FieldName: m_PlayerHealth
-              FieldType: Float
-              FieldSize: 4
-              IsVector: false
-              Value: 50
             - FieldID: 1573751430
               FieldName: m_SpeedScale
               FieldType: Float
               FieldSize: 4
               IsVector: false
               Value: 0.0500000007
+            - FieldID: 490718930
+              FieldName: m_PlayerHealth
+              FieldType: Float
+              FieldSize: 4
+              IsVector: false
+              Value: 50
     RelationshipComponent:
       ParentID: 0
       Children:

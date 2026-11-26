@@ -455,7 +455,7 @@ void EditorLayer::UI_Gizmos() {
   if (selectedEntity && m_GizmoType != -1) {
     auto &stateComponent = selectedEntity.GetComponent<ObjectStateComponent>();
 
-    if (stateComponent.isLocked)
+    if (stateComponent.Locked)
       return;
 
     ImGuizmo::SetOrthographic(false);

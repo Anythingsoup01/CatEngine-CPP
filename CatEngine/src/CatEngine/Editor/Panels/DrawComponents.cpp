@@ -40,8 +40,15 @@ void DrawTransformComponent(Entity selection) {
   ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.22f, 0.24f, 0.28f, 1.0f));
 
   float lineHeight = ImGui::GetFrameHeight();
+  std::string label = "Transform";
+
+  auto &rc = selection.GetComponent<RelationshipComponent>();
+  if (component.PrefabDirty && rc.Parent != 0)
+    label += " P";
+  if (component.EditDirty)
+    label += "*";
   bool open = ImGui::TreeNodeEx(reinterpret_cast<void *>(typeid(TransformComponent).hash_code()),
-                                treeNodeFlags, "Transform");
+                                treeNodeFlags, "%s", label.c_str());
 
   ImGui::PopStyleColor(3);
   ImGui::PopStyleVar();
@@ -58,9 +65,11 @@ void DrawTransformComponent(Entity selection) {
   ImGui::PopStyleColor(3);
 
   bool removeComponent = false;
+  bool edited = false;
   if (ImGui::BeginPopup("TransformSettingsPopup")) {
     if (ImGui::MenuItem("Reset")) {
       component = TransformComponent();
+      edited = true;
       ImGui::CloseCurrentPopup();
     }
     ImGui::Separator();
@@ -74,13 +83,32 @@ void DrawTransformComponent(Entity selection) {
   if (open) {
     ImGui::Spacing();
 
-    ImGuiDraw::Vec3("Position", component.LocalPosition, 0.1f, 0.0f, 0.0f);
+    if (ImGuiDraw::Vec3("Position", component.LocalPosition, 0.1f, 0.0f, 0.0f)) {
+      edited = true;
+    }
+
     glm::vec3 rotation = glm::degrees(component.LocalRotation);
-    ImGuiDraw::Vec3("Rotation", rotation, 0.1f, 0.0f, 0.0f);
-    component.LocalRotation = glm::radians(rotation);
-    ImGuiDraw::Vec3("Scale", component.LocalScale, 0.1f, 0.0f, 0.0f);
+    if (ImGuiDraw::Vec3("Rotation", rotation, 0.1f, 0.0f, 0.0f)) {
+      edited = true;
+      component.LocalRotation = glm::radians(rotation);
+    }
+
+    if (ImGuiDraw::Vec3("Scale", component.LocalScale, 0.1f, 0.0f, 0.0f)) {
+      edited = true;
+    }
 
     ImGui::TreePop();
+  }
+
+  if (edited) {
+    component.EditDirty = true;
+    Entity root = selection;
+    if (rc.Parent != 0) {
+      root = selection.GetRootParent();
+    }
+
+    if (root.HasComponent<PrefabLinkComponent>() && rc.Parent != 0)
+      component.PrefabDirty = true;
   }
 }
 
@@ -102,8 +130,15 @@ void DrawSpriteRendererComponent(Entity selection) {
   ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.22f, 0.24f, 0.28f, 1.0f));
 
   float lineHeight = ImGui::GetFrameHeight();
+  std::string label = "SpriteRenderer";
+
+  if (component.PrefabDirty)
+    label += " P";
+  if (component.EditDirty)
+    label += "*";
+
   bool open = ImGui::TreeNodeEx(reinterpret_cast<void *>(typeid(SpriteRendererComponent).hash_code()),
-                                treeNodeFlags, "Sprite Renderer");
+                                treeNodeFlags, "%s", label.c_str());
 
   ImGui::PopStyleColor(3);
   ImGui::PopStyleVar();
@@ -121,9 +156,11 @@ void DrawSpriteRendererComponent(Entity selection) {
   ImGui::PopStyleColor(3);
 
   bool removeComponent = false;
+  bool edited = false;
   if (ImGui::BeginPopup("SpriteRendererSettingsPopup")) {
     if (ImGui::MenuItem("Reset")) {
       component = SpriteRendererComponent();
+      edited = true;
       ImGui::CloseCurrentPopup();
     }
     ImGui::Separator();
@@ -189,6 +226,7 @@ void DrawSpriteRendererComponent(Entity selection) {
           const AssetType type = AssetManager::GetAssetType(droppedHandle);
           if (type == AssetType::Texture2D) {
             component.Texture = droppedHandle;
+            edited = true;
           } else {
             CE_API_WARN("Cannot explicitly convert {0} to Texture2D", AssetTypeToString(type));
           }
@@ -201,12 +239,18 @@ void DrawSpriteRendererComponent(Entity selection) {
       ImGui::SameLine(0.0f, 4.0f);
       if (ImGui::Button("x##ClearSprite", ImVec2(ImGui::GetFrameHeight(), 0.0f))) {
         component.Texture = 0;
+        edited = true;
       }
     }
     ImGui::EndGroup();
 
-    ImGuiDraw::ColorEdit4("Color", component.Color);
-    ImGuiDraw::Vec1("Tiling Factor", component.TilingFactor, 0.1f, 0.0f, 100.0f);
+    if (ImGuiDraw::ColorEdit4("Color", component.Color)) {
+      edited = true;
+    }
+
+    if (ImGuiDraw::Vec1("Tiling Factor", component.TilingFactor, 0.1f, 0.0f, 100.0f)) {
+      edited = true;
+    }
 
     if (previewTexture && previewTexture->GetWidth() > 0 && previewTexture->GetHeight() > 0) {
       ImGui::Spacing();
@@ -226,8 +270,22 @@ void DrawSpriteRendererComponent(Entity selection) {
     ImGui::TreePop();
   }
 
+  if (edited) {
+    component.EditDirty = true;
+    auto &rc = selection.GetComponent<RelationshipComponent>();
+    Entity root = selection;
+    if (rc.Parent != 0) {
+      root = selection.GetRootParent();
+    }
+
+    if (root.HasComponent<PrefabLinkComponent>() && rc.Parent != 0)
+      component.PrefabDirty = true;
+  }
+
   if (removeComponent) {
     selection.RemoveComponent<SpriteRendererComponent>();
+    auto &osc = selection.GetComponent<ObjectStateComponent>();
+    osc.DeletedComponents.push_back("Sprite Renderer");
   }
 }
 
@@ -249,8 +307,15 @@ void DrawCircleRendererComponent(Entity selection) {
   ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.22f, 0.24f, 0.28f, 1.0f));
 
   float lineHeight = ImGui::GetFrameHeight();
+  std::string label = "CircleRenderer";
+
+  if (component.PrefabDirty)
+    label += " P";
+  if (component.EditDirty)
+    label += "*";
+
   bool open = ImGui::TreeNodeEx(reinterpret_cast<void *>(typeid(CircleRendererComponent).hash_code()),
-                                treeNodeFlags, "Circle Renderer");
+                                treeNodeFlags, "%s", label.c_str());
 
   ImGui::PopStyleColor(3);
   ImGui::PopStyleVar();
@@ -267,9 +332,11 @@ void DrawCircleRendererComponent(Entity selection) {
   ImGui::PopStyleColor(3);
 
   bool removeComponent = false;
+  bool edited = false;
   if (ImGui::BeginPopup("CircleRendererSettingsPopup")) {
     if (ImGui::MenuItem("Reset")) {
       component = CircleRendererComponent();
+      edited = true;
       ImGui::CloseCurrentPopup();
     }
     ImGui::Separator();
@@ -282,14 +349,38 @@ void DrawCircleRendererComponent(Entity selection) {
 
   if (open) {
     ImGui::Spacing();
-    ImGuiDraw::ColorEdit4("Color", component.Color);
-    ImGuiDraw::Vec1("Thickness", component.Thickness, 0.025f, 0.f, 1.f);
-    ImGuiDraw::Vec1("Fade", component.Fade, 0.00025f, 0.f, 1.f);
+    if (ImGuiDraw::ColorEdit4("Color", component.Color)) {
+      edited = true;
+    }
+
+    if (ImGuiDraw::Vec1("Thickness", component.Thickness, 0.025f, 0.f, 1.f)) {
+      edited = true;
+    }
+
+    if (ImGuiDraw::Vec1("Fade", component.Fade, 0.00025f, 0.f, 1.f)) {
+      edited = true;
+    }
+
     ImGui::TreePop();
   }
 
-  if (removeComponent)
+  if (edited) {
+    component.EditDirty = true;
+    auto &rc = selection.GetComponent<RelationshipComponent>();
+    Entity root = selection;
+    if (rc.Parent != 0) {
+      root = selection.GetRootParent();
+    }
+
+    if (root.HasComponent<PrefabLinkComponent>() && rc.Parent != 0)
+      component.PrefabDirty = true;
+  }
+
+  if (removeComponent) {
     selection.RemoveComponent<CircleRendererComponent>();
+    auto &osc = selection.GetComponent<ObjectStateComponent>();
+    osc.DeletedComponents.push_back("Circle Renderer");
+  }
 }
 
 void DrawCameraComponent(Entity selection) {
@@ -310,8 +401,15 @@ void DrawCameraComponent(Entity selection) {
   ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.22f, 0.24f, 0.28f, 1.0f));
 
   float lineHeight = ImGui::GetFrameHeight();
+  std::string label = "Camera";
+
+  if (component.PrefabDirty)
+    label += " P";
+  if (component.EditDirty)
+    label += "*";
+
   bool open = ImGui::TreeNodeEx(reinterpret_cast<void *>(typeid(CircleRendererComponent).hash_code()),
-                                treeNodeFlags, "Camera");
+                                treeNodeFlags, "%s", label.c_str());
 
   ImGui::PopStyleColor(3);
   ImGui::PopStyleVar();
@@ -328,9 +426,11 @@ void DrawCameraComponent(Entity selection) {
   ImGui::PopStyleColor(3);
 
   bool removeComponent = false;
+  bool edited = false;
   if (ImGui::BeginPopup("CameraSettingsPopup")) {
     if (ImGui::MenuItem("Reset")) {
       component = CameraComponent();
+      edited = true;
       ImGui::CloseCurrentPopup();
     }
     ImGui::Separator();
@@ -350,11 +450,11 @@ void DrawCameraComponent(Entity selection) {
         projectionTypeString[(int)camera.GetProjectionType()];
     if (ImGui::BeginCombo("Projection", currentProjectionTypeString)) {
       for (int i = 0; i < 2; i++) {
-        bool isSelected =
-            currentProjectionTypeString == projectionTypeString[i];
+        bool isSelected = currentProjectionTypeString == projectionTypeString[i];
         if (ImGui::Selectable(projectionTypeString[i], &isSelected)) {
           currentProjectionTypeString = projectionTypeString[i];
           camera.SetProjectionType((SceneCamera::ProjectionType)i);
+          edited = true;
         }
 
         if (isSelected)
@@ -365,8 +465,7 @@ void DrawCameraComponent(Entity selection) {
     auto &primary = component.Primary;
     ImGuiDraw::CheckBox("Primary Camera", primary);
 
-    if (camera.GetProjectionType() ==
-        SceneCamera::ProjectionType::Perspectice) {
+    if (camera.GetProjectionType() == SceneCamera::ProjectionType::Perspectice) {
       auto vertFov = glm::degrees(camera.GetPerspectiveVerticalFov());
       if (ImGuiDraw::Vec1("Vertical FOV", vertFov))
         camera.SetPerspectiveVerticalFov(glm::radians(vertFov));
@@ -380,8 +479,7 @@ void DrawCameraComponent(Entity selection) {
         camera.SetPerspectiveFarClip(farClip);
     }
 
-    if (camera.GetProjectionType() ==
-        SceneCamera::ProjectionType::Orthographic) {
+    if (camera.GetProjectionType() == SceneCamera::ProjectionType::Orthographic) {
       auto size = camera.GetOrthographicSize();
       if (ImGuiDraw::Vec1("FOV", size))
         camera.SetOrthographicSize(size);
@@ -396,12 +494,29 @@ void DrawCameraComponent(Entity selection) {
     }
 
     auto &fixed = component.FixedAspectRatio;
-    ImGuiDraw::CheckBox("Fixed Aspect Ratio", fixed);
+    if (ImGuiDraw::CheckBox("Fixed Aspect Ratio", fixed)) {
+      edited = true;
+    }
     ImGui::TreePop();
   }
 
-  if (removeComponent)
+  if (edited) {
+    component.EditDirty = true;
+    auto &rc = selection.GetComponent<RelationshipComponent>();
+    Entity root = selection;
+    if (rc.Parent != 0) {
+      root = selection.GetRootParent();
+    }
+
+    if (root.HasComponent<PrefabLinkComponent>() && rc.Parent != 0)
+      component.PrefabDirty = true;
+  }
+
+  if (removeComponent) {
     selection.RemoveComponent<CameraComponent>();
+    auto &osc = selection.GetComponent<ObjectStateComponent>();
+    osc.DeletedComponents.push_back("Camera");
+  }
 }
 
 void DrawRigidbody2DComponent(Entity selection) {
@@ -422,8 +537,15 @@ void DrawRigidbody2DComponent(Entity selection) {
   ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.22f, 0.24f, 0.28f, 1.0f));
 
   float lineHeight = ImGui::GetFrameHeight();
+  std::string label = "Rigidbody2D";
+
+  if (component.PrefabDirty)
+    label += " P";
+  if (component.EditDirty)
+    label += "*";
+
   bool open = ImGui::TreeNodeEx(reinterpret_cast<void *>(typeid(CircleRendererComponent).hash_code()),
-                                treeNodeFlags, "Rigidbody2D");
+                                treeNodeFlags, "%s", label.c_str());
 
   ImGui::PopStyleColor(3);
   ImGui::PopStyleVar();
@@ -440,9 +562,11 @@ void DrawRigidbody2DComponent(Entity selection) {
   ImGui::PopStyleColor(3);
 
   bool removeComponent = false;
+  bool edited = false;
   if (ImGui::BeginPopup("Rigidbody2DSettingsPopup")) {
     if (ImGui::MenuItem("Reset")) {
       component = Rigidbody2DComponent();
+      edited = true;
       ImGui::CloseCurrentPopup();
     }
     ImGui::Separator();
@@ -462,6 +586,7 @@ void DrawRigidbody2DComponent(Entity selection) {
         if (ImGui::Selectable(bodyTypeString[i], &isSelected)) {
           currentBodyTypeString = bodyTypeString[i];
           component.Type = (Rigidbody2DComponent::BodyType)i;
+          edited = true;
         }
 
         if (isSelected)
@@ -470,12 +595,29 @@ void DrawRigidbody2DComponent(Entity selection) {
       ImGui::EndCombo();
     }
 
-    ImGuiDraw::CheckBox("Fixed Rotation", component.FixedRotation);
+    if (ImGuiDraw::CheckBox("Fixed Rotation", component.FixedRotation)) {
+      edited = true;
+    }
     ImGui::TreePop();
   }
 
-  if (removeComponent)
+  if (edited) {
+    component.EditDirty = true;
+    auto &rc = selection.GetComponent<RelationshipComponent>();
+    Entity root = selection;
+    if (rc.Parent != 0) {
+      root = selection.GetRootParent();
+    }
+
+    if (root.HasComponent<PrefabLinkComponent>() && rc.Parent != 0)
+      component.PrefabDirty = true;
+  }
+
+  if (removeComponent) {
     selection.RemoveComponent<Rigidbody2DComponent>();
+    auto &osc = selection.GetComponent<ObjectStateComponent>();
+    osc.DeletedComponents.push_back("Rigidbody2D");
+  }
 }
 
 void DrawBoxCollider2DComponent(Entity selection) {
@@ -496,8 +638,15 @@ void DrawBoxCollider2DComponent(Entity selection) {
   ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.22f, 0.24f, 0.28f, 1.0f));
 
   float lineHeight = ImGui::GetFrameHeight();
+  std::string label = "BoxCollider2D";
+
+  if (component.PrefabDirty)
+    label += " P";
+  if (component.EditDirty)
+    label += "*";
+
   bool open = ImGui::TreeNodeEx(reinterpret_cast<void *>(typeid(BoxCollider2DComponent).hash_code()),
-                                treeNodeFlags, "BoxCollider2D");
+                                treeNodeFlags, "%s", label.c_str());
 
   ImGui::PopStyleColor(3);
   ImGui::PopStyleVar();
@@ -514,9 +663,11 @@ void DrawBoxCollider2DComponent(Entity selection) {
   ImGui::PopStyleColor(3);
 
   bool removeComponent = false;
+  bool edited = false;
   if (ImGui::BeginPopup("BoxCollider2DSettingsPopup")) {
     if (ImGui::MenuItem("Reset")) {
       component = BoxCollider2DComponent();
+      edited = true;
       ImGui::CloseCurrentPopup();
     }
     ImGui::Separator();
@@ -530,22 +681,53 @@ void DrawBoxCollider2DComponent(Entity selection) {
   if (open) {
     ImGui::Spacing();
 
-    ImGuiDraw::Vec2("Offset", component.Offset);
-    ImGuiDraw::Vec2("Size", component.Size, 0.025f, 0.0001f, 100000.f);
-    ImGuiDraw::Vec1("Rotation", component.Rotation, 0.025f, 0, 0);
-    ImGuiDraw::CheckBox("Show Collider", component.ShowColliderBounds);
-    ImGuiDraw::CheckBox("IsTrigger", component.IsTrigger);
-    ImGuiDraw::Vec1("Density", component.Density, 0.025f, 0.0001f, 100000.f);
-    ImGuiDraw::Vec1("Friction", component.Friction, 0.025f, 0.0001f, 100000.f);
-    ImGuiDraw::Vec1("Restitution", component.Restitution, 0.025f, 0.0001f,
-                    100000.f);
-    ImGuiDraw::Vec1("Restitution Threshold", component.RestitutionThreshold,
-                    0.025f, 0.0001f, 100000.f);
+    if (ImGuiDraw::Vec2("Offset", component.Offset))
+      edited = true;
+
+    if (ImGuiDraw::Vec2("Size", component.Size, 0.025f, 0.0001f, 100000.f))
+      edited = true;
+
+    if (ImGuiDraw::Vec1("Rotation", component.Rotation, 0.025f, 0, 0))
+      edited = true;
+
+    if (ImGuiDraw::CheckBox("Show Collider", component.ShowColliderBounds))
+      edited = true;
+
+    if (ImGuiDraw::CheckBox("IsTrigger", component.IsTrigger))
+      edited = true;
+
+    if (ImGuiDraw::Vec1("Density", component.Density, 0.025f, 0.0001f, 100000.f))
+      edited = true;
+
+    if (ImGuiDraw::Vec1("Friction", component.Friction, 0.025f, 0.0001f, 100000.f))
+      edited = true;
+
+    if (ImGuiDraw::Vec1("Restitution", component.Restitution, 0.025f, 0.0001f, 100000.f))
+      edited = true;
+
+    if (ImGuiDraw::Vec1("Restitution Threshold", component.RestitutionThreshold, 0.025f, 0.0001f, 100000.f))
+      edited = true;
+
     ImGui::TreePop();
   }
 
-  if (removeComponent)
+  if (edited) {
+    component.EditDirty = true;
+    auto &rc = selection.GetComponent<RelationshipComponent>();
+    Entity root = selection;
+    if (rc.Parent != 0) {
+      root = selection.GetRootParent();
+    }
+
+    if (root.HasComponent<PrefabLinkComponent>() && rc.Parent != 0)
+      component.PrefabDirty = true;
+  }
+
+  if (removeComponent) {
     selection.RemoveComponent<BoxCollider2DComponent>();
+    auto &osc = selection.GetComponent<ObjectStateComponent>();
+    osc.DeletedComponents.push_back("BoxCollider2D");
+  }
 }
 
 void DrawCircleCollider2DComponent(Entity selection) {
@@ -566,8 +748,15 @@ void DrawCircleCollider2DComponent(Entity selection) {
   ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.22f, 0.24f, 0.28f, 1.0f));
 
   float lineHeight = ImGui::GetFrameHeight();
+  std::string label = "CircleCollider2D";
+
+    if (component.PrefabDirty)
+      label += " P";
+    if (component.EditDirty)
+      label += "*";
+
   bool open = ImGui::TreeNodeEx(reinterpret_cast<void *>(typeid(CircleCollider2DComponent).hash_code()),
-                                treeNodeFlags, "CircleCollider2D");
+                                treeNodeFlags, "%s", label.c_str());
 
   ImGui::PopStyleColor(3);
   ImGui::PopStyleVar();
@@ -584,9 +773,11 @@ void DrawCircleCollider2DComponent(Entity selection) {
   ImGui::PopStyleColor(3);
 
   bool removeComponent = false;
+  bool edited = false;
   if (ImGui::BeginPopup("CircleCollider2DSettingsPopup")) {
     if (ImGui::MenuItem("Reset")) {
       component = CircleCollider2DComponent();
+      edited = true;
       ImGui::CloseCurrentPopup();
     }
     ImGui::Separator();
@@ -599,28 +790,48 @@ void DrawCircleCollider2DComponent(Entity selection) {
 
   if (open) {
     ImGui::Spacing();
-    glm::vec2 &offset = component.Offset;
-    float &size = component.Radius;
 
-    float &density = component.Density;
-    float &friction = component.Friction;
-    float &restitution = component.Restitution;
-    float &restitutionThreshold = component.RestitutionThreshold;
+    if (ImGuiDraw::Vec2("Offset", component.Offset))
+      edited = true;
 
-    ImGuiDraw::Vec2("Offset", component.Offset);
-    ImGuiDraw::Vec1("Radius", component.Radius, 0.025f, 0.0001f, 100000.f);
-    ImGuiDraw::CheckBox("Show Collider", component.ShowColliderBounds);
-    ImGuiDraw::Vec1("Density", component.Density, 0.025f, 0.0001f, 100000.f);
-    ImGuiDraw::Vec1("Friction", component.Friction, 0.025f, 0.0001f, 100000.f);
-    ImGuiDraw::Vec1("Restitution", component.Restitution, 0.025f, 0.0001f,
-                    100000.f);
-    ImGuiDraw::Vec1("Restitution Threshold", component.RestitutionThreshold,
-                    0.025f, 0.0001f, 100000.f);
+    if (ImGuiDraw::Vec1("Radius", component.Radius, 0.025f, 0.0001f, 100000.f))
+      edited = true;
+
+    if (ImGuiDraw::CheckBox("Show Collider", component.ShowColliderBounds))
+      edited = true;
+
+    if (ImGuiDraw::Vec1("Density", component.Density, 0.025f, 0.0001f, 100000.f))
+      edited = true;
+
+    if (ImGuiDraw::Vec1("Friction", component.Friction, 0.025f, 0.0001f, 100000.f))
+      edited = true;
+
+    if (ImGuiDraw::Vec1("Restitution", component.Restitution, 0.025f, 0.0001f, 100000.f))
+      edited = true;
+
+    if (ImGuiDraw::Vec1("Restitution Threshold", component.RestitutionThreshold, 0.025f, 0.0001f, 100000.f))
+      edited = true;
+
     ImGui::TreePop();
   }
 
-  if (removeComponent)
+  if (edited) {
+    component.EditDirty = true;
+    auto &rc = selection.GetComponent<RelationshipComponent>();
+    Entity root = selection;
+    if (rc.Parent != 0) {
+      root = selection.GetRootParent();
+    }
+
+    if (root.HasComponent<PrefabLinkComponent>() && rc.Parent != 0)
+      component.PrefabDirty = true;
+  }
+
+  if (removeComponent) {
     selection.RemoveComponent<CircleCollider2DComponent>();
+    auto &osc = selection.GetComponent<ObjectStateComponent>();
+    osc.DeletedComponents.push_back("CircleCollider2D");
+  }
 }
 
 void DrawRuntimeScriptVector(const ScriptField &field, const int &index,
@@ -628,7 +839,6 @@ void DrawRuntimeScriptVector(const ScriptField &field, const int &index,
   // Wrap the entire element drawing inside ImGui::BeginDisabled to block
   // interaction
   ImGui::BeginDisabled(true);
-
   switch (field.ElementType) {
     case DataType::Short: {
       int16_t val = *reinterpret_cast<int16_t *>(elementPtr);
@@ -768,145 +978,173 @@ void DrawRuntimeScriptVector(const ScriptField &field, const int &index,
   ImGui::EndDisabled();
 }
 
-void DrawRuntimeScriptComponents(const ScriptField &field,
+bool DrawRuntimeScriptComponents(const ScriptField &field,
                                  Ref<ScriptInstance> scriptInstance,
                                  Ref<Scene> context) {
   switch (field.Type) {
-  case DataType::Short: {
-    int16_t data = scriptInstance->GetFieldData<int16_t>(field.Name);
-    if (ImGuiDraw::Int1(field.Name, (int &)data))
-      scriptInstance->SetFieldData(field.Name, data);
-    break;
-  }
-  case DataType::UShort: {
-    uint16_t data = scriptInstance->GetFieldData<uint16_t>(field.Name);
-    if (ImGuiDraw::Int1(field.Name, (int &)data))
-      scriptInstance->SetFieldData(field.Name, data);
-    break;
-  }
-  case DataType::Int: {
-    int32_t data = scriptInstance->GetFieldData<int32_t>(field.Name);
-    if (ImGuiDraw::Int1(field.Name, data))
-      scriptInstance->SetFieldData(field.Name, data);
-    break;
-  }
-  case DataType::UInt: {
-    uint32_t data = scriptInstance->GetFieldData<uint32_t>(field.Name);
-    if (ImGuiDraw::Int1(field.Name, (int &)data))
-      scriptInstance->SetFieldData(field.Name, data);
-    break;
-  }
-  case DataType::Long: {
-    int64_t data = scriptInstance->GetFieldData<int64_t>(field.Name);
-    if (ImGuiDraw::Int1(field.Name, (int &)data))
-      scriptInstance->SetFieldData(field.Name, data);
-    break;
-  }
-  case DataType::ULong: {
-    uint64_t data = scriptInstance->GetFieldData<uint64_t>(field.Name);
-    if (ImGuiDraw::Int1(field.Name, (int &)data))
-      scriptInstance->SetFieldData(field.Name, data);
-    break;
-  }
-  case DataType::Float: {
-    float data = scriptInstance->GetFieldData<float>(field.Name);
-    if (ImGuiDraw::Vec1(field.Name, data))
-      scriptInstance->SetFieldData(field.Name, data);
-    break;
-  }
-  case DataType::Double: {
-    double data = scriptInstance->GetFieldData<double>(field.Name);
-    if (ImGuiDraw::Vec1(field.Name, (float &)data))
-      scriptInstance->SetFieldData(field.Name, data);
-    break;
-  }
-  case DataType::Bool: {
-    bool data = scriptInstance->GetFieldData<bool>(field.Name);
-    if (ImGuiDraw::CheckBox(field.Name, data))
-      scriptInstance->SetFieldData(field.Name, data);
-    break;
-  }
-  case DataType::Vector2: {
-    glm::vec2 data = scriptInstance->GetFieldData<glm::vec2>(field.Name);
-    if (ImGuiDraw::Vec2(field.Name, data))
-      scriptInstance->SetFieldData(field.Name, data);
-    break;
-  }
-  case DataType::Vector3: {
-    glm::vec3 data = scriptInstance->GetFieldData<glm::vec3>(field.Name);
-    if (ImGuiDraw::Vec3(field.Name, data))
-      scriptInstance->SetFieldData(field.Name, data);
-    break;
-  }
-  case DataType::Vector4: {
-    glm::vec4 data = scriptInstance->GetFieldData<glm::vec4>(field.Name);
-    if (ImGuiDraw::Vec4(field.Name, data))
-      scriptInstance->SetFieldData(field.Name, data);
-    break;
-  }
-  case DataType::DynamicVector: {
-    // Retrieve vector data live from the running script instance buffer
-    VectorBuffer data = scriptInstance->GetVectorFieldData(field.Name);
-    uint64_t count = data.GetCount();
-
-    if (count != 0) {
-      if (ImGui::TreeNodeEx(field.Name.c_str(), ImGuiTreeNodeFlags_SpanAvailWidth)) {
-        for (size_t i = 0; i < count; ++i) {
-          void *elementPtr = data.GetElementPointer(i, field.ElementSize);
-          if (elementPtr) {
-            DrawRuntimeScriptVector(field, static_cast<int>(i), elementPtr, context);
-          }
-        }
-        ImGui::TreePop();
+    case DataType::Short: {
+      int16_t data = scriptInstance->GetFieldData<int16_t>(field.Name);
+      if (ImGuiDraw::Int1(field.Name, (int &)data)) {
+        scriptInstance->SetFieldData(field.Name, data);
+        return true;
       }
-    } else {
-      ImGuiDraw::StaticString(field.Name, "(empty)");
+      break;
     }
-    break;
-  }  case DataType::Entity: {
-    uint64_t data = scriptInstance->GetFieldData<uint64_t>(field.Name);
-    std::string labelName = context->GetEntityByUUID(data).GetName();
-    labelName = labelName.empty() ? "(empty)" : labelName;
-    labelName.append(" (Entity)");
-    ImGuiDraw::DataField(field.Name, labelName);
-    break;
-  }
-  case DataType::Texture2D: {
-    uint64_t data = scriptInstance->GetFieldData<uint64_t>(field.Name);
-    std::string labelName = Project::GetActive()
-                                ->GetEditorAssetManager()
-                                ->GetMetaData(data)
-                                .AssetName;
-    labelName = labelName.empty() ? "(empty)" : labelName;
-    labelName.append("(" + field.TypeName + ")");
-    ImGuiDraw::DataField(field.Name, labelName);
-    break;
+    case DataType::UShort: {
+      uint16_t data = scriptInstance->GetFieldData<uint16_t>(field.Name);
+      if (ImGuiDraw::Int1(field.Name, (int &)data)) {
+        scriptInstance->SetFieldData(field.Name, data);
+        return true;
+      }
+      break;
     }
-    case DataType::Prefab: {
+    case DataType::Int: {
+      int32_t data = scriptInstance->GetFieldData<int32_t>(field.Name);
+      if (ImGuiDraw::Int1(field.Name, data)) {
+        scriptInstance->SetFieldData(field.Name, data);
+        return true;
+      }
+      break;
+    }
+    case DataType::UInt: {
+      uint32_t data = scriptInstance->GetFieldData<uint32_t>(field.Name);
+      if (ImGuiDraw::Int1(field.Name, (int &)data)) {
+        scriptInstance->SetFieldData(field.Name, data);
+        return true;
+      }
+      break;
+    }
+    case DataType::Long: {
+      int64_t data = scriptInstance->GetFieldData<int64_t>(field.Name);
+      if (ImGuiDraw::Int1(field.Name, (int &)data)) {
+        scriptInstance->SetFieldData(field.Name, data);
+        return true;
+      }
+      break;
+    }
+    case DataType::ULong: {
+      uint64_t data = scriptInstance->GetFieldData<uint64_t>(field.Name);
+      if (ImGuiDraw::Int1(field.Name, (int &)data)) {
+        scriptInstance->SetFieldData(field.Name, data);
+        return true;
+      }
+      break;
+    }
+    case DataType::Float: {
+      float data = scriptInstance->GetFieldData<float>(field.Name);
+      if (ImGuiDraw::Vec1(field.Name, data)) {
+        scriptInstance->SetFieldData(field.Name, data);
+        return true;
+      }
+      break;
+    }
+    case DataType::Double: {
+      double data = scriptInstance->GetFieldData<double>(field.Name);
+      if (ImGuiDraw::Vec1(field.Name, (float &)data)) {
+        scriptInstance->SetFieldData(field.Name, data);
+        return true;
+      }
+      break;
+    }
+    case DataType::Bool: {
+      bool data = scriptInstance->GetFieldData<bool>(field.Name);
+      if (ImGuiDraw::CheckBox(field.Name, data)) {
+        scriptInstance->SetFieldData(field.Name, data);
+        return true;
+      }
+      break;
+    }
+    case DataType::Vector2: {
+      glm::vec2 data = scriptInstance->GetFieldData<glm::vec2>(field.Name);
+      if (ImGuiDraw::Vec2(field.Name, data)) {
+        scriptInstance->SetFieldData(field.Name, data);
+        return true;
+      }
+      break;
+    }
+    case DataType::Vector3: {
+      glm::vec3 data = scriptInstance->GetFieldData<glm::vec3>(field.Name);
+      if (ImGuiDraw::Vec3(field.Name, data)) {
+        scriptInstance->SetFieldData(field.Name, data);
+        return true;
+      }
+      break;
+    }
+    case DataType::Vector4: {
+      glm::vec4 data = scriptInstance->GetFieldData<glm::vec4>(field.Name);
+      if (ImGuiDraw::Vec4(field.Name, data)) {
+        scriptInstance->SetFieldData(field.Name, data);
+        return true;
+      }
+      break;
+    }
+    case DataType::DynamicVector: {
+      // Retrieve vector data live from the running script instance buffer
+      VectorBuffer data = scriptInstance->GetVectorFieldData(field.Name);
+      uint64_t count = data.GetCount();
+      bool modified = false;
+
+      if (count != 0) {
+        if (ImGui::TreeNodeEx(field.Name.c_str(), ImGuiTreeNodeFlags_SpanAvailWidth)) {
+          for (size_t i = 0; i < count; ++i) {
+            void *elementPtr = data.GetElementPointer(i, field.ElementSize);
+            if (elementPtr) {
+              DrawRuntimeScriptVector(field, static_cast<int>(i), elementPtr, context);
+            }
+          }
+          ImGui::TreePop();
+        }
+      } else {
+        ImGuiDraw::StaticString(field.Name, "(empty)");
+      }
+      break;
+    }
+    case DataType::Entity: {
+      uint64_t data = scriptInstance->GetFieldData<uint64_t>(field.Name);
+      std::string labelName = context->GetEntityByUUID(data).GetName();
+      labelName = labelName.empty() ? "(empty)" : labelName;
+      labelName.append(" (Entity)");
+      ImGuiDraw::DataField(field.Name, labelName);
+      break;
+    }
+    case DataType::Texture2D: {
       uint64_t data = scriptInstance->GetFieldData<uint64_t>(field.Name);
       std::string labelName = Project::GetActive()
-        ->GetEditorAssetManager()
-        ->GetMetaData(data)
-        .AssetName;
+                                  ->GetEditorAssetManager()
+                                  ->GetMetaData(data)
+                                  .AssetName;
       labelName = labelName.empty() ? "(empty)" : labelName;
       labelName.append("(" + field.TypeName + ")");
       ImGuiDraw::DataField(field.Name, labelName);
       break;
     }
-  case DataType::ScriptComponent:
-    uint64_t data = scriptInstance->GetFieldData<uint64_t>(field.Name);
-    std::string label = "";
-    std::string entityName = "";
+    case DataType::Prefab: {
+      uint64_t data = scriptInstance->GetFieldData<uint64_t>(field.Name);
+      std::string labelName = Project::GetActive()
+                                  ->GetEditorAssetManager()
+                                  ->GetMetaData(data)
+                                  .AssetName;
+      labelName = labelName.empty() ? "(empty)" : labelName;
+      labelName.append("(" + field.TypeName + ")");
+      ImGuiDraw::DataField(field.Name, labelName);
+      break;
+    }
+    case DataType::ScriptComponent: {
+      uint64_t data = scriptInstance->GetFieldData<uint64_t>(field.Name);
+      std::string label = "";
+      std::string entityName = "";
 
-    entityName = context->GetEntityByUUID(data).GetName();
-    label = "(" + entityName + ") ";
+      entityName = context->GetEntityByUUID(data).GetName();
+      label = "(" + entityName + ") ";
 
-    label = label.empty() ? "(empty) " : label + "(" + field.TypeName + ")";
-    ImGuiDraw::DataField(field.Name, label);
-    break;
+      label = label.empty() ? "(empty) " : label + "(" + field.TypeName + ")";
+      ImGuiDraw::DataField(field.Name, label);
+      break;
+    }
   }
-}
 
+  return false;
+}
 bool DrawEditTimeScriptVector(const ScriptField &field, const int &index,
                               void *elementPtr, Ref<Scene> context,
                               Entity selection) {
@@ -1080,6 +1318,7 @@ bool DrawEditTimeScriptVector(const ScriptField &field, const int &index,
 
           if (metaData.Type == AssetType::Texture2D) {
             *assetIDPtr = value;
+            interaction = true;
           }
         }
         ImGui::EndDragDropTarget();
@@ -1125,6 +1364,7 @@ bool DrawEditTimeScriptVector(const ScriptField &field, const int &index,
 
           if (metaData.Type == AssetType::Prefab) {
             *assetIDPtr = value;
+            interaction = true;
           }
         }
         ImGui::EndDragDropTarget();
@@ -1216,7 +1456,7 @@ bool DrawEditTimeScriptVector(const ScriptField &field, const int &index,
   return interaction;
 }
 
-void DrawEditTimeScriptComponents(const UUID &fieldID, const ScriptField &field,
+bool DrawEditTimeScriptComponents(const UUID &fieldID, const ScriptField &field,
                                   Ref<Scene> context, Entity selection,
                                   FieldMap &fieldMap) {
   bool hasInstance = (fieldMap.find(fieldID) != fieldMap.end());
@@ -1239,222 +1479,235 @@ void DrawEditTimeScriptComponents(const UUID &fieldID, const ScriptField &field,
   };
 
   switch (field.Type) {
-  case DataType::Short: {
-    int16_t data = hasInstance ? fieldMap[fieldID].GetValue<int16_t>()
-                               : (!field.DefaultValue.empty()
-                                      ? *(int16_t *)field.DefaultValue.data()
-                                      : 0);
-    if (ImGuiDraw::Int1(field.Name, (int &)data)) {
-      getOrCreateInstance().SetValue(data);
+    case DataType::Short: {
+      int16_t data = hasInstance ? fieldMap[fieldID].GetValue<int16_t>()
+        : (!field.DefaultValue.empty()
+        ? *(int16_t *)field.DefaultValue.data()
+        : 0);
+      if (ImGuiDraw::Int1(field.Name, (int &)data)) {
+        getOrCreateInstance().SetValue(data);
+        return true;
+      }
+      break;
     }
-    break;
-  }
-  case DataType::UShort: {
-    uint16_t data = hasInstance ? fieldMap[fieldID].GetValue<uint16_t>()
-                                : (!field.DefaultValue.empty()
-                                       ? *(uint16_t *)field.DefaultValue.data()
-                                       : 0);
-    if (ImGuiDraw::Int1(field.Name, (int &)data)) {
-      getOrCreateInstance().SetValue(data);
+    case DataType::UShort: {
+      uint16_t data = hasInstance ? fieldMap[fieldID].GetValue<uint16_t>()
+        : (!field.DefaultValue.empty()
+        ? *(uint16_t *)field.DefaultValue.data()
+        : 0);
+      if (ImGuiDraw::Int1(field.Name, (int &)data)) {
+        getOrCreateInstance().SetValue(data);
+        return true;
+      }
+      break;
     }
-    break;
-  }
-  case DataType::Int: {
-    int32_t data = hasInstance ? fieldMap[fieldID].GetValue<int32_t>()
-                               : (!field.DefaultValue.empty()
-                                      ? *(int32_t *)field.DefaultValue.data()
-                                      : 0);
-    if (ImGuiDraw::Int1(field.Name, (int &)data)) {
-      getOrCreateInstance().SetValue(data);
+    case DataType::Int: {
+      int32_t data = hasInstance ? fieldMap[fieldID].GetValue<int32_t>()
+        : (!field.DefaultValue.empty()
+        ? *(int32_t *)field.DefaultValue.data()
+        : 0);
+      if (ImGuiDraw::Int1(field.Name, (int &)data)) {
+        getOrCreateInstance().SetValue(data);
+        return true;
+      }
+      break;
     }
-    break;
-  }
-  case DataType::UInt: {
-    uint32_t data = hasInstance ? fieldMap[fieldID].GetValue<uint32_t>()
-                                : (!field.DefaultValue.empty()
-                                       ? *(uint32_t *)field.DefaultValue.data()
-                                       : 0);
-    if (ImGuiDraw::Int1(field.Name, (int &)data)) {
-      getOrCreateInstance().SetValue(data);
+    case DataType::UInt: {
+      uint32_t data = hasInstance ? fieldMap[fieldID].GetValue<uint32_t>()
+        : (!field.DefaultValue.empty()
+        ? *(uint32_t *)field.DefaultValue.data()
+        : 0);
+      if (ImGuiDraw::Int1(field.Name, (int &)data)) {
+        getOrCreateInstance().SetValue(data);
+        return true;
+      }
+      break;
     }
-    break;
-  }
-  case DataType::Long: {
-    int64_t data = hasInstance ? fieldMap[fieldID].GetValue<int64_t>()
-                               : (!field.DefaultValue.empty()
-                                      ? *(int64_t *)field.DefaultValue.data()
-                                      : 0);
-    if (ImGuiDraw::Int1(field.Name, (int &)data)) {
-      getOrCreateInstance().SetValue(data);
+    case DataType::Long: {
+      int64_t data = hasInstance ? fieldMap[fieldID].GetValue<int64_t>()
+        : (!field.DefaultValue.empty()
+        ? *(int64_t *)field.DefaultValue.data()
+        : 0);
+      if (ImGuiDraw::Int1(field.Name, (int &)data)) {
+        getOrCreateInstance().SetValue(data);
+        return true;
+      }
+      break;
     }
-    break;
-  }
-  case DataType::ULong: {
-    uint64_t data = hasInstance ? fieldMap[fieldID].GetValue<uint64_t>()
-                                : (!field.DefaultValue.empty()
-                                       ? *(uint64_t *)field.DefaultValue.data()
-                                       : 0);
-    if (ImGuiDraw::Int1(field.Name, (int &)data)) {
-      getOrCreateInstance().SetValue(data);
+    case DataType::ULong: {
+      uint64_t data = hasInstance ? fieldMap[fieldID].GetValue<uint64_t>()
+        : (!field.DefaultValue.empty()
+        ? *(uint64_t *)field.DefaultValue.data()
+        : 0);
+      if (ImGuiDraw::Int1(field.Name, (int &)data)) {
+        getOrCreateInstance().SetValue(data);
+        return true;
+      }
+      break;
     }
-    break;
-  }
-  case DataType::Float: {
-    float data = hasInstance ? fieldMap[fieldID].GetValue<float>()
-                             : (!field.DefaultValue.empty()
-                                    ? *(float *)field.DefaultValue.data()
-                                    : 0.0f);
-    if (ImGuiDraw::Vec1(field.Name, data)) {
-      getOrCreateInstance().SetValue(data);
+    case DataType::Float: {
+      float data = hasInstance ? fieldMap[fieldID].GetValue<float>()
+        : (!field.DefaultValue.empty()
+        ? *(float *)field.DefaultValue.data()
+        : 0.0f);
+      if (ImGuiDraw::Vec1(field.Name, data)) {
+        getOrCreateInstance().SetValue(data);
+        return true;
+      }
+      break;
     }
-    break;
-  }
-  case DataType::Double: {
-    double data = hasInstance ? fieldMap[fieldID].GetValue<double>()
-                              : (!field.DefaultValue.empty()
-                                     ? *(double *)field.DefaultValue.data()
-                                     : 0.0);
-    if (ImGuiDraw::Vec1(field.Name, (float &)data)) {
-      getOrCreateInstance().SetValue(data);
+    case DataType::Double: {
+      double data = hasInstance ? fieldMap[fieldID].GetValue<double>()
+        : (!field.DefaultValue.empty()
+        ? *(double *)field.DefaultValue.data()
+        : 0.0);
+      if (ImGuiDraw::Vec1(field.Name, (float &)data)) {
+        getOrCreateInstance().SetValue(data);
+        return true;
+      }
+      break;
     }
-    break;
-  }
-  case DataType::Bool: {
-    bool data = hasInstance ? fieldMap[fieldID].GetValue<bool>()
-                            : (!field.DefaultValue.empty()
-                                   ? *(bool *)field.DefaultValue.data()
-                                   : false);
-    if (ImGuiDraw::CheckBox(field.Name, data)) {
-      getOrCreateInstance().SetValue(data);
+    case DataType::Bool: {
+      bool data = hasInstance ? fieldMap[fieldID].GetValue<bool>()
+        : (!field.DefaultValue.empty()
+        ? *(bool *)field.DefaultValue.data()
+        : false);
+      if (ImGuiDraw::CheckBox(field.Name, data)) {
+        getOrCreateInstance().SetValue(data);
+        return true;
+      }
+      break;
     }
-    break;
-  }
-  case DataType::Vector2: {
-    glm::vec2 data = hasInstance
-                         ? fieldMap[fieldID].GetValue<glm::vec2>()
-                         : (!field.DefaultValue.empty()
-                                ? *(glm::vec2 *)field.DefaultValue.data()
-                                : glm::vec2(0.0f));
-    if (ImGuiDraw::Vec2(field.Name, data)) {
-      getOrCreateInstance().SetValue(data);
+    case DataType::Vector2: {
+      glm::vec2 data = hasInstance
+        ? fieldMap[fieldID].GetValue<glm::vec2>()
+        : (!field.DefaultValue.empty()
+        ? *(glm::vec2 *)field.DefaultValue.data()
+        : glm::vec2(0.0f));
+      if (ImGuiDraw::Vec2(field.Name, data)) {
+        getOrCreateInstance().SetValue(data);
+        return true;
+      }
+      break;
     }
-    break;
-  }
-  case DataType::Vector3: {
-    glm::vec3 data = hasInstance
-                         ? fieldMap[fieldID].GetValue<glm::vec3>()
-                         : (!field.DefaultValue.empty()
-                                ? *(glm::vec3 *)field.DefaultValue.data()
-                                : glm::vec3(0.0f));
-    if (ImGuiDraw::Vec3(field.Name, data)) {
-      getOrCreateInstance().SetValue(data);
+    case DataType::Vector3: {
+      glm::vec3 data = hasInstance
+        ? fieldMap[fieldID].GetValue<glm::vec3>()
+        : (!field.DefaultValue.empty()
+        ? *(glm::vec3 *)field.DefaultValue.data()
+        : glm::vec3(0.0f));
+      if (ImGuiDraw::Vec3(field.Name, data)) {
+        getOrCreateInstance().SetValue(data);
+        return true;
+      }
+      break;
     }
-    break;
-  }
-  case DataType::Vector4: {
-    glm::vec4 data = hasInstance
-                         ? fieldMap[fieldID].GetValue<glm::vec4>()
-                         : (!field.DefaultValue.empty()
-                                ? *(glm::vec4 *)field.DefaultValue.data()
-                                : glm::vec4(0.0f));
-    if (ImGuiDraw::Vec4(field.Name, data)) {
-      getOrCreateInstance().SetValue(data);
+    case DataType::Vector4: {
+      glm::vec4 data = hasInstance
+        ? fieldMap[fieldID].GetValue<glm::vec4>()
+        : (!field.DefaultValue.empty()
+        ? *(glm::vec4 *)field.DefaultValue.data()
+        : glm::vec4(0.0f));
+      if (ImGuiDraw::Vec4(field.Name, data)) {
+        getOrCreateInstance().SetValue(data);
+        return true;
+      }
+      break;
     }
-    break;
-  }
-  case DataType::DynamicVector: {
-    VectorBuffer data = hasInstance ? fieldMap[fieldID].VectorData
-                                    : (!field.DefaultValue.empty()
-                                           ? VectorBuffer(field.DefaultValue)
-                                           : VectorBuffer());
+    case DataType::DynamicVector: {
+      VectorBuffer data = hasInstance ? fieldMap[fieldID].VectorData
+        : (!field.DefaultValue.empty()
+        ? VectorBuffer(field.DefaultValue)
+        : VectorBuffer());
 
-    uint64_t count = data.GetCount();
-    if (count != 0) {
-      std::string label = field.Name;
-      if (ImGui::TreeNodeEx(label.c_str(), ImGuiTreeNodeFlags_SpanAvailWidth)) {
-        for (size_t i = 0; i < count; ++i) {
-          void *elementPtr = data.GetElementPointer(i, field.ElementSize);
-          if (DrawEditTimeScriptVector(field, i, elementPtr, context,
+      uint64_t count = data.GetCount();
+      if (count != 0) {
+        std::string label = field.Name;
+        if (ImGui::TreeNodeEx(label.c_str(), ImGuiTreeNodeFlags_SpanAvailWidth)) {
+          for (size_t i = 0; i < count; ++i) {
+            void *elementPtr = data.GetElementPointer(i, field.ElementSize);
+            if (elementPtr &&
+              DrawEditTimeScriptVector(field, i, elementPtr, context,
                                        selection)) {
-            getOrCreateInstance().SetVectorValue(data.Data);
+              getOrCreateInstance().SetVectorValue(data.Data);
+              return true;
+            }
           }
+
+          ImGui::TreePop();
         }
-
-        ImGui::TreePop();
+      } else {
+        ImGuiDraw::StaticString(field.Name, "(empty)");
       }
-    } else {
-      ImGuiDraw::StaticString(field.Name, "(empty)");
-    }
 
-    // --- Right-aligned Buttons ---
-    // Calculate width for two small buttons (~20px each + spacing)
-    float buttonWidth = 20.0f;
-    float spacing = 4.0f;
-    float totalWidth = (buttonWidth * 2.0f) + spacing;
+      float buttonWidth = 20.0f;
+      float spacing = 4.0f;
+      float totalWidth = (buttonWidth * 2.0f) + spacing;
 
-    // Push the cursor over to the right side of the window/column
-    ImGui::SetCursorPosX(ImGui::GetCursorPosX() +
-                         ImGui::GetContentRegionAvail().x - totalWidth);
+      ImGui::SetCursorPosX(ImGui::GetCursorPosX() +
+                           ImGui::GetContentRegionAvail().x - totalWidth);
 
-    // Render '+' button
-    if (ImGui::Button("+", ImVec2(buttonWidth, 0))) {
-      data.PushBackDefault(field.ElementSize);
-      getOrCreateInstance().SetVectorValue(data.Data);
-    }
-
-    ImGui::SameLine(0.0f, spacing);
-    // Disable '-' button if count is 0
-    ImGui::BeginDisabled(count == 0);
-    if (ImGui::Button("-", ImVec2(buttonWidth, 0))) {
-      data.PopBack(field.ElementSize);
-      getOrCreateInstance().SetVectorValue(data.Data);
-    }
-    ImGui::EndDisabled();
-    break;
-  }
-  case DataType::Entity: {
-    uint64_t entityID = hasInstance
-                            ? fieldMap[fieldID].GetValue<uint64_t>()
-                            : (!field.DefaultValue.empty()
-                                   ? *(uint64_t *)field.DefaultValue.data()
-                                   : 0);
-    std::string labelName = (entityID != 0 && context)
-                                ? context->GetEntityByUUID(entityID).GetName()
-                                : "";
-    labelName = labelName.empty() ? "(empty)" : labelName;
-    labelName.append(" (" + field.TypeName + ")");
-
-    ImGuiDraw::DataField(field.Name, labelName);
-    if (ImGui::BeginDragDropTarget()) {
-      if (const ImGuiPayload *payload =
-              ImGui::AcceptDragDropPayload("SCENE_HIERARCHY_ITEM")) {
-        UUID droppedEntityID = *(UUID *)payload->Data;
-        getOrCreateInstance().SetValue(droppedEntityID.uuid());
+      if (ImGui::Button("+", ImVec2(buttonWidth, 0))) {
+        data.PushBackDefault(field.ElementSize);
+        getOrCreateInstance().SetVectorValue(data.Data);
+        return true;
       }
-      ImGui::EndDragDropTarget();
+
+      ImGui::SameLine(0.0f, spacing);
+      ImGui::BeginDisabled(count == 0);
+      if (ImGui::Button("-", ImVec2(buttonWidth, 0))) {
+        data.PopBack(field.ElementSize);
+        getOrCreateInstance().SetVectorValue(data.Data);
+        return true;
+      }
+      ImGui::EndDisabled();
+      break;
     }
-    break;
-  }
-  case DataType::Texture2D: {
-    uint64_t assetID = hasInstance
-                           ? fieldMap[fieldID].GetValue<uint64_t>()
-                           : (!field.DefaultValue.empty()
-                                  ? *(uint64_t *)field.DefaultValue.data()
-                                  : 0);
-    std::string label = "";
-    if (assetID != 0 && Project::GetActive() &&
+    case DataType::Entity: {
+      uint64_t entityID = hasInstance
+        ? fieldMap[fieldID].GetValue<uint64_t>()
+        : (!field.DefaultValue.empty()
+        ? *(uint64_t *)field.DefaultValue.data()
+        : 0);
+      std::string labelName = (entityID != 0 && context)
+        ? context->GetEntityByUUID(entityID).GetName()
+        : "";
+      labelName = labelName.empty() ? "(empty)" : labelName;
+      labelName.append(" (" + field.TypeName + ")");
+
+      ImGuiDraw::DataField(field.Name, labelName);
+      if (ImGui::BeginDragDropTarget()) {
+        if (const ImGuiPayload *payload =
+          ImGui::AcceptDragDropPayload("SCENE_HIERARCHY_ITEM")) {
+          UUID droppedEntityID = *(UUID *)payload->Data;
+          getOrCreateInstance().SetValue(droppedEntityID.uuid());
+          return true;
+        }
+        ImGui::EndDragDropTarget();
+      }
+      break;
+    }
+    case DataType::Texture2D: {
+      uint64_t assetID = hasInstance
+        ? fieldMap[fieldID].GetValue<uint64_t>()
+        : (!field.DefaultValue.empty()
+        ? *(uint64_t *)field.DefaultValue.data()
+        : 0);
+      std::string label = "";
+      if (assetID != 0 && Project::GetActive() &&
         Project::GetActive()->GetEditorAssetManager()) {
-      label = Project::GetActive()
-                  ->GetEditorAssetManager()
-                  ->GetMetaData(assetID)
-                  .AssetName;
-    }
-    label = label.empty() ? "(empty)" : label;
-    label.append(" (" + field.TypeName + ")");
+        label = Project::GetActive()
+          ->GetEditorAssetManager()
+          ->GetMetaData(assetID)
+          .AssetName;
+      }
+      label = label.empty() ? "(empty)" : label;
+      label.append(" (" + field.TypeName + ")");
 
       ImGuiDraw::DataField(field.Name, label);
       if (ImGui::BeginDragDropTarget()) {
-        if (const ImGuiPayload *payload = ImGui::AcceptDragDropPayload("ASSET_BROWSER_ITEM")) {
+        if (const ImGuiPayload *payload =
+          ImGui::AcceptDragDropPayload("ASSET_BROWSER_ITEM")) {
           const char *raw_str = static_cast<const char *>(payload->Data);
           size_t len = static_cast<size_t>(payload->DataSize);
           if (len > 0 && raw_str[len - 1] == '\0') {
@@ -1476,6 +1729,7 @@ void DrawEditTimeScriptComponents(const UUID &fieldID, const ScriptField &field,
 
           if (metaData.Type == AssetType::Texture2D) {
             getOrCreateInstance().SetValue(value);
+            return true;
           }
         }
         ImGui::EndDragDropTarget();
@@ -1523,6 +1777,7 @@ void DrawEditTimeScriptComponents(const UUID &fieldID, const ScriptField &field,
 
           if (metaData.Type == AssetType::Prefab) {
             getOrCreateInstance().SetValue(value);
+            return true;
           }
         }
         ImGui::EndDragDropTarget();
@@ -1547,8 +1802,6 @@ void DrawEditTimeScriptComponents(const UUID &fieldID, const ScriptField &field,
       label = label.empty() ? "(empty) " : label;
       label.append("(" + field.TypeName + ")");
 
-      // 1. Peek at the active drag payload to see if it matches this script
-      // type
       bool isValidDragTarget = false;
       if (const ImGuiPayload *activePayload = ImGui::GetDragDropPayload()) {
         if (activePayload->IsDataType("SCENE_HIERARCHY_ITEM") &&
@@ -1561,23 +1814,18 @@ void DrawEditTimeScriptComponents(const UUID &fieldID, const ScriptField &field,
             draggedEntity.GetUUID() != selection.GetUUID()) {
             auto &scc = draggedEntity.GetComponent<ScriptComponentContainer>();
             for (auto &script : scc.Scripts) {
-              // Check if the dragged entity has the exact script this field
-              // expects
               if (script.ClassName == field.TypeName) {
                 isValidDragTarget = true;
                 break;
-              }
+            }
             }
           }
         }
       }
 
-      // 2. Apply visual highlight if a valid entity is currently being
-      // dragged over it
       if (isValidDragTarget) {
-        // Push a subtle green/accent tint to indicate a valid drop target
         ImGui::PushStyleColor(ImGuiCol_FrameBg,
-                            ImVec4(0.15f, 0.55f, 0.25f, 0.8f));
+                              ImVec4(0.15f, 0.55f, 0.25f, 0.8f));
       }
 
       ImGuiDraw::DataField(field.Name, label);
@@ -1586,7 +1834,6 @@ void DrawEditTimeScriptComponents(const UUID &fieldID, const ScriptField &field,
         ImGui::PopStyleColor();
       }
 
-      // 3. Handle the drop acceptance with type validation
       if (ImGui::BeginDragDropTarget()) {
         if (const ImGuiPayload *payload =
           ImGui::AcceptDragDropPayload("SCENE_HIERARCHY_ITEM")) {
@@ -1594,7 +1841,6 @@ void DrawEditTimeScriptComponents(const UUID &fieldID, const ScriptField &field,
           Entity droppedEntity = context->GetEntityByUUID(droppedEntityID);
 
           if (droppedEntity) {
-          // Double-check the script match on drop
             bool matchesScript = false;
             if (droppedEntity.HasComponent<ScriptComponentContainer>()) {
               auto &scc = droppedEntity.GetComponent<ScriptComponentContainer>();
@@ -1608,6 +1854,7 @@ void DrawEditTimeScriptComponents(const UUID &fieldID, const ScriptField &field,
 
             if (matchesScript) {
               getOrCreateInstance().SetValue(droppedEntityID);
+              return true;
             }
           }
         }
@@ -1616,6 +1863,7 @@ void DrawEditTimeScriptComponents(const UUID &fieldID, const ScriptField &field,
       break;
     }
   }
+  return false;
 }
 
 void DrawScriptComponent(Entity selection) {
@@ -1646,7 +1894,14 @@ void DrawScriptComponent(Entity selection) {
     ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.22f, 0.24f, 0.28f, 1.0f));
 
     float lineHeight = ImGui::GetFrameHeight();
-    bool open = ImGui::TreeNodeEx(&idx, treeNodeFlags, "Script");
+    std::string label = "Script";
+
+    if (sc.PrefabDirty)
+      label += " P";
+    if (sc.EditDirty)
+      label += "*";
+
+    bool open = ImGui::TreeNodeEx(&idx, treeNodeFlags, "%s", label.c_str());
 
     ImGui::PopStyleColor(3);
     ImGui::PopStyleVar();
@@ -1705,8 +1960,7 @@ void DrawScriptComponent(Entity selection) {
               component.LoadedScriptNames.push_back(sc.ClassName);
             }
           }
-          sc.ScriptID =
-            sc.ClassName.empty() ? 0 : Hash::GenerateFNVHash(sc.ClassName);
+          sc.ScriptID = sc.ClassName.empty() ? 0 : Hash::GenerateFNVHash(sc.ClassName);
         }
       }
 
@@ -1740,25 +1994,37 @@ void DrawScriptComponent(Entity selection) {
         continue;
       }
 
-      Ref<ScriptClass> scriptClass =
-        scriptEngine.GetScriptClass(sc.ClassName.c_str());
+      Ref<ScriptClass> scriptClass = scriptEngine.GetScriptClass(sc.ClassName.c_str());
       const auto &fields = scriptClass->GetFields();
 
       auto &scriptFields = scriptEngine.GetScriptFieldMap(selection);
       auto &fieldInstanceMap = scriptFields[sc.ScriptID];
 
+      bool edited = false;
       for (const auto &[fieldID, field] : fields) {
-        DrawEditTimeScriptComponents(fieldID, field, context, selection,
-                                     fieldInstanceMap);
+        if (DrawEditTimeScriptComponents(fieldID, field, context, selection, fieldInstanceMap))
+          edited = true;
       }
       ImGui::TreePop();
+      if (edited) {
+        component.EditDirty = true;
+        sc.EditDirty = true;
+        auto &rc = selection.GetComponent<RelationshipComponent>();
+        Entity root = selection;
+        if (rc.Parent != 0) {
+          root = selection.GetRootParent();
+        }
+
+        if (root.HasComponent<PrefabLinkComponent>() && rc.Parent != 0)
+          component.PrefabDirty = true;
+      }
     }
-
     ImGui::PopID();
-
   }
 
   for (auto it = scriptsToRemove.rbegin(); it != scriptsToRemove.rend(); ++it) {
+    auto &osc = selection.GetComponent<ObjectStateComponent>();
+    osc.DeletedComponents.push_back(component.Scripts[*it].ClassName);
     selection.RemoveScriptComponent(*it);
   }
 }

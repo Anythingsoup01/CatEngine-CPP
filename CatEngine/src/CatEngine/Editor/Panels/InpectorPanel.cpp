@@ -3,10 +3,10 @@
 
 #include "DrawComponents.h"
 
+#include "CatEngine/AssetManager/AssetManager.h"
 #include "CatEngine/Editor/ImGui/CEImGui.h"
-
 #include "CatEngine/Prefab/Prefab.h"
-
+#include "CatEngine/Prefab/PrefabManager.h"
 #include "CatEngine/Project/Project.h"
 
 #include <imgui.h>
@@ -32,7 +32,7 @@ void InspectorPanel::OnImGuiRender(bool &isOpen) {
 
     if (m_EntitySelection) {
       auto &stateComponent = m_EntitySelection.GetComponent<ObjectStateComponent>();
-      if (stateComponent.isLocked) {
+      if (stateComponent.Locked) {
         ImGui::BeginDisabled();
       }
       DrawComponents(m_EntitySelection);
@@ -73,7 +73,7 @@ void InspectorPanel::OnImGuiRender(bool &isOpen) {
         ImGui::EndPopup();
       }
 
-      if (stateComponent.isLocked) {
+      if (stateComponent.Locked) {
         ImGui::EndDisabled();
       }
 
@@ -101,77 +101,284 @@ void InspectorPanel::SetAssetSelectionContext(AssetHandle handle) {
   m_AssetSelection = handle;
 }
 
+void DrawEntityOverrideTreeRecursive(Scene *scene, Entity current, bool isRoot, const std::unordered_map<UUID, std::vector<std::string>> &dirtyMap) {
+  if (!scene || !current)
+    return;
+
+  const UUID entityUUID = current.GetUUID();
+  auto it = dirtyMap.find(entityUUID);
+  const bool hasDirtyChanges = (it != dirtyMap.end() && !it->second.empty());
+
+  std::string entityName = "Unnamed Entity";
+  if (current.HasComponent<NameComponent>()) {
+    entityName = current.GetComponent<NameComponent>().Name;
+  } else if (current.HasComponent<TagComponent>()) {
+    entityName = current.GetComponent<TagComponent>().Tag;
+  }
+
+  // Check whether any descendant has dirty entries so parent nodes stay expandable to reach them
+  bool hasDirtyDescendant = false;
+  if (current.HasComponent<RelationshipComponent>()) {
+    const auto &rel = current.GetComponent<RelationshipComponent>();
+    for (UUID childUUID : rel.Children) {
+      Entity child = scene->GetEntityByUUID(childUUID);
+      if (child) {
+        auto childIt = dirtyMap.find(child.GetUUID());
+        if (childIt != dirtyMap.end() && !childIt->second.empty()) {
+          hasDirtyDescendant = true;
+          break;
+        }
+      }
+    }
+  }
+
+  if (hasDirtyChanges || hasDirtyDescendant) {
+    ImGui::PushID(static_cast<uint64_t>(entityUUID));
+
+    const std::string headerTitle = isRoot ? (entityName + " (Root)") : entityName;
+    ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanAvailWidth;
+    if (!hasDirtyChanges && !hasDirtyDescendant) {
+      flags |= ImGuiTreeNodeFlags_Leaf;
+    }
+
+    if (ImGui::TreeNodeEx("##OverrideNode", flags, "%s", headerTitle.c_str())) {
+      if (hasDirtyChanges) {
+        for (const std::string &changeLabel : it->second) {
+          ImGui::BulletText("%s", changeLabel.c_str());
+        }
+      }
+
+      if (current.HasComponent<RelationshipComponent>()) {
+        const auto &rel = current.GetComponent<RelationshipComponent>();
+        for (UUID childUUID : rel.Children) {
+          Entity child = scene->GetEntityByUUID(childUUID);
+          if (child) {
+            DrawEntityOverrideTreeRecursive(scene, child, /*isRoot=*/false, dirtyMap);
+          }
+        }
+      }
+
+      ImGui::TreePop();
+    }
+
+    ImGui::PopID();
+  }
+}
+
 void InspectorPanel::DrawComponents(Entity selection) {
-  if (ImGui::BeginTable("##TAGLAYER", 4)) {
-    ImGui::TableSetupColumn("ACTIVE_STATE", ImGuiTableColumnFlags_WidthFixed, 10);
-    ImGui::TableSetupColumn("TAG", ImGuiTableColumnFlags_WidthStretch);
-    ImGui::TableSetupColumn("LAYER", ImGuiTableColumnFlags_WidthStretch);
+  auto &stateComponent = selection.GetComponent<ObjectStateComponent>();
+  auto &nameComponent = selection.GetComponent<NameComponent>();
+  auto &tagComponent = selection.GetComponent<TagComponent>();
+  auto &layerComponent = selection.GetComponent<LayerComponent>();
+
+  // 1) Top row: Active checkbox, Entity Name, and Lock toggle
+  if (ImGui::BeginTable("##InspectorHeaderTop", 3, ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_NoPadInnerX)) {
+    ImGui::TableSetupColumn("Active", ImGuiTableColumnFlags_WidthFixed, 24.0f);
+    ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch, 1.0f);
+    ImGui::TableSetupColumn("Lock", ImGuiTableColumnFlags_WidthFixed, 24.0f);
 
     ImGui::TableNextRow();
 
+    // Active toggle (Unity top-left enable box)
     ImGui::TableSetColumnIndex(0);
-    auto &stateComponent = selection.GetComponent<ObjectStateComponent>();
+    ImGui::AlignTextToFramePadding();
     bool activeState = stateComponent.SelfActive;
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{2.0f, 2.0f});
     if (ImGui::Checkbox("##VISIBILITY_BUTTON", &activeState)) {
       m_Context->SetEntityActive(selection, activeState);
+      stateComponent.EditDirty = true;
+      if (selection.HasComponent<PrefabLinkComponent>())
+        stateComponent.PrefabDirty = true;
     }
 
-    if (ImGui::IsItemHovered())
+
+    ImGui::PopStyleVar();
+    if (ImGui::IsItemHovered()) {
       ImGui::SetTooltip("Active");
+    }
 
+    // Entity name field
     ImGui::TableSetColumnIndex(1);
-    auto &tag = selection.GetComponent<TagComponent>().Tag;
+    ImGui::AlignTextToFramePadding();
+    char nameBuffer[256] = {};
+    std::snprintf(nameBuffer, sizeof(nameBuffer), "%s", nameComponent.Name.c_str());
 
-    ImGui::PushItemWidth(-1.0f);
-    char tagBuffer[256];
-    memset(tagBuffer, 0, sizeof(tagBuffer));
-    strncpy(tagBuffer, tag.c_str(), 256);
-    ImGui::Text("Tag");
-    ImGui::SameLine();
-    if (ImGui::InputText("##T", tagBuffer, sizeof(tagBuffer))) {
-      tag = std::string(tagBuffer);
+    ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.14f, 0.15f, 0.18f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.18f, 0.20f, 0.24f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(0.12f, 0.13f, 0.16f, 1.0f));
+    ImGui::SetNextItemWidth(-1.0f);
+    if (ImGui::InputText("##ENTITY_NAME", nameBuffer, sizeof(nameBuffer))) {
+      nameComponent.Name = nameBuffer;
+      nameComponent.EditDirty = true;
+      if (selection.HasComponent<PrefabLinkComponent>())
+        nameComponent.PrefabDirty = true;
     }
-    ImGui::PopItemWidth();
+    ImGui::PopStyleColor(3);
 
+    // Lock toggle on the right
     ImGui::TableSetColumnIndex(2);
-    auto &layer = selection.GetComponent<LayerComponent>().Layer;
-
-    ImGui::PushItemWidth(-1.0f);
-    char layerBuffer[256];
-    memset(layerBuffer, 0, sizeof(layerBuffer));
-    strncpy(layerBuffer, layer.c_str(), 256);
-    ImGui::Text("Layer");
-    ImGui::SameLine();
-    if (ImGui::InputText("##L", layerBuffer, sizeof(layerBuffer))) {
-      layer = std::string(layerBuffer);
+    ImGui::AlignTextToFramePadding();
+    bool lockState = stateComponent.SelfLocked;
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{2.0f, 2.0f});
+    if (ImGui::Checkbox("##LOCK_BUTTON", &lockState)) {
+      m_Context->SetEntityLocked(selection, lockState);
+      stateComponent.EditDirty = true;
+      if (selection.HasComponent<PrefabLinkComponent>())
+        stateComponent.PrefabDirty = true;
     }
-    ImGui::PopItemWidth();
+
+    ImGui::PopStyleVar();
+    if (ImGui::IsItemHovered()) {
+      ImGui::SetTooltip("Locked");
+    }
 
     ImGui::EndTable();
   }
 
-  if (ImGui::BeginTable("##NAME", 1)) {
-    ImGui::TableSetupColumn("NAME", ImGuiTableColumnFlags_WidthStretch);
+  ImGui::Spacing();
+
+  // 2) Second row: Tag and Layer side-by-side
+  if (ImGui::BeginTable("##TAGLAYER", 2, ImGuiTableFlags_NoPadInnerX)) {
+    ImGui::TableSetupColumn("TagCol", ImGuiTableColumnFlags_WidthStretch, 0.5f);
+    ImGui::TableSetupColumn("LayerCol", ImGuiTableColumnFlags_WidthStretch, 0.5f);
 
     ImGui::TableNextRow();
 
     ImGui::TableSetColumnIndex(0);
-    ImGui::PushItemWidth(-1.0f);
-    auto &name = selection.GetComponent<NameComponent>().Name;
-
-    char nameBuffer[256];
-    memset(nameBuffer, 0, sizeof(nameBuffer));
-    strncpy(nameBuffer, name.c_str(), 256);
-    ImGui::Text("Name");
-    ImGui::SameLine();
-    if (ImGui::InputText("##N", nameBuffer, sizeof(nameBuffer))) {
-      name = std::string(nameBuffer);
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextDisabled("Tag");
+    ImGui::SameLine(0.0f, 6.0f);
+    char tagBuffer[256] = {};
+    std::snprintf(tagBuffer, sizeof(tagBuffer), "%s", tagComponent.Tag.c_str());
+    ImGui::SetNextItemWidth(-1.0f);
+    if (ImGui::InputText("##T", tagBuffer, sizeof(tagBuffer))) {
+      tagComponent.Tag = tagBuffer;
+      tagComponent.EditDirty = true;
+      if (selection.HasComponent<PrefabLinkComponent>())
+        tagComponent.PrefabDirty = true;
     }
 
-    ImGui::PopItemWidth();
+    ImGui::TableSetColumnIndex(1);
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextDisabled("Layer");
+    ImGui::SameLine(0.0f, 6.0f);
+    char layerBuffer[256] = {};
+    std::snprintf(layerBuffer, sizeof(layerBuffer), "%s", layerComponent.Layer.c_str());
+    ImGui::SetNextItemWidth(-1.0f);
+    if (ImGui::InputText("##L", layerBuffer, sizeof(layerBuffer))) {
+      layerComponent.Layer = layerBuffer;
+      layerComponent.EditDirty = true;
+      if (selection.HasComponent<PrefabLinkComponent>())
+        layerComponent.PrefabDirty = true;
+    }
 
     ImGui::EndTable();
   }
+
+  // 3) Prefab bar skeleton (shown when entity has a PrefabLinkComponent)
+  if (selection.HasComponent<PrefabLinkComponent>()) {
+    auto &prefabLink = selection.GetComponent<PrefabLinkComponent>();
+    auto assetManager = Project::GetActive()->GetEditorAssetManager();
+
+    std::string prefabLabel = "Prefab";
+    if (prefabLink.PrefabID != 0 && AssetManager::IsAssetHandleValid(prefabLink.PrefabID)) {
+      const auto &prefabMeta = assetManager->GetMetaData(prefabLink.PrefabID);
+      prefabLabel = prefabMeta.AssetName.empty() ? prefabMeta.FilePath.stem().string() : prefabMeta.AssetName;
+    }
+
+    ImGui::Spacing();
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 3.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{8.0f, 5.0f});
+
+    // ImVec2(0.0f, 0.0f) with AutoResizeY expands to full available width and wraps to content height
+    if (ImGui::BeginChild("##PrefabInfoBar", ImVec2(0.0f, 0.0f),
+                          ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_AlwaysUseWindowPadding)) {
+      ImGui::AlignTextToFramePadding();
+      ImGui::TextUnformatted(("Prefab: " + prefabLabel).c_str());
+
+      if (ImGui::SmallButton("Overrides")) {
+        ImGui::OpenPopup("PrefabOverridesPopup");
+      }
+
+      // Left-aligned action buttons
+      if (ImGui::BeginPopup("PrefabOverridesPopup")) {
+        auto dirtyMap = PrefabManager::Get().GetDirtyEntities(prefabLink.PrefabID, selection);
+
+        const UUID deletedBucketKey{1};
+        auto deletedIt = dirtyMap.find(deletedBucketKey);
+        const bool hasDeletedEntries = (deletedIt != dirtyMap.end() && !deletedIt->second.empty());
+
+        bool anyEntityChanges = false;
+        for (const auto &[uuid, changes] : dirtyMap) {
+          if (uuid != deletedBucketKey && !changes.empty()) {
+            anyEntityChanges = true;
+            break;
+          }
+        }
+
+        ImGui::TextUnformatted("Prefab Overrides");
+        ImGui::Separator();
+
+        if (!anyEntityChanges && !hasDeletedEntries) {
+          ImGui::TextDisabled("No overrides detected.");
+        } else {
+          if (anyEntityChanges) {
+            DrawEntityOverrideTreeRecursive(m_Context.get(), selection, /*isRoot=*/true, dirtyMap);
+          }
+
+          if (hasDeletedEntries) {
+            if (anyEntityChanges) {
+              ImGui::Spacing();
+            }
+            ImGuiTreeNodeFlags delFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanAvailWidth;
+            if (ImGui::TreeNodeEx("Deleted Entities##PrefabDeletedGroup", delFlags)) {
+              ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.92f, 0.45f, 0.45f, 1.0f));
+              for (const std::string &deletedEntry : deletedIt->second) {
+                ImGui::BulletText("%s", deletedEntry.c_str());
+              }
+              ImGui::PopStyleColor();
+              ImGui::TreePop();
+            }
+          }
+
+          ImGui::Separator();
+          if (ImGui::Button("Apply All")) {
+            // TODO: Apply overrides to prefab asset (prefabLink.PrefabID) and clear dirty/deleted flags
+          }
+          ImGui::SameLine();
+          if (ImGui::Button("Revert All")) {
+            // TODO: Restore overridden components/deleted entities from prefab and clear dirty flags
+          }
+        }
+
+        ImGui::EndPopup();
+      }
+
+      ImGui::SameLine();
+      if (ImGui::SmallButton("Unpack")) {
+        // TODO: Remove PrefabLinkComponent from this entity (and optionally children)
+      }
+
+      // Right-aligned "Open" button
+      const char *openLabel = "Open";
+      const float openWidth = ImGui::CalcTextSize(openLabel).x + ImGui::GetStyle().FramePadding.x * 2.0f;
+      const float rightEdge = ImGui::GetWindowContentRegionMax().x;
+      if (rightEdge - openWidth > ImGui::GetCursorPosX()) {
+        ImGui::SameLine(rightEdge - openWidth);
+      } else {
+        ImGui::SameLine();
+      }
+      if (ImGui::SmallButton(openLabel)) {
+        // TODO: Open prefab asset in prefab-editing mode (prefabLink.PrefabID)
+      }
+    }
+    ImGui::EndChild();
+
+    ImGui::PopStyleVar(2);
+  }
+
+  ImGui::Spacing();
+  ImGui::Separator();
 
   DrawComponentsHelper(selection);
 

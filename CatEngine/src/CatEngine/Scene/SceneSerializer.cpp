@@ -77,34 +77,58 @@ void SceneSerializer::SerializeEntity(YAML::Emitter &out, Entity entity) {
   CE_PROFILE_FUNCTION();
 
   out << YAML::BeginMap; // Entity
-  out << YAML::Key << "Entity" << YAML::Value
-      << entity.GetComponent<IDComponent>().ID;
+  out << YAML::Key << "Entity" << YAML::Value << entity.GetComponent<IDComponent>().ID;
   if (entity.HasComponent<TagComponent>()) {
+    auto &tc = entity.GetComponent<TagComponent>();
     out << YAML::Key << "TagComponent";
     out << YAML::BeginMap; // TagComponent
 
-    auto &tag = entity.GetComponent<TagComponent>().Tag;
-    out << YAML::Key << "Tag" << YAML::Value << tag;
+    out << YAML::Key << "Tag" << YAML::Value << tc.Tag;
+    out << YAML::Key << "PrefabDirty" << YAML::Value << tc.PrefabDirty;
 
+    tc.EditDirty = false;
     out << YAML::EndMap; // TagComponent
   }
   if (entity.HasComponent<LayerComponent>()) {
+    auto &lc = entity.GetComponent<LayerComponent>();
     out << YAML::Key << "LayerComponent";
     out << YAML::BeginMap; // LayerComponent
 
-    auto &layer = entity.GetComponent<LayerComponent>().Layer;
-    out << YAML::Key << "Layer" << YAML::Value << layer;
+    out << YAML::Key << "Layer" << YAML::Value << lc.Layer;
+    out << YAML::Key << "PrefabDirty" << YAML::Value << lc.PrefabDirty;
 
+    lc.EditDirty = false;
     out << YAML::EndMap; // LayerComponent
   }
   if (entity.HasComponent<NameComponent>()) {
+    auto &nc = entity.GetComponent<NameComponent>();
     out << YAML::Key << "NameComponent";
     out << YAML::BeginMap; // NameComponent
 
-    auto &name = entity.GetComponent<NameComponent>().Name;
-    out << YAML::Key << "Name" << YAML::Value << name;
+    out << YAML::Key << "Name" << YAML::Value << nc.Name;
+    out << YAML::Key << "PrefabDirty" << YAML::Value << nc.PrefabDirty;
 
+    nc.EditDirty = false;
     out << YAML::EndMap; // NameComponent
+  }
+  if (entity.HasComponent<ObjectStateComponent>()) {
+    auto &osc = entity.GetComponent<ObjectStateComponent>();
+    out << YAML::Key << "ObjectStateComponent";
+    out << YAML::BeginMap; // ObjectStateComponent
+
+    out << YAML::Key << "Locked" << YAML::Value << osc.Locked;
+    out << YAML::Key << "SelfLocked" << YAML::Value << osc.SelfLocked;
+    out << YAML::Key << "HierarchyLocked" << YAML::Value << osc.HierarchyLocked;
+
+    out << YAML::Key << "Active" << YAML::Value << osc.Active;
+    out << YAML::Key << "SelfActive" << YAML::Value << osc.SelfActive;
+    out << YAML::Key << "HierarchyActive" << YAML::Value << osc.HierarchyActive;
+
+    out << YAML::Key << "PrefabDirty" << YAML::Value << osc.PrefabDirty;
+    out << YAML::Key << "PrefabAdded" << YAML::Value << osc.PrefabAdded;
+
+    osc.EditDirty = false;
+    out << YAML::EndMap; // ObjectStateComponent
   }
   if (entity.HasComponent<PrefabLinkComponent>()) {
     auto &plc = entity.GetComponent<PrefabLinkComponent>();
@@ -114,39 +138,49 @@ void SceneSerializer::SerializeEntity(YAML::Emitter &out, Entity entity) {
     out << YAML::Key << "PrefabID" << YAML::Value << plc.PrefabID;
     out << YAML::Key << "SourceEntityID" << YAML::Value << plc.SourceEntityID;
     out << YAML::Key << "LastKnownUpdate" << YAML::Value << plc.LastKnownUpdate;
+    out << YAML::Key << "PrefabDirty" << YAML::Value << plc.PrefabDirty;
 
     out << YAML::EndMap; // PrefabLinkComponent
   }
   if (entity.HasComponent<TransformComponent>()) {
+    auto &tc = entity.GetComponent<TransformComponent>();
     out << YAML::Key << "TransformComponent";
     out << YAML::BeginMap; // TransformComponent
 
-    auto &tc = entity.GetComponent<TransformComponent>();
     out << YAML::Key << "LocalPosition" << YAML::Value << tc.LocalPosition;
     out << YAML::Key << "LocalRotation" << YAML::Value << tc.LocalRotation;
     out << YAML::Key << "LocalScale" << YAML::Value << tc.LocalScale;
+    out << YAML::Key << "PrefabDirty" << YAML::Value << tc.PrefabDirty;
+
+    tc.EditDirty = false;
     out << YAML::EndMap; // TransformComponent
   }
 
   if (entity.HasComponent<SpriteRendererComponent>()) {
+    auto &src = entity.GetComponent<SpriteRendererComponent>();
     out << YAML::Key << "SpriteRendererComponent";
     out << YAML::BeginMap; // SpriteRendererComponent
 
-    auto &src = entity.GetComponent<SpriteRendererComponent>();
     out << YAML::Key << "Color" << YAML::Value << src.Color;
     out << YAML::Key << "Texture" << YAML::Value << src.Texture;
     out << YAML::Key << "Tiling" << YAML::Value << src.TilingFactor;
+    out << YAML::Key << "PrefabDirty" << YAML::Value << src.PrefabDirty;
+
+    src.EditDirty = false;
     out << YAML::EndMap; // SpriteRendererComponent
   }
 
   if (entity.HasComponent<CircleRendererComponent>()) {
+    auto &crc = entity.GetComponent<CircleRendererComponent>();
     out << YAML::Key << "CircleRendererComponent";
     out << YAML::BeginMap; // CircleRendererComponent
 
-    auto &src = entity.GetComponent<CircleRendererComponent>();
-    out << YAML::Key << "Color" << YAML::Value << src.Color;
-    out << YAML::Key << "Thickness" << YAML::Value << src.Thickness;
-    out << YAML::Key << "Fade" << YAML::Value << src.Fade;
+    out << YAML::Key << "Color" << YAML::Value << crc.Color;
+    out << YAML::Key << "Thickness" << YAML::Value << crc.Thickness;
+    out << YAML::Key << "Fade" << YAML::Value << crc.Fade;
+    out << YAML::Key << "PrefabDirty" << YAML::Value << crc.PrefabDirty;
+
+    crc.EditDirty = false;
     out << YAML::EndMap; // CircleRendererComponent
   }
 
@@ -178,7 +212,9 @@ void SceneSerializer::SerializeEntity(YAML::Emitter &out, Entity entity) {
     out << YAML::Key << "Primary" << YAML::Value << cameraComponent.Primary;
     out << YAML::Key << "FixedAspectRatio" << YAML::Value
         << cameraComponent.FixedAspectRatio;
+    out << YAML::Key << "PrefabDirty" << YAML::Value << cameraComponent.PrefabDirty;
 
+    cameraComponent.EditDirty = false;
     out << YAML::EndMap; // CameraComponent
   }
 
@@ -189,6 +225,8 @@ void SceneSerializer::SerializeEntity(YAML::Emitter &out, Entity entity) {
     out << YAML::BeginMap; // Rigidbody2DComponent
     out << YAML::Key << "BodyType" << YAML::Value << (int)rb2d.Type;
     out << YAML::Key << "FixedRotation" << YAML::Value << rb2d.FixedRotation;
+    out << YAML::Key << "PrefabDirty" << YAML::Value << rb2d.PrefabDirty;
+    rb2d.EditDirty = false;
     out << YAML::EndMap; // Rigidbody2DComponent
   }
 
@@ -206,6 +244,8 @@ void SceneSerializer::SerializeEntity(YAML::Emitter &out, Entity entity) {
     out << YAML::Key << "Restitution" << YAML::Value << bc2d.Restitution;
     out << YAML::Key << "RestitutionThreshold" << YAML::Value
         << bc2d.RestitutionThreshold;
+    out << YAML::Key << "PrefabDirty" << YAML::Value << bc2d.PrefabDirty;
+    bc2d.EditDirty = false;
     out << YAML::EndMap; // BoxCollider2DComponent
   }
 
@@ -222,6 +262,8 @@ void SceneSerializer::SerializeEntity(YAML::Emitter &out, Entity entity) {
     out << YAML::Key << "Restitution" << YAML::Value << cc2d.Restitution;
     out << YAML::Key << "RestitutionThreshold" << YAML::Value
         << cc2d.RestitutionThreshold;
+    out << YAML::Key << "PrefabDirty" << YAML::Value << cc2d.PrefabDirty;
+    cc2d.EditDirty = false;
     out << YAML::EndMap; // CircleCollider2DComponent
   }
 
@@ -236,6 +278,7 @@ void SceneSerializer::SerializeEntity(YAML::Emitter &out, Entity entity) {
       out << YAML::BeginMap; // ScriptComponent Start
       out << YAML::Key << "ScriptID" << YAML::Value << sc.ScriptID;
       out << YAML::Key << "ClassName" << YAML::Value << sc.ClassName;
+      out << YAML::Key << "PrefabDirty" << YAML::Value << sc.PrefabDirty;
       out << YAML::Key << "Fields" << YAML::Value;
       out << YAML::BeginSeq; // Fields Start
       const FieldMap &fieldMap =
@@ -265,7 +308,6 @@ void SceneSerializer::SerializeEntity(YAML::Emitter &out, Entity entity) {
           for (size_t i = 0; i < field.VectorData.GetCount(); i++) {
             const void *elementPtr =
                 field.VectorData.GetElementPointer(i, field.Field.ElementSize);
-            // Directly serialize the element value without wrapping in a map
             SerializeEntityScriptVector(out, field.Field.ElementType,
                                         elementPtr);
           }
@@ -318,6 +360,7 @@ void SceneSerializer::SerializeEntity(YAML::Emitter &out, Entity entity) {
             default:
               break;
           }
+          sc.EditDirty = false;
         }
         out << YAML::EndMap; // Field Map End
       }
@@ -325,6 +368,7 @@ void SceneSerializer::SerializeEntity(YAML::Emitter &out, Entity entity) {
       out << YAML::EndMap; // ScriptComponent End
       out << YAML::EndMap; // Script Component End
     }
+    container.EditDirty = false;
     out << YAML::EndSeq; // ScriptComponentContainer end
   }
 
@@ -465,24 +509,51 @@ void SceneSerializer::DeserializeEntity(YAML::Node &entity, UUID parent) {
 
   std::string name;
   auto nameComponent = entity["NameComponent"];
-  if (nameComponent)
+  if (nameComponent) {
     name = nameComponent["Name"].as<std::string>();
+  }
 
   Entity deserializedEntity = m_Scene->CreateEntityWithUUID(uuid, name, parent);
+
+  if (nameComponent && deserializedEntity.HasComponent<NameComponent>()) {
+    deserializedEntity.GetComponent<NameComponent>().PrefabDirty =
+        nameComponent["PrefabDirty"].as<bool>(false);
+  }
 
   static int hierarchyIndex = 0;
 
   std::string tag;
   auto tagComponent = entity["TagComponent"];
-  if (tagComponent)
+  if (tagComponent) {
     tag = tagComponent["Tag"].as<std::string>();
-  deserializedEntity.GetComponent<TagComponent>().Tag = tag;
+  }
+  auto &tc = deserializedEntity.GetComponent<TagComponent>();
+  tc.Tag = tag;
+  tc.PrefabDirty = tagComponent ? tagComponent["PrefabDirty"].as<bool>(false) : false;
 
   std::string layer;
   auto layerComponent = entity["LayerComponent"];
-  if (layerComponent)
+  if (layerComponent) {
     layer = layerComponent["Layer"].as<std::string>();
-  deserializedEntity.GetComponent<LayerComponent>().Layer = layer;
+  }
+  auto &lc = deserializedEntity.GetComponent<LayerComponent>();
+  lc.Layer = layer;
+  lc.PrefabDirty = layerComponent ? layerComponent["PrefabDirty"].as<bool>(false) : false;
+
+  auto objectStateComponent = entity["ObjectStateComponent"];
+  if (objectStateComponent) {
+    auto &osc = deserializedEntity.GetOrAddComponent<ObjectStateComponent>();
+    osc.Locked = objectStateComponent["Locked"].as<bool>(false);
+    osc.SelfLocked = objectStateComponent["SelfLocked"].as<bool>(false);
+    osc.HierarchyLocked = objectStateComponent["HierarchyLocked"].as<bool>(false);
+
+    osc.Active = objectStateComponent["Active"].as<bool>(true);
+    osc.SelfActive = objectStateComponent["SelfActive"].as<bool>(true);
+    osc.HierarchyActive = objectStateComponent["HierarchyActive"].as<bool>(true);
+
+    osc.PrefabDirty = objectStateComponent["PrefabDirty"].as<bool>(false);
+    osc.PrefabAdded = objectStateComponent["PrefabAdded"].as<bool>(false);
+  }
 
   auto prefabLinkComponent = entity["PrefabLinkComponent"];
   if (prefabLinkComponent) {
@@ -490,17 +561,19 @@ void SceneSerializer::DeserializeEntity(YAML::Node &entity, UUID parent) {
     plc.PrefabID = prefabLinkComponent["PrefabID"].as<UUID>();
     plc.SourceEntityID = prefabLinkComponent["SourceEntityID"].as<UUID>();
     plc.LastKnownUpdate = prefabLinkComponent["LastKnownUpdate"].as<uint64_t>(0);
+    plc.PrefabDirty = prefabLinkComponent["PrefabDirty"].as<bool>(false);
   }
 
   auto transformComponent = entity["TransformComponent"];
   if (transformComponent) {
-    auto &tc = deserializedEntity.GetOrAddComponent<TransformComponent>();
-    tc.LocalPosition =
+    auto &trc = deserializedEntity.GetOrAddComponent<TransformComponent>();
+    trc.LocalPosition =
         transformComponent["LocalPosition"].as<glm::vec3>(glm::vec3{0, 0, 0});
-    tc.LocalRotation =
+    trc.LocalRotation =
         transformComponent["LocalRotation"].as<glm::vec3>(glm::vec3{0, 0, 0});
-    tc.LocalScale =
+    trc.LocalScale =
         transformComponent["LocalScale"].as<glm::vec3>(glm::vec3{1, 1, 1});
+    trc.PrefabDirty = transformComponent["PrefabDirty"].as<bool>(false);
   }
 
   auto spriteRendererComponent = entity["SpriteRendererComponent"];
@@ -509,14 +582,16 @@ void SceneSerializer::DeserializeEntity(YAML::Node &entity, UUID parent) {
     src.Color = spriteRendererComponent["Color"].as<glm::vec4>();
     src.Texture = spriteRendererComponent["Texture"].as<AssetHandle>();
     src.TilingFactor = spriteRendererComponent["Tiling"].as<float>();
+    src.PrefabDirty = spriteRendererComponent["PrefabDirty"].as<bool>(false);
   }
 
   auto circleRendererComponent = entity["CircleRendererComponent"];
   if (circleRendererComponent) {
-    auto &src = deserializedEntity.GetOrAddComponent<CircleRendererComponent>();
-    src.Color = circleRendererComponent["Color"].as<glm::vec4>();
-    src.Thickness = circleRendererComponent["Thickness"].as<float>();
-    src.Fade = circleRendererComponent["Fade"].as<float>();
+    auto &crc = deserializedEntity.GetOrAddComponent<CircleRendererComponent>();
+    crc.Color = circleRendererComponent["Color"].as<glm::vec4>();
+    crc.Thickness = circleRendererComponent["Thickness"].as<float>();
+    crc.Fade = circleRendererComponent["Fade"].as<float>();
+    crc.PrefabDirty = circleRendererComponent["PrefabDirty"].as<bool>(false);
   }
 
   auto cameraComponent = entity["CameraComponent"];
@@ -541,6 +616,7 @@ void SceneSerializer::DeserializeEntity(YAML::Node &entity, UUID parent) {
 
     cc.Primary = cameraComponent["Primary"].as<bool>();
     cc.FixedAspectRatio = cameraComponent["FixedAspectRatio"].as<bool>();
+    cc.PrefabDirty = cameraComponent["PrefabDirty"].as<bool>(false);
   }
 
   auto rigidBody2DComponent = entity["Rigidbody2DComponent"];
@@ -549,6 +625,7 @@ void SceneSerializer::DeserializeEntity(YAML::Node &entity, UUID parent) {
     rb2d.Type = (Rigidbody2DComponent::BodyType)rigidBody2DComponent["BodyType"]
                     .as<int>();
     rb2d.FixedRotation = rigidBody2DComponent["FixedRotation"].as<bool>();
+    rb2d.PrefabDirty = rigidBody2DComponent["PrefabDirty"].as<bool>(false);
   }
 
   auto boxCollider2D = entity["BoxCollider2DComponent"];
@@ -565,6 +642,7 @@ void SceneSerializer::DeserializeEntity(YAML::Node &entity, UUID parent) {
     bc2d.Restitution = boxCollider2D["Restitution"].as<float>();
     bc2d.RestitutionThreshold =
         boxCollider2D["RestitutionThreshold"].as<float>();
+    bc2d.PrefabDirty = boxCollider2D["PrefabDirty"].as<bool>(false);
   }
 
   auto circleCollider2D = entity["CircleCollider2DComponent"];
@@ -580,6 +658,7 @@ void SceneSerializer::DeserializeEntity(YAML::Node &entity, UUID parent) {
     cc2d.Restitution = circleCollider2D["Restitution"].as<float>();
     cc2d.RestitutionThreshold =
         circleCollider2D["RestitutionThreshold"].as<float>();
+    cc2d.PrefabDirty = circleCollider2D["PrefabDirty"].as<bool>(false);
   }
 
   auto scriptComponentContainer = entity["ScriptComponentContainer"];
@@ -594,6 +673,7 @@ void SceneSerializer::DeserializeEntity(YAML::Node &entity, UUID parent) {
         ScriptComponent &sc = deserializedEntity.AddScriptComponent();
         sc.ScriptID = scriptID;
         sc.ClassName = className;
+        sc.PrefabDirty = scriptComponent["PrefabDirty"].as<bool>(false);
 
         scc.LoadedScriptNames.push_back(className);
 
@@ -621,7 +701,6 @@ void SceneSerializer::DeserializeEntity(YAML::Node &entity, UUID parent) {
                   field["ElementType"].as<std::string>();
               auto valueSeq = field["Value"];
               if (valueSeq && valueSeq.IsSequence()) {
-                // Deserialize each element into the vector buffer
                 DeserializeEntityScriptVector(valueSeq, sfi.Field.ElementType,
                                               sfi.Field.ElementSize,
                                               sfi.VectorData);
@@ -689,8 +768,7 @@ void SceneSerializer::DeserializeEntity(YAML::Node &entity, UUID parent) {
     for (auto child : relationshipComponent["Children"]) {
       DeserializeEntity(child, uuid);
     }
-  }
-}
+  }}
 
 bool SceneSerializer::Deserialize(const std::string &filepath) {
   CE_PROFILE_FUNCTION();

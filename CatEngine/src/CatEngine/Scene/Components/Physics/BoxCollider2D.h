@@ -17,7 +17,10 @@ struct BoxCollider2DComponent {
   float Restitution = 0.0f;
   float RestitutionThreshold = 0.5f;
 
-  bool IsDirty = false;
+  bool RuntimeDirty = false;
+  bool EditDirty = false;
+  bool PrefabDirty = false;
+
 
   // Storage for runtime
   void *RuntimeFixture = nullptr;

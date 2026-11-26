@@ -186,6 +186,23 @@ public:
     return false;
   }
 
+  Entity GetRootParent() {
+    if (!m_Scene) {
+      return {};
+    }
+
+    auto &rc = GetComponent<RelationshipComponent>();
+    UUID rootParentID = rc.Parent;
+    Entity parent = m_Scene->GetEntityByUUID(rootParentID);
+    while (rootParentID != 0) {
+      parent = m_Scene->GetEntityByUUID(rootParentID);
+      auto &prc = parent.GetComponent<RelationshipComponent>();
+      rootParentID = prc.Parent;
+    }
+
+    return parent;
+  }
+
   void SetSceneContext(Ref<Scene> scene) {
     m_Scene = scene.get();
   }

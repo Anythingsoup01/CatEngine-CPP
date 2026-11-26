@@ -9,7 +9,11 @@ struct PrefabLinkComponent {
   AssetHandle PrefabID = 0;
   UUID SourceEntityID = 0;
 
+  bool PrefabDirty = false;
+
   uint64_t LastKnownUpdate = 0;
+
+  std::vector<std::string> DeletedEntities;
 
   PrefabLinkComponent() = default;
   PrefabLinkComponent(AssetHandle prefabID, UUID sourceEntityID, uint64_t lastKnownUpdate)

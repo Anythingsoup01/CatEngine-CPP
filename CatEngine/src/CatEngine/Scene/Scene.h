@@ -26,6 +26,9 @@ public:
   Entity CreateEntityWithUUID(UUID uuid, const std::string &name = std::string(), UUID parent = 0);
   void DeleteEntity(Entity entity);
 
+  void SetEntityLocked(Entity entity, bool locked);
+  void SetEntityChildLockedRecursive(Entity child, bool parentLocked);
+
   void SetEntityActive(Entity entity, bool active);
   void SetEntityChildActiveRecursive(Entity child, bool parentActive);
 

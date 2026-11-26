@@ -268,6 +268,8 @@ void SceneHierarchyPanel::DrawEntityNode(Entity entity, bool isPrefabRoot) {
 
   // Single-click selection when not dragging or toggling arrow
   if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Left) && !ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
+    Ref<InspectorPanel> inspector = PanelManager::Get().GetPanel<InspectorPanel>("InspectorPanel");
+    inspector->SetEntitySelectionContext(entity);
     m_SelectionContext = entity;
   }
 
@@ -319,12 +321,6 @@ void SceneHierarchyPanel::DrawEntityNode(Entity entity, bool isPrefabRoot) {
     ImGui::EndDragDropTarget();
   }
 
-  if (ImGui::IsMouseDoubleClicked(0) && ImGui::IsItemHovered()) {
-    Ref<InspectorPanel> inspector = PanelManager::Get().GetPanel<InspectorPanel>("InspectorPanel");
-    inspector->SetEntitySelectionContext(entity);
-    m_SelectionContext = entity;
-  }
-
   DrawContextMenu(entity);
 
   // Visibility column
@@ -360,7 +356,7 @@ void SceneHierarchyPanel::DrawEntityNode(Entity entity, bool isPrefabRoot) {
     float cursorX = ImGui::GetCursorPosX();
     ImGui::SetCursorPosX(cursorX + (columnWidth - iconSize) * 0.5f);
 
-    Ref<Texture2D> icon = stateComponent.isLocked
+    Ref<Texture2D> icon = stateComponent.Locked
       ? IconManager::GetIcon("AssetLock-Locked")
       : IconManager::GetIcon("AssetLock-Unlocked");
 
@@ -371,7 +367,7 @@ void SceneHierarchyPanel::DrawEntityNode(Entity entity, bool isPrefabRoot) {
     if (ImGui::ImageButton("##ASSET_LOCK_BUTTON",
                            (ImTextureID)((uint64_t)(icon->GetRendererID())),
                            ImVec2(iconSize, iconSize), ImVec2(0, 1), ImVec2(1, 0))) {
-      stateComponent.isLocked = !stateComponent.isLocked;
+      stateComponent.Locked = !stateComponent.Locked;
     }
 
     ImGui::PopStyleColor(3);

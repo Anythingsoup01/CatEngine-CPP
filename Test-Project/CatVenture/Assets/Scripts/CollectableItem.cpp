@@ -13,7 +13,7 @@ void CollectableItem::Start() {}
 void CollectableItem::OnTriggerEnter(Object other) {
   if (other.HasScript<PlayerController>()) {
     auto *playerController = other.GetScript<PlayerController>();
-    playerController->ApplyHealth(100);
+    playerController->ApplyHealth(m_HealthModification);
 
     Scene::Destroy(this->m_EntityID);
   }

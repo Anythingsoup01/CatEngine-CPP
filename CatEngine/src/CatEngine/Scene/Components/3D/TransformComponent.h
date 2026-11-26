@@ -17,6 +17,11 @@ struct TransformComponent {
   glm::vec3 WorldRotation = {0.0f, 0.0f, 0.0f};
   glm::vec3 WorldScale = {1.0f, 1.0f, 1.0f};
 
+  bool RuntimeDirty = false;
+  bool EditDirty = false;
+  bool PrefabDirty = false;
+
+
 
   TransformComponent() = default;
   TransformComponent(const TransformComponent &) = default;

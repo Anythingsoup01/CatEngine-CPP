@@ -1,0 +1,59 @@
+Prefab: CatEngine Prefab
+Entities:
+  - Entity: 10959969818355890429
+    TagComponent:
+      Tag: None
+    LayerComponent:
+      Layer: Default
+    NameComponent:
+      Name: BadItem
+    TransformComponent:
+      LocalPosition: [0, 0, 0]
+      LocalRotation: [0, 0, 0]
+      LocalScale: [1, 1, 1]
+    Rigidbody2DComponent:
+      BodyType: 1
+      FixedRotation: false
+    BoxCollider2DComponent:
+      Offset: [0, 0]
+      Size: [0.5, 0.5]
+      Rotation: 0
+      ShowColliderBounds: false
+      IsTrigger: true
+      Density: 1
+      Friction: 0.5
+      Restitution: 0
+      RestitutionThreshold: 0.5
+    ScriptComponentContainer:
+      - ScriptComponent:
+          ScriptID: 4273638238
+          ClassName: CollectableItem
+          Fields:
+            - FieldID: 3790947769
+              FieldName: m_HealthModification
+              FieldType: Float
+              FieldSize: 4
+              IsVector: false
+              Value: -50
+    RelationshipComponent:
+      ParentID: 0
+      Children:
+        - Entity: 12465422709002277256
+          TagComponent:
+            Tag: None
+          LayerComponent:
+            Layer: Default
+          NameComponent:
+            Name: GameObject
+          TransformComponent:
+            LocalPosition: [0, 0, 0]
+            LocalRotation: [0, 0, 0]
+            LocalScale: [1, 1, 1]
+          SpriteRendererComponent:
+            Color: [1, 0.383177578, 0.383177578, 1]
+            Texture: 9011015729964880298
+            Tiling: 1
+          RelationshipComponent:
+            ParentID: 10959969818355890429
+            Children:
+              []

@@ -10,8 +10,12 @@ namespace CatEngine {
 struct SpriteRendererComponent {
   bool Active = true;
   glm::vec4 Color{1.f, 1.f, 1.f, 1.f};
-  AssetHandle Texture;
+  AssetHandle Texture = 0;
   float TilingFactor = 1.0f;
+
+  bool RuntimeDirty = false;
+  bool EditDirty = false;
+  bool PrefabDirty = false;
 
   SpriteRendererComponent() = default;
   SpriteRendererComponent(const SpriteRendererComponent &) = default;

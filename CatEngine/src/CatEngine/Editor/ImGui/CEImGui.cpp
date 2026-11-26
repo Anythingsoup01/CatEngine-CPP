@@ -402,8 +402,7 @@ bool ImGuiDraw::CheckBox(const std::string &label, bool &active) {
   return triggered;
 }
 
-void ImGuiDraw::DataField(const std::string &label,
-                          const std::string &componentName) {
+void ImGuiDraw::DataField(const std::string &label, const std::string &componentName) {
   ImGui::PushID(label.c_str());
 
   if (ImGui::BeginTable("##", 2)) {
