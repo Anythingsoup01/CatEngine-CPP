@@ -64,8 +64,18 @@ void EditorLayer::OnUpdate(Time deltaTime) {
   CE_PROFILE_FUNCTION();
   m_DeltaTime = deltaTime;
 
-  m_BlockMouseEvents = m_SceneViewportPanel.IsHovered();
-  m_BlockKeyboardEvents = m_SceneViewportPanel.IsFocused();
+  if (m_SceneViewportPanel.IsHovered()) {
+    m_BlockKeyboardEvents = false;
+    m_BlockMouseEvents = false;
+  }
+  else if (m_SceneViewportPanel.IsFocused()) {
+    m_BlockKeyboardEvents = false;
+    m_BlockMouseEvents = false;
+  }
+  else {
+    m_BlockKeyboardEvents = true;
+    m_BlockMouseEvents = true;
+  }
 
   if (m_ProjectActive) {
     Project::GetActive()->UpdateAssetManager();
@@ -273,7 +283,7 @@ void EditorLayer::OnUpdateEditor(Time deltaTime) {
                                      (float)m_SceneViewportPanel.GetHeight());
     }
 
-    m_EditorCamera.AllowEvents(!ImGuizmo::IsUsing() && m_BlockMouseEvents);
+    m_EditorCamera.AllowEvents(!ImGuizmo::IsUsing() && !m_BlockMouseEvents);
 
     m_EditorCamera.OnUpdate(deltaTime);
 
@@ -351,7 +361,7 @@ void EditorLayer::OnUpdateSimulation(Time deltaTime) {
                                      (float)m_SceneViewportPanel.GetHeight());
     }
 
-    m_EditorCamera.AllowEvents(!ImGuizmo::IsUsing() && m_BlockMouseEvents);
+    m_EditorCamera.AllowEvents(!ImGuizmo::IsUsing() && !m_BlockMouseEvents);
 
     m_EditorCamera.OnUpdate(deltaTime);
 
@@ -1012,22 +1022,22 @@ bool EditorLayer::OnKeyPressed(KeyPressedEvent &e) {
     break;
   }
   case KeyCode::Q: {
-    if (m_BlockKeyboardEvents) // if false, block events
+    if (!m_BlockKeyboardEvents) // if false, block events
       m_GizmoType = ImGuizmo::OPERATION::BOUNDS;
     break;
   }
   case KeyCode::W: {
-    if (m_BlockKeyboardEvents)
+    if (!m_BlockKeyboardEvents)
       m_GizmoType = ImGuizmo::OPERATION::TRANSLATE;
     break;
   }
   case KeyCode::E: {
-    if (m_BlockKeyboardEvents)
+    if (!m_BlockKeyboardEvents)
       m_GizmoType = ImGuizmo::OPERATION::ROTATE;
     break;
   }
   case KeyCode::R: {
-    if (m_BlockKeyboardEvents)
+    if (!m_BlockKeyboardEvents)
       m_GizmoType = ImGuizmo::OPERATION::SCALE;
     break;
   }
@@ -1046,9 +1056,8 @@ bool EditorLayer::OnMouseButtonPressed(MouseButtonPressedEvent &e) {
              Input::IsKeyPressed(KeyCode::RightAlt);
   if (Input::IsMouseButtonPressed(MouseCode::ButtonLeft)) {
     if (m_SceneViewportPanel.IsHovered() && !ImGuizmo::IsOver() && !alt) {
-      m_PanelManager->GetPanel<InspectorPanel>("InspectorPanel")
-          ->SetEntitySelectionContext(m_HoveredEntity);
       m_PanelManager->GetPanel<SceneHierarchyPanel>("SceneHierarchyPanel")->SetSelectedEntity(m_HoveredEntity);
+      m_PanelManager->GetPanel<InspectorPanel>("InspectorPanel")->UpdateEntitySelection();
     }
   }
 

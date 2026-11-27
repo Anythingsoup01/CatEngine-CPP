@@ -11,6 +11,7 @@
 #include "CatEngine/Project/Project.h"
 
 #include <imgui.h>
+#include <imgui_internal.h>
 
 namespace CatEngine {
 
@@ -23,6 +24,10 @@ void AssetBrowserPanel::SetSceneContext(const Ref<Scene> &context) {
 
 void AssetBrowserPanel::OnImGuiRender(bool &isOpen) {
   if (ImGui::Begin("Assets", &isOpen)) {
+    if (ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows) &&
+      ImGui::IsMouseClicked(ImGuiMouseButton_Middle)) {
+      ImGui::FocusWindow(ImGui::GetCurrentWindow());
+    }
     std::filesystem::path assetRoot = Project::GetAssetDirectory();
     std::filesystem::path relativePath =
         std::filesystem::relative(m_CurrentDirectory, assetRoot);

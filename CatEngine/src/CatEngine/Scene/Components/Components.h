@@ -5,7 +5,8 @@
 
 #include "3D/TransformComponent.h"
 
-#include "CatEngine/Scene/Components/Asset/PrefabLink.h"
+#include "Asset/PrefabLink.h"
+
 #include "Renderer/CameraComponent.h"
 
 #include "Physics/BoxCollider2D.h"

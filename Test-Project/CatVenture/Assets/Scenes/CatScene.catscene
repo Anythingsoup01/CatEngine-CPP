@@ -96,7 +96,6 @@ Entities:
       PrefabAdded: false
     PrefabLinkComponent:
       PrefabID: 6860324237650516918
-      SourceEntityID: 4891340968737901211
       LastKnownUpdate: 1795662968694161472
       PrefabDirty: false
     TransformComponent:
@@ -183,47 +182,13 @@ Entities:
       PrefabAdded: false
     PrefabLinkComponent:
       PrefabID: 2805504806217325339
-      SourceEntityID: 17917616161294619118
-      LastKnownUpdate: 1795662970700604943
+      LastKnownUpdate: 1795807265571501238
       PrefabDirty: false
     TransformComponent:
-      LocalPosition: [-1.96018028, 1.31278419, 0]
+      LocalPosition: [-1.6003933, 1.31278419, 0]
       LocalRotation: [0, 0, 0]
       LocalScale: [1, 1, 1]
       PrefabDirty: false
-    Rigidbody2DComponent:
-      BodyType: 2
-      FixedRotation: true
-      PrefabDirty: false
-    BoxCollider2DComponent:
-      Offset: [0, 0]
-      Size: [0.5, 0.5]
-      Rotation: 0
-      ShowColliderBounds: false
-      IsTrigger: false
-      Density: 1
-      Friction: 0.5
-      Restitution: 0
-      RestitutionThreshold: 0.5
-      PrefabDirty: false
-    ScriptComponentContainer:
-      - ScriptComponent:
-          ScriptID: 1101011320
-          ClassName: PlayerController
-          PrefabDirty: true
-          Fields:
-            - FieldID: 1573751430
-              FieldName: m_SpeedScale
-              FieldType: Float
-              FieldSize: 4
-              IsVector: false
-              Value: 0.0500000007
-            - FieldID: 490718930
-              FieldName: m_PlayerHealth
-              FieldType: Float
-              FieldSize: 4
-              IsVector: false
-              Value: 50
     RelationshipComponent:
       ParentID: 0
       Children:
@@ -250,9 +215,9 @@ Entities:
             LocalPosition: [0, 0, 0]
             LocalRotation: [0, 0, 0]
             LocalScale: [1, 1, 1]
-            PrefabDirty: false
+            PrefabDirty: true
           SpriteRendererComponent:
-            Color: [0.486316025, 0.869158864, 0.369595617, 1]
+            Color: [1, 1, 1, 1]
             Texture: 15721212057771476663
             Tiling: 1
             PrefabDirty: true
@@ -283,7 +248,7 @@ Entities:
             LocalPosition: [0, 0, 10]
             LocalRotation: [0, -0, 0]
             LocalScale: [1, 1, 1]
-            PrefabDirty: true
+            PrefabDirty: false
           CameraComponent:
             Camera:
               ProjectionType: 0
@@ -295,7 +260,7 @@ Entities:
               OrthographicFar: 1
             Primary: true
             FixedAspectRatio: false
-            PrefabDirty: true
+            PrefabDirty: false
           RelationshipComponent:
             ParentID: 2554069822271188310
             Children:
@@ -321,7 +286,6 @@ Entities:
       PrefabAdded: false
     PrefabLinkComponent:
       PrefabID: 17337123684361863146
-      SourceEntityID: 10959969818355890429
       LastKnownUpdate: 1795662451496843300
       PrefabDirty: false
     TransformComponent:
@@ -413,7 +377,6 @@ Entities:
       PrefabAdded: false
     PrefabLinkComponent:
       PrefabID: 6860324237650516918
-      SourceEntityID: 4891340968737901211
       LastKnownUpdate: 1795662968694161472
       PrefabDirty: false
     TransformComponent:

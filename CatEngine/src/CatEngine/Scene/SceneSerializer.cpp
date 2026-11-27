@@ -136,7 +136,6 @@ void SceneSerializer::SerializeEntity(YAML::Emitter &out, Entity entity) {
     out << YAML::BeginMap; // PrefabLinkComponent
 
     out << YAML::Key << "PrefabID" << YAML::Value << plc.PrefabID;
-    out << YAML::Key << "SourceEntityID" << YAML::Value << plc.SourceEntityID;
     out << YAML::Key << "LastKnownUpdate" << YAML::Value << plc.LastKnownUpdate;
     out << YAML::Key << "PrefabDirty" << YAML::Value << plc.PrefabDirty;
 
@@ -520,8 +519,6 @@ void SceneSerializer::DeserializeEntity(YAML::Node &entity, UUID parent) {
         nameComponent["PrefabDirty"].as<bool>(false);
   }
 
-  static int hierarchyIndex = 0;
-
   std::string tag;
   auto tagComponent = entity["TagComponent"];
   if (tagComponent) {
@@ -559,7 +556,6 @@ void SceneSerializer::DeserializeEntity(YAML::Node &entity, UUID parent) {
   if (prefabLinkComponent) {
     auto &plc = deserializedEntity.GetOrAddComponent<PrefabLinkComponent>();
     plc.PrefabID = prefabLinkComponent["PrefabID"].as<UUID>();
-    plc.SourceEntityID = prefabLinkComponent["SourceEntityID"].as<UUID>();
     plc.LastKnownUpdate = prefabLinkComponent["LastKnownUpdate"].as<uint64_t>(0);
     plc.PrefabDirty = prefabLinkComponent["PrefabDirty"].as<bool>(false);
   }
@@ -768,7 +764,8 @@ void SceneSerializer::DeserializeEntity(YAML::Node &entity, UUID parent) {
     for (auto child : relationshipComponent["Children"]) {
       DeserializeEntity(child, uuid);
     }
-  }}
+  }
+}
 
 bool SceneSerializer::Deserialize(const std::string &filepath) {
   CE_PROFILE_FUNCTION();

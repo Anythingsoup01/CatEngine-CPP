@@ -1,6 +1,7 @@
 #include "SceneViewportPanel.h"
 
 #include <imgui.h>
+#include <imgui_internal.h>
 
 namespace CatEngine {
 SceneViewportPanel::SceneViewportPanel(const FramebufferSpecification &spec) {
@@ -22,6 +23,11 @@ bool SceneViewportPanel::FramebufferResized() {
 }
 
 void SceneViewportPanel::OnImGuiRender() {
+  if (ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows) &&
+    ImGui::IsMouseClicked(ImGuiMouseButton_Middle)) {
+    ImGui::FocusWindow(ImGui::GetCurrentWindow());
+  }
+
   auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
   auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
   auto viewportOffset = ImGui::GetWindowPos();

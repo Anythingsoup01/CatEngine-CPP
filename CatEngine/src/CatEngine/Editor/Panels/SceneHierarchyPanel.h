@@ -19,8 +19,7 @@ public:
   virtual void OnEvent(Event &e) override {}
 
   Entity GetSelectedEntity() const { return m_SelectionContext; }
-  void SetSelectedEntity(Entity entity = {}) { m_SelectionContext = entity; }
-
+  void SetSelectedEntity(Entity entity = {});
 private:
   void DrawEntityNode(Entity entity, bool isPrefabRoot = false);
 

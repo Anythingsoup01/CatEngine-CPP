@@ -28,6 +28,10 @@ void SceneHierarchyPanel::SetSceneContext(const Ref<Scene> &scene) {
 
 void SceneHierarchyPanel::OnImGuiRender(bool &isOpen) {
   ImGui::Begin("Hierarchy", &isOpen);
+  if (ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows) &&
+    ImGui::IsMouseClicked(ImGuiMouseButton_Middle)) {
+    ImGui::FocusWindow(ImGui::GetCurrentWindow());
+  }
   ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow |
                              ImGuiTreeNodeFlags_SpanAvailWidth |
                              ImGuiTreeNodeFlags_DefaultOpen;
@@ -191,6 +195,15 @@ void SceneHierarchyPanel::OnImGuiRender(bool &isOpen) {
   ImGui::End();
 }
 
+void SceneHierarchyPanel::SetSelectedEntity(Entity entity) {
+  if (m_SelectionContext.IsParentOf(entity)) {
+    m_SelectionContext = entity;
+  } else {
+    m_SelectionContext = entity.GetRootParent();
+  }
+}
+
+
 void SceneHierarchyPanel::DrawEntityNode(Entity entity, bool isPrefabRoot) {
   if (!entity || !m_Context->GetReg().valid(entity))
     return;
@@ -268,9 +281,9 @@ void SceneHierarchyPanel::DrawEntityNode(Entity entity, bool isPrefabRoot) {
 
   // Single-click selection when not dragging or toggling arrow
   if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Left) && !ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
-    Ref<InspectorPanel> inspector = PanelManager::Get().GetPanel<InspectorPanel>("InspectorPanel");
-    inspector->SetEntitySelectionContext(entity);
     m_SelectionContext = entity;
+    Ref<InspectorPanel> inspector = PanelManager::Get().GetPanel<InspectorPanel>("InspectorPanel");
+    inspector->UpdateEntitySelection();
   }
 
   if (ImGui::BeginDragDropSource()) {
@@ -413,24 +426,23 @@ void SceneHierarchyPanel::DrawContextMenu(Entity hoveredEntity) {
       auto &rc = parentEntity.GetComponent<RelationshipComponent>();
       rc.Children.push_back(entity.GetUUID());
     }
-    Ref<InspectorPanel> inspector =
-        PanelManager::Get().GetPanel<InspectorPanel>("InspectorPanel");
-    inspector->SetEntitySelectionContext(entity);
+    m_SelectionContext = entity;
+    Ref<InspectorPanel> inspector = PanelManager::Get().GetPanel<InspectorPanel>("InspectorPanel");
+    inspector->UpdateEntitySelection();
     ImGui::CloseCurrentPopup();
   }
 
   if (hoveredEntity) {
     if (ImGui::MenuItem("Create Empty Child")) {
-      const auto &entity =
-          m_Context->CreateEntity("GameObject", hoveredEntity.GetUUID());
+      const auto &entity = m_Context->CreateEntity("GameObject", hoveredEntity.GetUUID());
       auto &newEntityRC = entity.GetComponent<RelationshipComponent>();
       auto &hoveredEntityRC =
           hoveredEntity.GetComponent<RelationshipComponent>();
       hoveredEntityRC.Children.push_back(entity.GetUUID());
       newEntityRC.Parent = hoveredEntity.GetUUID();
-      Ref<InspectorPanel> inspector =
-          PanelManager::Get().GetPanel<InspectorPanel>("InspectorPanel");
-      inspector->SetEntitySelectionContext(entity);
+      m_SelectionContext = entity;
+      Ref<InspectorPanel> inspector = PanelManager::Get().GetPanel<InspectorPanel>("InspectorPanel");
+      inspector->UpdateEntitySelection();
       ImGui::CloseCurrentPopup();
     }
 // TODO:
@@ -472,9 +484,9 @@ void SceneHierarchyPanel::DrawContextMenu(Entity hoveredEntity) {
         auto &rc = parentEntity.GetComponent<RelationshipComponent>();
         rc.Children.push_back(entity.GetUUID());
       }
-      Ref<InspectorPanel> inspector =
-          PanelManager::Get().GetPanel<InspectorPanel>("InspectorPanel");
-      inspector->SetEntitySelectionContext(entity);
+      m_SelectionContext = entity;
+      Ref<InspectorPanel> inspector = PanelManager::Get().GetPanel<InspectorPanel>("InspectorPanel");
+      inspector->UpdateEntitySelection();
 
       ImGui::CloseCurrentPopup();
     }
@@ -486,9 +498,9 @@ void SceneHierarchyPanel::DrawContextMenu(Entity hoveredEntity) {
         auto &rc = parentEntity.GetComponent<RelationshipComponent>();
         rc.Children.push_back(entity.GetUUID());
       }
-      Ref<InspectorPanel> inspector =
-          PanelManager::Get().GetPanel<InspectorPanel>("InspectorPanel");
-      inspector->SetEntitySelectionContext(entity);
+      m_SelectionContext = entity;
+      Ref<InspectorPanel> inspector = PanelManager::Get().GetPanel<InspectorPanel>("InspectorPanel");
+      inspector->UpdateEntitySelection();
 
       ImGui::CloseCurrentPopup();
     }
@@ -502,9 +514,9 @@ void SceneHierarchyPanel::DrawContextMenu(Entity hoveredEntity) {
         auto &rc = parentEntity.GetComponent<RelationshipComponent>();
         rc.Children.push_back(entity.GetUUID());
       }
-      Ref<InspectorPanel> inspector =
-          PanelManager::Get().GetPanel<InspectorPanel>("InspectorPanel");
-      inspector->SetEntitySelectionContext(entity);
+      m_SelectionContext = entity;
+      Ref<InspectorPanel> inspector = PanelManager::Get().GetPanel<InspectorPanel>("InspectorPanel");
+      inspector->UpdateEntitySelection();
 
       ImGui::CloseCurrentPopup();
     }
@@ -518,9 +530,9 @@ void SceneHierarchyPanel::DrawContextMenu(Entity hoveredEntity) {
         auto &rc = parentEntity.GetComponent<RelationshipComponent>();
         rc.Children.push_back(entity.GetUUID());
       }
-      Ref<InspectorPanel> inspector =
-          PanelManager::Get().GetPanel<InspectorPanel>("InspectorPanel");
-      inspector->SetEntitySelectionContext(entity);
+      m_SelectionContext = entity;
+      Ref<InspectorPanel> inspector = PanelManager::Get().GetPanel<InspectorPanel>("InspectorPanel");
+      inspector->UpdateEntitySelection();
 
       ImGui::CloseCurrentPopup();
     }
@@ -535,9 +547,9 @@ void SceneHierarchyPanel::DrawContextMenu(Entity hoveredEntity) {
       auto &rc = parentEntity.GetComponent<RelationshipComponent>();
       rc.Children.push_back(entity.GetUUID());
     }
-    Ref<InspectorPanel> inspector =
-        PanelManager::Get().GetPanel<InspectorPanel>("InspectorPanel");
-    inspector->SetEntitySelectionContext(entity);
+    m_SelectionContext = entity;
+    Ref<InspectorPanel> inspector = PanelManager::Get().GetPanel<InspectorPanel>("InspectorPanel");
+    inspector->UpdateEntitySelection();
     ImGui::CloseCurrentPopup();
   }
 
@@ -555,9 +567,8 @@ void SceneHierarchyPanel::DrawContextMenu(Entity hoveredEntity) {
         }
       }
       m_SelectionContext = {};
-      Ref<InspectorPanel> inspector =
-          PanelManager::Get().GetPanel<InspectorPanel>("InspectorPanel");
-      inspector->SetEntitySelectionContext({});
+      Ref<InspectorPanel> inspector = PanelManager::Get().GetPanel<InspectorPanel>("InspectorPanel");
+      inspector->UpdateEntitySelection();
     }
   }
   ImGui::EndPopup();

@@ -203,6 +203,27 @@ public:
     return parent;
   }
 
+bool IsParentOf(Entity entity) {
+  if (!m_Scene || !entity || !HasComponent<RelationshipComponent>())
+    return false;
+
+  const UUID targetID = entity.GetUUID();
+  if (targetID == GetUUID())
+    return false;
+
+  const auto &rc = GetComponent<RelationshipComponent>();
+  for (UUID childID : rc.Children) {
+    if (childID == targetID)
+      return true;
+
+    Entity childEntity = m_Scene->GetEntityByUUID(childID);
+    if (childEntity && childEntity.IsParentOf(entity))
+      return true;
+  }
+
+  return false;
+}
+
   void SetSceneContext(Ref<Scene> scene) {
     m_Scene = scene.get();
   }

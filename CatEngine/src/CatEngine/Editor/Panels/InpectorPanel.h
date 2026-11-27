@@ -19,7 +19,7 @@ public:
   virtual void OnImGuiRender(bool &isOpen) override;
   virtual void OnEvent(Event &e) override {}
 
-  void SetEntitySelectionContext(Entity e);
+  void UpdateEntitySelection();
   void SetAssetSelectionContext(AssetHandle handle);
 
 private:

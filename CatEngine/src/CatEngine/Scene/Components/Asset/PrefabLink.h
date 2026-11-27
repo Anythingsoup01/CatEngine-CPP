@@ -7,8 +7,6 @@ namespace CatEngine {
 
 struct PrefabLinkComponent {
   AssetHandle PrefabID = 0;
-  UUID SourceEntityID = 0;
-
   bool PrefabDirty = false;
 
   uint64_t LastKnownUpdate = 0;
@@ -17,7 +15,7 @@ struct PrefabLinkComponent {
 
   PrefabLinkComponent() = default;
   PrefabLinkComponent(AssetHandle prefabID, UUID sourceEntityID, uint64_t lastKnownUpdate)
-    : PrefabID(prefabID), SourceEntityID(sourceEntityID), LastKnownUpdate(lastKnownUpdate) {}
+    : PrefabID(prefabID), LastKnownUpdate(lastKnownUpdate) {}
 };
 
 }

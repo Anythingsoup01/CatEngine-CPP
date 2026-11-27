@@ -105,7 +105,17 @@ private:
 
   void CalculateTransformRecursive(Entity e, const glm::mat4 &parentWorldMatrix);
 
-  void DeleteEntities();
+  // Queues the entity in a vector to be deleted
+  // after disabling any physics or scripts
+  void DeleteRuntimeEntity(Entity e);
+
+  // Deletes the entities in the queue after
+  // having physics and scripts disabled
+  void DeleteRuntimeEntities();
+
+  // Deletes the edit time entity
+  void DeleteEditTimeEntity(Entity e);
+
 private:
   void ExecuteSceneCommandQueue();
 private:
@@ -128,5 +138,6 @@ private:
 
   friend class Entity;
   friend class Physics2D;
+  friend class PrefabManager;
 };
 } // namespace CatEngine

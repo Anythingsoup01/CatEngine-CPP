@@ -2,7 +2,9 @@
 
 #include "ConsolePanel.h"
 #include "CatEngine/Editor/ImGui/CEImGui.h"
-#include "imgui.h"
+
+#include <imgui.h>
+#include <imgui_internal.h>
 
 namespace CatEngine {
 
@@ -13,6 +15,10 @@ static std::vector<const char *> s_LogLevels = {"All",     "Trace", "Log",
 
 void ConsolePanel::OnImGuiRender(bool &isOpen) {
   if (ImGui::Begin("Console", &isOpen)) {
+    if (ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows) &&
+      ImGui::IsMouseClicked(ImGuiMouseButton_Middle)) {
+      ImGui::FocusWindow(ImGui::GetCurrentWindow());
+    }
 
     float buttonWidth = 60.0f;
     float comboWidth = ImGui::CalcTextSize("Log Level   Critical  ").x;

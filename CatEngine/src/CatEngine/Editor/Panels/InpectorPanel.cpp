@@ -5,6 +5,8 @@
 
 #include "CatEngine/AssetManager/AssetManager.h"
 #include "CatEngine/Editor/ImGui/CEImGui.h"
+#include "CatEngine/Editor/PanelManager.h"
+#include "CatEngine/Editor/Panels/SceneHierarchyPanel.h"
 #include "CatEngine/Prefab/Prefab.h"
 #include "CatEngine/Prefab/PrefabManager.h"
 #include "CatEngine/Project/Project.h"
@@ -24,6 +26,10 @@ void InspectorPanel::SetSceneContext(const Ref<Scene> &context) {
 
 void InspectorPanel::OnImGuiRender(bool &isOpen) {
   ImGui::Begin("Inspector");
+  if (ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows) &&
+    ImGui::IsMouseClicked(ImGuiMouseButton_Middle)) {
+    ImGui::FocusWindow(ImGui::GetCurrentWindow());
+  }
   if (m_EntitySelection || m_AssetSelection) {
     ImVec2 contentRegionAvailable = ImGui::GetContentRegionAvail();
     const ImGuiTreeNodeFlags treeNodeFlags =
@@ -91,8 +97,9 @@ void InspectorPanel::OnImGuiRender(bool &isOpen) {
   ImGui::End();
 }
 
-void InspectorPanel::SetEntitySelectionContext(Entity e) {
-  m_EntitySelection = e;
+void InspectorPanel::UpdateEntitySelection() {
+  auto sceneHierarchy = PanelManager::Get().GetPanel<SceneHierarchyPanel>("SceneHierarchyPanel");
+  m_EntitySelection = sceneHierarchy->GetSelectedEntity();
   m_AssetSelection = 0;
 }
 
@@ -343,7 +350,7 @@ void InspectorPanel::DrawComponents(Entity selection) {
 
           ImGui::Separator();
           if (ImGui::Button("Apply All")) {
-            // TODO: Apply overrides to prefab asset (prefabLink.PrefabID) and clear dirty/deleted flags
+            PrefabManager::Get().ApplyOverridesToPrefab(prefabLink.PrefabID, selection);
           }
           ImGui::SameLine();
           if (ImGui::Button("Revert All")) {

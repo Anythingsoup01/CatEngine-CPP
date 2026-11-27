@@ -1,82 +1,92 @@
 Prefab: CatEngine Prefab
 Entities:
-  - Entity: 17917616161294619118
+  - Entity: 17989758431517433925
     TagComponent:
       Tag: None
+      PrefabDirty: false
     LayerComponent:
       Layer: Default
+      PrefabDirty: false
     NameComponent:
-      Name: Player
+      Name: Player (Prefab)
+      PrefabDirty: false
+    ObjectStateComponent:
+      Locked: false
+      SelfLocked: false
+      HierarchyLocked: false
+      Active: true
+      SelfActive: true
+      HierarchyActive: true
+      PrefabDirty: false
+      PrefabAdded: false
     TransformComponent:
       LocalPosition: [0, 0, 0]
       LocalRotation: [0, 0, 0]
       LocalScale: [1, 1, 1]
-    Rigidbody2DComponent:
-      BodyType: 2
-      FixedRotation: true
-    BoxCollider2DComponent:
-      Offset: [0, 0]
-      Size: [0.5, 0.5]
-      Rotation: 0
-      ShowColliderBounds: false
-      IsTrigger: false
-      Density: 1
-      Friction: 0.5
-      Restitution: 0
-      RestitutionThreshold: 0.5
-    ScriptComponentContainer:
-      - ScriptComponent:
-          ScriptID: 1101011320
-          ClassName: PlayerController
-          Fields:
-            - FieldID: 1573751430
-              FieldName: m_SpeedScale
-              FieldType: Float
-              FieldSize: 4
-              IsVector: false
-              Value: 0.0500000007
-            - FieldID: 490718930
-              FieldName: m_PlayerHealth
-              FieldType: Float
-              FieldSize: 4
-              IsVector: false
-              Value: 50
+      PrefabDirty: false
     RelationshipComponent:
       ParentID: 0
       Children:
-        - Entity: 8956870582982125163
+        - Entity: 5286967785592759938
           TagComponent:
             Tag: None
+            PrefabDirty: false
           LayerComponent:
             Layer: Default
+            PrefabDirty: false
           NameComponent:
-            Name: Player Sprite
-          TransformComponent:
-            LocalPosition: [2.98023224e-08, 0, 0]
-            LocalRotation: [0, 0, 0]
-            LocalScale: [1, 1, 1]
-          SpriteRendererComponent:
-            Color: [0.328712553, 0.943925261, 0.141147733, 1]
-            Texture: 15721212057771476663
-            Tiling: 1
-          RelationshipComponent:
-            ParentID: 17917616161294619118
-            Children:
-              []
-        - Entity: 2774478371075942326
-          TagComponent:
-            Tag: None
-          LayerComponent:
-            Layer: Default
-          NameComponent:
-            Name: Camera
+            Name: Sprite
+            PrefabDirty: false
+          ObjectStateComponent:
+            Locked: false
+            SelfLocked: false
+            HierarchyLocked: false
+            Active: true
+            SelfActive: true
+            HierarchyActive: true
+            PrefabDirty: false
+            PrefabAdded: false
           TransformComponent:
             LocalPosition: [0, 0, 0]
+            LocalRotation: [0, 0, 0]
+            LocalScale: [1, 1, 1]
+            PrefabDirty: false
+          SpriteRendererComponent:
+            Color: [1, 1, 1, 1]
+            Texture: 15721212057771476663
+            Tiling: 5
+            PrefabDirty: true
+          RelationshipComponent:
+            ParentID: 17989758431517433925
+            Children:
+              []
+        - Entity: 789023929204498203
+          TagComponent:
+            Tag: None
+            PrefabDirty: false
+          LayerComponent:
+            Layer: Default
+            PrefabDirty: false
+          NameComponent:
+            Name: Camera
+            PrefabDirty: false
+          ObjectStateComponent:
+            Locked: false
+            SelfLocked: false
+            HierarchyLocked: false
+            Active: true
+            SelfActive: true
+            HierarchyActive: true
+            PrefabDirty: false
+            PrefabAdded: false
+          TransformComponent:
+            LocalPosition: [0, 0, 10]
             LocalRotation: [0, -0, 0]
             LocalScale: [1, 1, 1]
+            PrefabDirty: false
           CameraComponent:
             Camera:
-              ProjectionType: 1
+              ProjectionType: 0
               PerspectiveFOV: 0.785398185
               PerspectiveNear: 0.00999999978
               PerspectiveFar: 10000
@@ -85,7 +95,8 @@ Entities:
               OrthographicFar: 1
             Primary: true
             FixedAspectRatio: false
+            PrefabDirty: false
           RelationshipComponent:
-            ParentID: 17917616161294619118
+            ParentID: 17989758431517433925
             Children:
               []

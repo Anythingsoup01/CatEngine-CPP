@@ -21,20 +21,7 @@ Scene::Scene() {}
 
 Scene::~Scene() { ShutdownRuntime(); }
 
-template <typename T>
-static void CopyComponent(entt::registry &dstRegistry, entt::registry &srcRegistry,
-              const std::unordered_map<UUID, entt::entity> &enttMap) {
-  auto srcEntities = srcRegistry.view<T>();
-  for (auto srcEntity : srcEntities) {
-    entt::entity destEntity =
-        enttMap.at(srcRegistry.get<IDComponent>(srcEntity).ID);
-
-    auto &srcComponent = srcRegistry.get<T>(srcEntity);
-    auto &destComponent =
-        dstRegistry.emplace_or_replace<T>(destEntity, srcComponent);
-  }
-}
-
+namespace SceneUtil {
 template <typename... Component>
 static void CopyComponentIfExists(Entity dst, Entity src) {
   (
@@ -44,6 +31,7 @@ static void CopyComponentIfExists(Entity dst, Entity src) {
     }(),
     ...);
 }
+
 template <typename... Component>
 static void CopyComponentIfExists(ComponentGroup<Component...>, Entity dst,
                                   Entity src) {
@@ -60,6 +48,10 @@ static void CopyComponentIfExistsForEntity(entt::registry &dstRegistry,
     dstRegistry.emplace_or_replace<T>(destEntity, srcComponent);
   }
 }
+
+}
+
+using namespace SceneUtil;
 
 void Scene::RecursiveCopyTo(Ref<Scene> &target, const UUID &entityID) {
   if (!target)
@@ -112,11 +104,6 @@ void Scene::CopyTo(Ref<Scene> &target) {
 
 void Scene::OnUpdateEditor(Time ts, EditorCamera &camera) {
   CE_PROFILE_FUNCTION();
-
-  if (!m_IsRunning) {
-    ExecuteSceneCommandQueue();
-    DeleteEntities();
-  }
 
   UpdateTransforms();
   Renderer2D::BeginScene(camera);
@@ -188,7 +175,7 @@ void Scene::OnUpdateRuntime(Time time) {
 
     while (m_Accumulator >= m_FixedTimeStep) {
       // Loads the delete command to run the next update frame, allowing the physics engine to catch up
-      DeleteEntities();
+      DeleteRuntimeEntities();
 
       // Update Scripts
       ScriptEngine::GetMutable().OnFixedUpdate(Time(m_FixedTimeStep));
@@ -385,7 +372,31 @@ void Scene::CalculateTransformRecursive(Entity entity,
   }
 }
 
-void Scene::DeleteEntities() {
+void Scene::DeleteRuntimeEntity(Entity entity) {
+  m_SceneCommandQueue.push_back([this, entity](){
+    auto &rc = entity.GetComponent<RelationshipComponent>();
+
+    for (auto &child : rc.Children) {
+      DeleteRuntimeEntity(GetEntityByUUID(child));
+    }
+
+    if (entity.HasComponent<BoxCollider2DComponent>() || entity.HasComponent<CircleCollider2DComponent>()) {
+      Physics2D::Get().EnableCollider(entity, false);
+    }
+
+    if (entity.HasComponent<Rigidbody2DComponent>()) {
+      Physics2D::Get().EnableRigidbody(entity, false);
+    }
+
+    if (entity.HasComponent<ScriptComponentContainer>()) {
+      ScriptEngine::GetMutable().DeleteEntity(entity);
+    }
+
+    m_DeletedEntities.push_back(entity.GetUUID());
+  });
+}
+
+void Scene::DeleteRuntimeEntities() {
   m_SceneCommandQueue.push_back([this](){
     for (auto &entityID : m_DeletedEntities) {
       Entity e = this->GetEntityByUUID(entityID);
@@ -399,6 +410,34 @@ void Scene::DeleteEntities() {
     }
     m_DeletedEntities.clear();
   });
+}
+
+void Scene::DeleteEditTimeEntity(Entity entity) {
+  auto &rc = entity.GetComponent<RelationshipComponent>();
+  if (rc.Parent != 0) {
+    UUID rootID = rc.Parent;
+    // Look for parent PrefabLinkComponent
+    while (rootID != 0) {
+      Entity parent = entity.GetScene()->GetEntityByUUID(rootID);
+      auto &prc = parent.GetComponent<RelationshipComponent>();
+      if (parent.HasComponent<PrefabLinkComponent>()) {
+        auto &plc = parent.GetComponent<PrefabLinkComponent>();
+        std::string name = entity.GetComponent<NameComponent>().Name;
+        plc.DeletedEntities.push_back(name);
+        break;
+      }
+      rootID = prc.Parent;
+    }
+  }
+
+  for (auto &child : rc.Children) {
+    DeleteEditTimeEntity(GetEntityByUUID(child));
+  }
+
+  UUID entityID = entity.GetUUID();
+  m_EntityMap.erase(entityID);
+  m_RootEntities.erase(std::remove(m_RootEntities.begin(), m_RootEntities.end(), entityID), m_RootEntities.end());
+  m_Registry.destroy(entity);
 }
 
 void Scene::DuplicateEntity(Entity entity) { PasteEntity(entity); }
@@ -477,43 +516,11 @@ Entity Scene::CreateEntityWithUUID(UUID uuid, const std::string &name, UUID pare
 }
 
 void Scene::DeleteEntity(Entity entity) {
-  m_SceneCommandQueue.push_back([this, entity](){
-    auto &rc = entity.GetComponent<RelationshipComponent>();
-    UUID rootParentID = rc.Parent;
-    Entity parent = GetEntityByUUID(rootParentID);
-    while (rootParentID != 0) {
-      parent = GetEntityByUUID(rootParentID);
-      auto &prc = parent.GetComponent<RelationshipComponent>();
-      rootParentID = prc.Parent;
-    }
-
-    if (parent.HasComponent<PrefabLinkComponent>()) {
-      auto &plc = parent.GetComponent<PrefabLinkComponent>();
-      std::string name = entity.GetComponent<NameComponent>().Name;
-      plc.DeletedEntities.push_back(name);
-    }
-
-    for (auto &child : rc.Children) {
-      DeleteEntity(GetEntityByUUID(child));
-    }
-
-    if (m_IsRunning) {
-      if (entity.HasComponent<BoxCollider2DComponent>() || entity.HasComponent<CircleCollider2DComponent>()) {
-        Physics2D::Get().EnableCollider(entity, false);
-      }
-
-      if (entity.HasComponent<Rigidbody2DComponent>()) {
-        Physics2D::Get().EnableRigidbody(entity, false);
-      }
-
-      if (entity.HasComponent<ScriptComponentContainer>()) {
-        ScriptEngine::GetMutable().DeleteEntity(entity);
-      }
-    }
-
-
-    m_DeletedEntities.push_back(entity.GetUUID());
-  });
+  if (m_IsRunning) {
+    DeleteRuntimeEntity(entity);
+  } else {
+    DeleteEditTimeEntity(entity);
+  }
 }
 
 void Scene::SetEntityLocked(Entity entity, bool locked) {
@@ -1021,7 +1028,7 @@ void Scene::SyncPrefabHierarchyRecursive(Entity dstEntity, Entity srcPrefabEntit
   if (!dstEntity || !srcPrefabEntity)
     return;
 
-  SyncEntityComponentsFromPrefab(dstEntity, srcPrefabEntity, /*preserveInstanceTransform=*/true);
+  SyncEntityComponentsFromPrefab(dstEntity, srcPrefabEntity, true);
 
   if (dstEntity.HasComponent<PrefabLinkComponent>()) {
     auto &link = dstEntity.GetComponent<PrefabLinkComponent>();
