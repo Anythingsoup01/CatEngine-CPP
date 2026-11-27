@@ -533,7 +533,17 @@ void ScriptEngine::CopyScriptFields(Entity src, Entity dst) {
     return;
   }
 
-  s_ScriptData->EntityScriptFields[dst.GetUUID()] = s_ScriptData->EntityScriptFields[src.GetUUID()];
+  for (auto &[scriptID, scriptFields] : s_ScriptData->EntityScriptFields[src.GetUUID()]) {
+    bool dirty = false;
+    for (auto &script : src.GetComponent<ScriptComponentContainer>().Scripts) {
+      if (script.ScriptID == scriptID && script.PrefabDirty) {
+        dirty = true;
+        break;
+      }
+    }
+    if (!dirty)
+      s_ScriptData->EntityScriptFields[dst.GetUUID()].emplace(scriptID, scriptFields);
+  }
 }
 
 void ScriptEngine::CapyInit() {

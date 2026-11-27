@@ -94,12 +94,8 @@ Entities:
       HierarchyActive: true
       PrefabDirty: false
       PrefabAdded: false
-    PrefabLinkComponent:
-      PrefabID: 6860324237650516918
-      LastKnownUpdate: 1795662968694161472
-      PrefabDirty: false
     TransformComponent:
-      LocalPosition: [3.24000001, 1.19588089, 0]
+      LocalPosition: [2.03653169, 1.26956177, 0]
       LocalRotation: [0, 0, 0]
       LocalScale: [1, 1, 1]
       PrefabDirty: false
@@ -153,7 +149,7 @@ Entities:
             LocalScale: [1, 1, 1]
             PrefabDirty: false
           SpriteRendererComponent:
-            Color: [1, 0, 0, 1]
+            Color: [0, 0.158878565, 1, 1]
             Texture: 9011015729964880298
             Tiling: 1
             PrefabDirty: false
@@ -215,12 +211,12 @@ Entities:
             LocalPosition: [0, 0, 0]
             LocalRotation: [0, 0, 0]
             LocalScale: [1, 1, 1]
-            PrefabDirty: true
+            PrefabDirty: false
           SpriteRendererComponent:
             Color: [1, 1, 1, 1]
             Texture: 15721212057771476663
             Tiling: 1
-            PrefabDirty: true
+            PrefabDirty: false
           RelationshipComponent:
             ParentID: 2554069822271188310
             Children:
@@ -377,7 +373,7 @@ Entities:
       PrefabAdded: false
     PrefabLinkComponent:
       PrefabID: 6860324237650516918
-      LastKnownUpdate: 1795662968694161472
+      LastKnownUpdate: 1795816892821436931
       PrefabDirty: false
     TransformComponent:
       LocalPosition: [0, 1.16889572, 0]
@@ -405,7 +401,12 @@ Entities:
           ClassName: CollectableItem
           PrefabDirty: false
           Fields:
-            []
+            - FieldID: 3790947769
+              FieldName: m_HealthModification
+              FieldType: Float
+              FieldSize: 4
+              IsVector: false
+              Value: 50
     RelationshipComponent:
       ParentID: 0
       Children:

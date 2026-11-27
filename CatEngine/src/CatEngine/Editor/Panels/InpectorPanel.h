@@ -41,6 +41,7 @@ private:
   void DisplayAddScriptComponent(const std::string &name);
 private:
   Ref<Scene> m_Context;
+  AssetHandle m_SceneToOpen = 0;
   Entity m_EntitySelection = {};
   AssetHandle m_AssetSelection = 0;
 };

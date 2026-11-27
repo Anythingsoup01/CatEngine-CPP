@@ -91,9 +91,9 @@ private:
 private:
   void RecursiveCopyTo(Ref<Scene> &target, const UUID &entityID);
 
-  void SyncEntityComponentsFromPrefab(Entity dstEntity, Entity srcPrefabEntity, bool preserveInstanceTransform);
-  void SyncPrefabHierarchyRecursive(Entity dstEntity, Entity srcPrefabEntity, AssetHandle prefabID, uint64_t prefabVersion);
-  void RecursiveUpdatePrefabs(const UUID &entityID);
+  void SyncEntityComponentsFromPrefab(Entity dstEntity, Entity srcPrefabEntity, bool preserveInstanceTransform, bool forceUpdate);
+  void SyncPrefabHierarchyRecursive(Entity dstEntity, Entity srcPrefabEntity, AssetHandle prefabID, uint64_t prefabVersion, bool forceUpdate);
+  void RecursiveUpdatePrefabs(const UUID &entityID, bool forceUpdate = false);
 
   void OnPhysics2DStart();
   void OnPhysics2DUpdate(Time ts);
@@ -139,5 +139,6 @@ private:
   friend class Entity;
   friend class Physics2D;
   friend class PrefabManager;
+  friend class InspectorPanel;
 };
 } // namespace CatEngine

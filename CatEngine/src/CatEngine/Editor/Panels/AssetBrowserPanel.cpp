@@ -24,9 +24,10 @@ void AssetBrowserPanel::SetSceneContext(const Ref<Scene> &context) {
 
 void AssetBrowserPanel::OnImGuiRender(bool &isOpen) {
   if (ImGui::Begin("Assets", &isOpen)) {
-    if (ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows) &&
-      ImGui::IsMouseClicked(ImGuiMouseButton_Middle)) {
-      ImGui::FocusWindow(ImGui::GetCurrentWindow());
+    ImGuiIO &io = ImGui::GetIO();
+    if (ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows)) {
+      if (ImGui::IsMouseClicked(ImGuiMouseButton_Middle) || io.MouseWheel != 0.0f)
+        ImGui::FocusWindow(ImGui::GetCurrentWindow());
     }
     std::filesystem::path assetRoot = Project::GetAssetDirectory();
     std::filesystem::path relativePath =

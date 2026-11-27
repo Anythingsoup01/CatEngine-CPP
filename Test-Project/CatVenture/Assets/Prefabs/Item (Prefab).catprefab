@@ -3,17 +3,31 @@ Entities:
   - Entity: 4891340968737901211
     TagComponent:
       Tag: None
+      PrefabDirty: false
     LayerComponent:
       Layer: Default
+      PrefabDirty: false
     NameComponent:
       Name: Item
+      PrefabDirty: false
+    ObjectStateComponent:
+      Locked: false
+      SelfLocked: false
+      HierarchyLocked: false
+      Active: true
+      SelfActive: true
+      HierarchyActive: true
+      PrefabDirty: false
+      PrefabAdded: false
     TransformComponent:
       LocalPosition: [0, 0, 0]
       LocalRotation: [0, 0, 0]
       LocalScale: [1, 1, 1]
+      PrefabDirty: false
     Rigidbody2DComponent:
       BodyType: 1
       FixedRotation: false
+      PrefabDirty: false
     BoxCollider2DComponent:
       Offset: [0, 0]
       Size: [0.5, 0.5]
@@ -24,30 +38,51 @@ Entities:
       Friction: 0.5
       Restitution: 0
       RestitutionThreshold: 0.5
+      PrefabDirty: false
     ScriptComponentContainer:
       - ScriptComponent:
           ScriptID: 4273638238
           ClassName: CollectableItem
+          PrefabDirty: false
           Fields:
-            []
+            - FieldID: 3790947769
+              FieldName: m_HealthModification
+              FieldType: Float
+              FieldSize: 4
+              IsVector: false
+              Value: 50
     RelationshipComponent:
       ParentID: 0
       Children:
         - Entity: 18012411933303629574
           TagComponent:
             Tag: None
+            PrefabDirty: false
           LayerComponent:
             Layer: Default
+            PrefabDirty: false
           NameComponent:
             Name: Item Sprite
+            PrefabDirty: false
+          ObjectStateComponent:
+            Locked: false
+            SelfLocked: false
+            HierarchyLocked: false
+            Active: true
+            SelfActive: true
+            HierarchyActive: true
+            PrefabDirty: false
+            PrefabAdded: false
           TransformComponent:
             LocalPosition: [0, 0, 0]
-            LocalRotation: [0, -0, 0]
+            LocalRotation: [0, 0, 0]
             LocalScale: [1, 1, 1]
+            PrefabDirty: false
           SpriteRendererComponent:
             Color: [1, 1, 1, 1]
             Texture: 9011015729964880298
             Tiling: 1
+            PrefabDirty: false
           RelationshipComponent:
             ParentID: 4891340968737901211
             Children:

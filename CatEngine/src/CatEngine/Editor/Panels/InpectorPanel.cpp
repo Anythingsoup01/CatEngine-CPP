@@ -4,6 +4,7 @@
 #include "DrawComponents.h"
 
 #include "CatEngine/AssetManager/AssetManager.h"
+#include "CatEngine/Core/Application.h"
 #include "CatEngine/Editor/ImGui/CEImGui.h"
 #include "CatEngine/Editor/PanelManager.h"
 #include "CatEngine/Editor/Panels/SceneHierarchyPanel.h"
@@ -26,9 +27,10 @@ void InspectorPanel::SetSceneContext(const Ref<Scene> &context) {
 
 void InspectorPanel::OnImGuiRender(bool &isOpen) {
   ImGui::Begin("Inspector");
-  if (ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows) &&
-    ImGui::IsMouseClicked(ImGuiMouseButton_Middle)) {
-    ImGui::FocusWindow(ImGui::GetCurrentWindow());
+  ImGuiIO &io = ImGui::GetIO();
+  if (ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows)) {
+    if (ImGui::IsMouseClicked(ImGuiMouseButton_Middle) || io.MouseWheel != 0.0f)
+      ImGui::FocusWindow(ImGui::GetCurrentWindow());
   }
   if (m_EntitySelection || m_AssetSelection) {
     ImVec2 contentRegionAvailable = ImGui::GetContentRegionAvail();
@@ -41,6 +43,7 @@ void InspectorPanel::OnImGuiRender(bool &isOpen) {
       if (stateComponent.Locked) {
         ImGui::BeginDisabled();
       }
+
       DrawComponents(m_EntitySelection);
 
       bool Components2DAvaliable =
@@ -282,7 +285,8 @@ void InspectorPanel::DrawComponents(Entity selection) {
     ImGui::EndTable();
   }
 
-  // 3) Prefab bar skeleton (shown when entity has a PrefabLinkComponent)
+  bool removePrefabComponent = false;
+  AssetHandle prefabLinkHandle = 0;
   if (selection.HasComponent<PrefabLinkComponent>()) {
     auto &prefabLink = selection.GetComponent<PrefabLinkComponent>();
     auto assetManager = Project::GetActive()->GetEditorAssetManager();
@@ -354,7 +358,7 @@ void InspectorPanel::DrawComponents(Entity selection) {
           }
           ImGui::SameLine();
           if (ImGui::Button("Revert All")) {
-            // TODO: Restore overridden components/deleted entities from prefab and clear dirty flags
+            m_Context->RecursiveUpdatePrefabs(selection.GetUUID(), true);
           }
         }
 
@@ -363,7 +367,7 @@ void InspectorPanel::DrawComponents(Entity selection) {
 
       ImGui::SameLine();
       if (ImGui::SmallButton("Unpack")) {
-        // TODO: Remove PrefabLinkComponent from this entity (and optionally children)
+        removePrefabComponent = true;
       }
 
       // Right-aligned "Open" button
@@ -376,7 +380,7 @@ void InspectorPanel::DrawComponents(Entity selection) {
         ImGui::SameLine();
       }
       if (ImGui::SmallButton(openLabel)) {
-        // TODO: Open prefab asset in prefab-editing mode (prefabLink.PrefabID)
+        prefabLinkHandle = prefabLink.PrefabID;
       }
     }
     ImGui::EndChild();
@@ -384,12 +388,24 @@ void InspectorPanel::DrawComponents(Entity selection) {
     ImGui::PopStyleVar(2);
   }
 
+
   ImGui::Spacing();
   ImGui::Separator();
 
   DrawComponentsHelper(selection);
 
   ImGui::Dummy(ImVec2{ImGui::GetContentRegionAvail().x, 50});
+
+
+  if (removePrefabComponent) {
+    selection.RemoveComponent<PrefabLinkComponent>();
+  }
+
+  if (prefabLinkHandle) {
+    Application::Get().SubmitToMainThread([prefabLinkHandle](){
+      Application::Get().OpenSceneFromHandle(prefabLinkHandle);
+    });
+  }
 }
 
 void InspectorPanel::DrawAsset(const AssetHandle &handle) {

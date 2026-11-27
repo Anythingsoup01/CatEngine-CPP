@@ -15,9 +15,10 @@ static std::vector<const char *> s_LogLevels = {"All",     "Trace", "Log",
 
 void ConsolePanel::OnImGuiRender(bool &isOpen) {
   if (ImGui::Begin("Console", &isOpen)) {
-    if (ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows) &&
-      ImGui::IsMouseClicked(ImGuiMouseButton_Middle)) {
-      ImGui::FocusWindow(ImGui::GetCurrentWindow());
+    ImGuiIO &io = ImGui::GetIO();
+    if (ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows)) {
+      if (ImGui::IsMouseClicked(ImGuiMouseButton_Middle) || io.MouseWheel != 0.0f)
+        ImGui::FocusWindow(ImGui::GetCurrentWindow());
     }
 
     float buttonWidth = 60.0f;

@@ -1,10 +1,10 @@
 Project:
   Name: CatVenture
   AssetDirectory: Assets
-  LastLoadedAssetPath: /home/anyth/Doge/Dev/CatEngine/Test-Project/CatVenture/Assets/Textures
+  LastLoadedAssetPath: /home/anyth/Doge/Dev/CatEngine/Test-Project/CatVenture/Assets/Prefabs
   OpenScenes:
     - AssetHandle: 2688644230827143704
-    - AssetHandle: 17337123684361863146
-    - AssetHandle: 6860324237650516918
     - AssetHandle: 2805504806217325339
+    - AssetHandle: 6860324237650516918
+    - AssetHandle: 17337123684361863146
     - AssetHandle: 7495987576117382183

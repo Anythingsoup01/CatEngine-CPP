@@ -23,9 +23,10 @@ bool SceneViewportPanel::FramebufferResized() {
 }
 
 void SceneViewportPanel::OnImGuiRender() {
-  if (ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows) &&
-    ImGui::IsMouseClicked(ImGuiMouseButton_Middle)) {
-    ImGui::FocusWindow(ImGui::GetCurrentWindow());
+  ImGuiIO &io = ImGui::GetIO();
+  if (ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows)) {
+    if (ImGui::IsMouseClicked(ImGuiMouseButton_Middle) || io.MouseWheel != 0.0f)
+      ImGui::FocusWindow(ImGui::GetCurrentWindow());
   }
 
   auto viewportMinRegion = ImGui::GetWindowContentRegionMin();

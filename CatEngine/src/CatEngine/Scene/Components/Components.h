@@ -14,7 +14,7 @@
 #include "Physics/Rigidbody2D.h"
 
 #include "Required/InformationComponents.h"
-#include "Required/RelationshipComponent.h"
+#include "Required/RelationshipComponent.h" // IWYU pragma: keep
 
 #include "Scripting/ScriptComponentContainer.h"
 
@@ -23,7 +23,7 @@ namespace CatEngine {
 template <typename... Component> struct ComponentGroup {};
 
 using AllComponents = ComponentGroup<
-    TagComponent, LayerComponent, RelationshipComponent, ObjectStateComponent,
+    TagComponent, LayerComponent, ObjectStateComponent,
     TransformComponent, CameraComponent,
     SpriteRendererComponent, CircleRendererComponent, BoxCollider2DComponent,
     CircleCollider2DComponent, Rigidbody2DComponent, ScriptComponentContainer,

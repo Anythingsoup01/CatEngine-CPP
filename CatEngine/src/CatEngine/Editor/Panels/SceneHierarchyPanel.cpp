@@ -28,9 +28,10 @@ void SceneHierarchyPanel::SetSceneContext(const Ref<Scene> &scene) {
 
 void SceneHierarchyPanel::OnImGuiRender(bool &isOpen) {
   ImGui::Begin("Hierarchy", &isOpen);
-  if (ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows) &&
-    ImGui::IsMouseClicked(ImGuiMouseButton_Middle)) {
-    ImGui::FocusWindow(ImGui::GetCurrentWindow());
+  ImGuiIO &io = ImGui::GetIO();
+  if (ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows)) {
+    if (ImGui::IsMouseClicked(ImGuiMouseButton_Middle) || io.MouseWheel != 0.0f)
+      ImGui::FocusWindow(ImGui::GetCurrentWindow());
   }
   ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow |
                              ImGuiTreeNodeFlags_SpanAvailWidth |
@@ -239,7 +240,7 @@ void SceneHierarchyPanel::DrawEntityNode(Entity entity, bool isPrefabRoot) {
     flags |= ImGuiTreeNodeFlags_Selected;
   }
 
-  if (isPrefabRoot) {
+  if (isPrefabRoot || entity.IsParentOf(m_SelectionContext)) {
     flags |= ImGuiTreeNodeFlags_DefaultOpen;
   }
 
@@ -274,7 +275,12 @@ void SceneHierarchyPanel::DrawEntityNode(Entity entity, bool isPrefabRoot) {
   ImGui::PushStyleColor(ImGuiCol_HeaderHovered, isSelected ? headerSelected : headerHovered);
   ImGui::PushStyleColor(ImGuiCol_HeaderActive, headerActive);
 
-  const std::string strID = name + "##EntityNode";
+  const bool shouldForceOpen = isPrefabRoot || entity.IsParentOf(m_SelectionContext);
+  if (shouldForceOpen) {
+    ImGui::SetNextItemOpen(true, ImGuiCond_Always);
+  }
+
+  const std::string strID = "##EntityNode";
   const bool opened = ImGui::TreeNodeEx(strID.c_str(), flags, "%s", name.c_str());
 
   ImGui::PopStyleColor(4);

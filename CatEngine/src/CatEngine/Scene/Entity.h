@@ -193,14 +193,14 @@ public:
 
     auto &rc = GetComponent<RelationshipComponent>();
     UUID rootParentID = rc.Parent;
-    Entity parent = m_Scene->GetEntityByUUID(rootParentID);
+    Entity current = *this;
     while (rootParentID != 0) {
-      parent = m_Scene->GetEntityByUUID(rootParentID);
-      auto &prc = parent.GetComponent<RelationshipComponent>();
+      current = m_Scene->GetEntityByUUID(rootParentID);
+      auto &prc = current.GetComponent<RelationshipComponent>();
       rootParentID = prc.Parent;
     }
 
-    return parent;
+    return current;
   }
 
 bool IsParentOf(Entity entity) {
