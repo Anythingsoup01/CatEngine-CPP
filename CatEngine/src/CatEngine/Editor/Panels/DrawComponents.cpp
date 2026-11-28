@@ -11,8 +11,204 @@
 
 namespace CatEngine {
 
+struct ComponentHeaderResult {
+  bool Open = false;
+  bool Reset = false;
+  bool Remove = false;
+};
+
+// Same header style as the other drawers: framed tree node, dirty markers,
+// and a ":" settings popup with Reset / Remove.
+ComponentHeaderResult DrawComponentHeader(const char *name, size_t typeHash,
+                                          bool prefabDirty, bool editDirty,
+                                          bool isChild, bool removable = true) {
+  const ImGuiTreeNodeFlags flags =
+      ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed |
+      ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap |
+      ImGuiTreeNodeFlags_FramePadding;
+
+  ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{8.0f, 5.0f});
+  ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.19f, 0.20f, 0.23f, 1.0f));
+  ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.24f, 0.25f, 0.29f, 1.0f));
+  ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.22f, 0.24f, 0.28f, 1.0f));
+
+  const float lineHeight = ImGui::GetFrameHeight();
+  std::string label = name;
+  if (prefabDirty && isChild)
+    label += " P";
+  if (editDirty)
+    label += "*";
+
+  ComponentHeaderResult result;
+  result.Open = ImGui::TreeNodeEx(reinterpret_cast<void *>(typeHash), flags, "%s", label.c_str());
+
+  ImGui::PopStyleColor(3);
+  ImGui::PopStyleVar();
+
+  const float rightEdge = ImGui::GetWindowContentRegionMax().x;
+  ImGui::SameLine(rightEdge - lineHeight);
+  ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+  ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.30f, 0.32f, 0.36f, 0.7f));
+  ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.36f, 0.38f, 0.42f, 0.9f));
+
+  const std::string buttonID = ":##" + std::string(name) + "Settings";
+  const std::string popupID = std::string(name) + "SettingsPopup";
+  if (ImGui::Button(buttonID.c_str(), ImVec2(lineHeight, lineHeight)))
+    ImGui::OpenPopup(popupID.c_str());
+  ImGui::PopStyleColor(3);
+
+  if (ImGui::BeginPopup(popupID.c_str())) {
+    if (ImGui::MenuItem("Reset")) {
+      result.Reset = true;
+      ImGui::CloseCurrentPopup();
+    }
+    if (removable) {
+      ImGui::Separator();
+      if (ImGui::MenuItem("Remove Component")) {
+        result.Remove = true;
+        ImGui::CloseCurrentPopup();
+      }
+    }
+    ImGui::EndPopup();
+  }
+  return result;
+}
+
+template <typename T>
+ComponentHeaderResult BeginComponent(Entity selection, const char *name, T &component,
+                                     bool &edited, bool removable = true) {
+  const bool isChild = selection.GetComponent<RelationshipComponent>().Parent != 0;
+  auto header = DrawComponentHeader(name, typeid(T).hash_code(), component.PrefabDirty,
+                                    component.EditDirty, isChild, removable);
+  if (header.Reset) {
+    component = T();
+    edited = true;
+  }
+  return header;
+}
+
+template <typename T>
+void FinishComponent(Entity selection, T &component, bool edited,
+                     const ComponentHeaderResult &header, const char *deletedName) {
+  if (edited)
+    MarkComponentEdited(selection, component);
+  if (header.Remove)
+    RemoveComponentTracked<T>(selection, deletedName);
+}
+
+template <typename T>
+void MarkComponentEdited(Entity selection, T &component) {
+  component.EditDirty = true;
+  auto &rc = selection.GetComponent<RelationshipComponent>();
+  if (rc.Parent != 0 && selection.GetRootParent().HasComponent<PrefabLinkComponent>())
+    component.PrefabDirty = true;
+}
+
+template <typename T>
+void RemoveComponentTracked(Entity selection, const char *deletedName) {
+  selection.RemoveComponent<T>();
+  selection.GetComponent<ObjectStateComponent>().DeletedComponents.push_back(deletedName);
+}
+
+template <typename E>
+bool DrawEnumCombo(const char *label, E &value, const char *const *names, int count) {
+  bool changed = false;
+  if (ImGui::BeginCombo(label, names[(int)value])) {
+    for (int i = 0; i < count; i++) {
+      const bool selected = (int)value == i;
+      if (ImGui::Selectable(names[i], selected)) {
+        value = (E)i;
+        changed = true;
+      }
+      if (selected)
+        ImGui::SetItemDefaultFocus();
+    }
+    ImGui::EndCombo();
+  }
+  return changed;
+}
+
+// Texture slot with asset drag-and-drop and a clear button.
+// Same behavior as the sprite renderer's slot.
+bool DrawTextureSlot(const char *label, AssetHandle &texture) {
+  bool changed = false;
+
+  std::string name = "None";
+  if (texture != 0 && AssetManager::IsAssetHandleValid(texture) &&
+      AssetManager::GetAssetType(texture) == AssetType::Texture2D) {
+    const auto &md = Project::GetActive()->GetEditorAssetManager()->GetMetaData(texture);
+    name = md.AssetName.empty() ? md.FilePath.stem().string() : md.AssetName;
+  }
+
+  ImGui::PushID(label);
+  ImGui::BeginGroup();
+  ImGui::TextUnformatted(label);
+  ImGui::SameLine(110.0f);
+
+  const bool hasClear = texture != 0;
+  const float clearW = hasClear ? (ImGui::GetFrameHeight() + 4.0f) : 0.0f;
+  const float fieldW = glm::max<float>(80.0f, ImGui::GetContentRegionAvail().x - clearW);
+
+  ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.14f, 0.15f, 0.17f, 1.0f));
+  ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.20f, 0.21f, 0.25f, 1.0f));
+  ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.17f, 0.18f, 0.21f, 1.0f));
+  ImGui::Button((name + "##Slot").c_str(), ImVec2(fieldW, 0.0f));
+  ImGui::PopStyleColor(3);
+
+  if (ImGui::BeginDragDropTarget()) {
+    if (const ImGuiPayload *payload = ImGui::AcceptDragDropPayload("ASSET_BROWSER_ITEM")) {
+      const char *raw = static_cast<const char *>(payload->Data);
+      size_t len = static_cast<size_t>(payload->DataSize);
+      if (len > 0 && raw[len - 1] == '\0')
+        --len;
+      std::string_view sv(raw, len);
+      uint64_t parsed = 0;
+      auto [ptr, ec] = std::from_chars(sv.data(), sv.data() + sv.size(), parsed);
+
+      AssetHandle dropped = 0;
+      if (payload->DataSize == sizeof(AssetHandle))
+        dropped = *static_cast<const AssetHandle *>(payload->Data);
+      else if (ec == std::errc() && ptr == sv.data() + sv.size())
+        dropped = static_cast<AssetHandle>(parsed);
+
+      if (dropped != 0 && AssetManager::IsAssetHandleValid(dropped)) {
+        const AssetType type = AssetManager::GetAssetType(dropped);
+        if (type == AssetType::Texture2D) {
+          texture = dropped;
+          changed = true;
+        } else {
+          CE_API_WARN("Cannot explicitly convert {0} to Texture2D", AssetTypeToString(type));
+        }
+      }
+    }
+    ImGui::EndDragDropTarget();
+  }
+
+  if (hasClear) {
+    ImGui::SameLine(0.0f, 4.0f);
+    if (ImGui::Button("x##Clear", ImVec2(ImGui::GetFrameHeight(), 0.0f))) {
+      texture = 0;
+      changed = true;
+    }
+  }
+  ImGui::EndGroup();
+  ImGui::PopID();
+  return changed;
+}
+
+
 void DrawComponentsHelper(Entity selection) {
-  DrawTransformComponent(selection);
+  if (selection.HasComponent<RectTransformComponent>())
+    DrawRectTransformComponent(selection);
+  else
+    DrawTransformComponent(selection);
+
+  DrawCanvasComponent(selection);
+  DrawCanvasGroupComponent(selection);
+  DrawPanelComponent(selection);
+  DrawButtonComponent(selection);
+  DrawSelectableComponent(selection);
+  DrawEventListenerComponent(selection);
   DrawSpriteRendererComponent(selection);
   DrawCircleRendererComponent(selection);
   DrawCameraComponent(selection);
@@ -23,817 +219,563 @@ void DrawComponentsHelper(Entity selection) {
 }
 
 void DrawTransformComponent(Entity selection) {
-  if (!selection.HasComponent<TransformComponent>()) {
+  if (!selection.HasComponent<TransformComponent>())
     return;
-  }
 
   auto &component = selection.GetComponent<TransformComponent>();
-
-  const ImGuiTreeNodeFlags treeNodeFlags =
-      ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed |
-      ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap |
-      ImGuiTreeNodeFlags_FramePadding;
-  
-  ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{8.0f, 5.0f});
-  ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.19f, 0.20f, 0.23f, 1.0f));
-  ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.24f, 0.25f, 0.29f, 1.0f));
-  ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.22f, 0.24f, 0.28f, 1.0f));
-
-  float lineHeight = ImGui::GetFrameHeight();
-  std::string label = "Transform";
-
-  auto &rc = selection.GetComponent<RelationshipComponent>();
-  if (component.PrefabDirty && rc.Parent != 0)
-    label += " P";
-  if (component.EditDirty)
-    label += "*";
-  bool open = ImGui::TreeNodeEx(reinterpret_cast<void *>(typeid(TransformComponent).hash_code()),
-                                treeNodeFlags, "%s", label.c_str());
-
-  ImGui::PopStyleColor(3);
-  ImGui::PopStyleVar();
-
-  const float buttonSize = lineHeight;
-  const float rightEdge = ImGui::GetWindowContentRegionMax().x;
-  ImGui::SameLine(rightEdge - buttonSize);
-  ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
-  ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.30f, 0.32f, 0.36f, 0.7f));
-  ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.36f, 0.38f, 0.42f, 0.9f));
-  if (ImGui::Button(":##TransformSettings", ImVec2(buttonSize, buttonSize))) {
-    ImGui::OpenPopup("TransformSettingsPopup");
-  }
-  ImGui::PopStyleColor(3);
-
-  bool removeComponent = false;
   bool edited = false;
-  if (ImGui::BeginPopup("TransformSettingsPopup")) {
-    if (ImGui::MenuItem("Reset")) {
-      component = TransformComponent();
-      edited = true;
-      ImGui::CloseCurrentPopup();
-    }
-    ImGui::Separator();
-    if (ImGui::MenuItem("Remove Component")) {
-      removeComponent = true;
-      ImGui::CloseCurrentPopup();
-    }
-    ImGui::EndPopup();
-  }
+  auto header = BeginComponent(selection, "Transform", component, edited, /*removable*/ false);
 
-  if (open) {
+  if (header.Open) {
     ImGui::Spacing();
 
-    if (ImGuiDraw::Vec3("Position", component.LocalPosition, 0.1f, 0.0f, 0.0f)) {
+    if (ImGuiDraw::Vec3("Position", component.LocalPosition, 0.1f, 0.0f, 0.0f))
       edited = true;
-    }
 
     glm::vec3 rotation = glm::degrees(component.LocalRotation);
     if (ImGuiDraw::Vec3("Rotation", rotation, 0.1f, 0.0f, 0.0f)) {
-      edited = true;
       component.LocalRotation = glm::radians(rotation);
+      edited = true;
     }
 
-    if (ImGuiDraw::Vec3("Scale", component.LocalScale, 0.1f, 0.0f, 0.0f)) {
+    if (ImGuiDraw::Vec3("Scale", component.LocalScale, 0.1f, 0.0f, 0.0f))
       edited = true;
-    }
 
     ImGui::TreePop();
   }
 
-  if (edited) {
-    component.EditDirty = true;
-    Entity root = selection;
-    if (rc.Parent != 0) {
-      root = selection.GetRootParent();
-    }
-
-    if (root.HasComponent<PrefabLinkComponent>() && rc.Parent != 0)
-      component.PrefabDirty = true;
-  }
+  FinishComponent(selection, component, edited, header, "Transform");
 }
 
-void DrawSpriteRendererComponent(Entity selection) {
-  if (!selection.HasComponent<SpriteRendererComponent>()) {
+void DrawRectTransformComponent(Entity selection) {
+  if (!selection.HasComponent<RectTransformComponent>())
     return;
-  }
 
-  auto &component = selection.GetComponent<SpriteRendererComponent>();
-
-  const ImGuiTreeNodeFlags treeNodeFlags =
-      ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed |
-      ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap |
-      ImGuiTreeNodeFlags_FramePadding;
-
-  ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{8.0f, 5.0f});
-  ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.19f, 0.20f, 0.23f, 1.0f));
-  ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.24f, 0.25f, 0.29f, 1.0f));
-  ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.22f, 0.24f, 0.28f, 1.0f));
-
-  float lineHeight = ImGui::GetFrameHeight();
-  std::string label = "SpriteRenderer";
-
-  if (component.PrefabDirty)
-    label += " P";
-  if (component.EditDirty)
-    label += "*";
-
-  bool open = ImGui::TreeNodeEx(reinterpret_cast<void *>(typeid(SpriteRendererComponent).hash_code()),
-                                treeNodeFlags, "%s", label.c_str());
-
-  ImGui::PopStyleColor(3);
-  ImGui::PopStyleVar();
-
-  // Right-aligned settings trigger on the component header
-  const float buttonSize = lineHeight;
-  const float rightEdge = ImGui::GetWindowContentRegionMax().x;
-  ImGui::SameLine(rightEdge - buttonSize);
-  ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
-  ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.30f, 0.32f, 0.36f, 0.7f));
-  ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.36f, 0.38f, 0.42f, 0.9f));
-  if (ImGui::Button(":##SpriteRendererSettings", ImVec2(buttonSize, buttonSize))) {
-    ImGui::OpenPopup("SpriteRendererSettingsPopup");
-  }
-  ImGui::PopStyleColor(3);
-
-  bool removeComponent = false;
+  const bool inCanvas = selection.GetScene()->IsUnderCanvas(selection);
+  auto &component = selection.GetComponent<RectTransformComponent>();
   bool edited = false;
-  if (ImGui::BeginPopup("SpriteRendererSettingsPopup")) {
-    if (ImGui::MenuItem("Reset")) {
-      component = SpriteRendererComponent();
-      edited = true;
-      ImGui::CloseCurrentPopup();
-    }
-    ImGui::Separator();
-    if (ImGui::MenuItem("Remove Component")) {
-      removeComponent = true;
-      ImGui::CloseCurrentPopup();
-    }
-    ImGui::EndPopup();
-  }
+  auto header = BeginComponent(selection, "RectTransform", component, edited, !inCanvas);
 
-  if (open) {
+  if (header.Open) {
     ImGui::Spacing();
 
-    // Resolve sprite asset label & optional texture for thumbnail preview
-    std::string label = "None";
-    Ref<Texture2D> previewTexture = nullptr;
-    const AssetHandle handle = component.Texture;
-    if (handle != 0 && AssetManager::IsAssetHandleValid(handle) &&
-        AssetManager::GetAssetType(handle) == AssetType::Texture2D) {
-      const auto &metaData = Project::GetActive()->GetEditorAssetManager()->GetMetaData(handle);
-      label = metaData.AssetName.empty() ? metaData.FilePath.stem().string() : metaData.AssetName;
-      previewTexture = AssetManager::GetAsset<Texture2D>(handle);
-    }
+    struct AnchorOption { const char *Name; UIAnchorPreset Preset; };
+    static const AnchorOption options[] = {
+        {"Top Left", UIAnchorPreset::TopLeft},
+        {"Top Center", UIAnchorPreset::TopCenter},
+        {"Top Right", UIAnchorPreset::TopRight},
+        {"Middle Left", UIAnchorPreset::MiddleLeft},
+        {"Center", UIAnchorPreset::Center},
+        {"Middle Right", UIAnchorPreset::MiddleRight},
+        {"Bottom Left", UIAnchorPreset::BottomLeft},
+        {"Bottom Center", UIAnchorPreset::BottomCenter},
+        {"Bottom Right", UIAnchorPreset::BottomRight},
+        {"Stretch All", UIAnchorPreset::StretchAll},
+        {"Custom", UIAnchorPreset::Custom},
+    };
 
-    // Sprite object field row (labeled like Unity's "Sprite" property)
-    ImGui::BeginGroup();
-    ImGui::TextUnformatted("Sprite");
-    ImGui::SameLine(110.0f); // Match your ImGuiDraw label column width
+    const char *current = "Custom";
+    for (const auto &o : options)
+      if (o.Preset == component.AnchorPreset)
+        current = o.Name;
 
-    const bool hasClearButton = (handle != 0);
-    const float clearBtnWidth = hasClearButton ? (ImGui::GetFrameHeight() + 4.0f) : 0.0f;
-    const float availFieldWidth = glm::max<float>(80.0f, ImGui::GetContentRegionAvail().x - clearBtnWidth);
-
-    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.14f, 0.15f, 0.17f, 1.0f));
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.20f, 0.21f, 0.25f, 1.0f));
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.17f, 0.18f, 0.21f, 1.0f));
-
-    if (ImGui::Button((label + "##SpriteSlotButton").c_str(), ImVec2(availFieldWidth, 0.0f))) {
-      // Optional: ping/select asset in AssetBrowserPanel if desired
-    }
-    ImGui::PopStyleColor(3);
-
-    if (ImGui::BeginDragDropTarget()) {
-      if (const ImGuiPayload *payload = ImGui::AcceptDragDropPayload("ASSET_BROWSER_ITEM")) {
-        const char *raw_str = static_cast<const char *>(payload->Data);
-        size_t len = static_cast<size_t>(payload->DataSize);
-        if (len > 0 && raw_str[len - 1] == '\0') {
-          --len;
-        }
-        std::string_view sv(raw_str, len);
-        uint64_t parsedHandle = 0;
-        auto [ptr, ec] = std::from_chars(sv.data(), sv.data() + sv.size(), parsedHandle);
-
-        // Support both raw AssetHandle binary payloads and string-encoded handles
-        AssetHandle droppedHandle = 0;
-        if (payload->DataSize == sizeof(AssetHandle)) {
-          droppedHandle = *static_cast<const AssetHandle *>(payload->Data);
-        } else if (ec == std::errc() && ptr == sv.data() + sv.size()) {
-          droppedHandle = static_cast<AssetHandle>(parsedHandle);
-        }
-
-        if (droppedHandle != 0 && AssetManager::IsAssetHandleValid(droppedHandle)) {
-          const AssetType type = AssetManager::GetAssetType(droppedHandle);
-          if (type == AssetType::Texture2D) {
-            component.Texture = droppedHandle;
-            edited = true;
-          } else {
-            CE_API_WARN("Cannot explicitly convert {0} to Texture2D", AssetTypeToString(type));
+    if (ImGui::BeginCombo("Anchor Preset", current)) {
+      for (const auto &o : options) {
+        const bool selected = o.Preset == component.AnchorPreset;
+        if (ImGui::Selectable(o.Name, selected) && o.Preset != UIAnchorPreset::Custom) {
+          component.ApplyAnchorPreset(o.Preset);
+          // A stretched element fills its parent: clear the offsets.
+          if (o.Preset == UIAnchorPreset::StretchAll) {
+            component.Size = {0.0f, 0.0f};
+            component.Position = {0.0f, 0.0f};
           }
+          edited = true;
         }
+        if (selected)
+          ImGui::SetItemDefaultFocus();
       }
-      ImGui::EndDragDropTarget();
+      ImGui::EndCombo();
     }
 
-    if (hasClearButton) {
-      ImGui::SameLine(0.0f, 4.0f);
-      if (ImGui::Button("x##ClearSprite", ImVec2(ImGui::GetFrameHeight(), 0.0f))) {
-        component.Texture = 0;
+    bool anchorsEdited = false;
+    if (ImGuiDraw::Vec2("Anchor Min", component.AnchorMin, 0.01f, 0.0f, 1.0f))
+      anchorsEdited = true;
+    if (ImGuiDraw::Vec2("Anchor Max", component.AnchorMax, 0.01f, 0.0f, 1.0f))
+      anchorsEdited = true;
+    if (anchorsEdited) {
+      component.AnchorPreset = UIAnchorPreset::Custom;
+      edited = true;
+    }
+
+    if (ImGuiDraw::Vec2("Pivot", component.Pivot, 0.01f, 0.0f, 1.0f))
+      edited = true;
+
+    const bool stretched = component.AnchorMin != component.AnchorMax;
+    if (ImGuiDraw::Vec2("Position", component.Position, 0.5f, 0.0f, 0.0f))
+      edited = true;
+    if (ImGuiDraw::Vec2(stretched ? "Size Delta" : "Size", component.Size, 0.5f, 0.0f, 0.0f))
+      edited = true;
+    if (stretched)
+      ImGui::TextDisabled("Size Delta is added to the stretched size (0 = fill).");
+
+    if (ImGuiDraw::Vec1("Rotation", component.Rotation, 0.1f, 0.0f, 0.0f))
+      edited = true;
+
+    ImGui::Spacing();
+    ImGui::TreePop();
+  }
+
+  FinishComponent(selection, component, edited, header, "RectTransform");
+}
+
+void DrawCanvasComponent(Entity selection) {
+  if (!selection.HasComponent<CanvasComponent>())
+    return;
+
+  auto &component = selection.GetComponent<CanvasComponent>();
+  bool edited = false;
+  auto header = BeginComponent(selection, "Canvas", component, edited);
+
+  if (header.Open) {
+    ImGui::Spacing();
+
+    static const char *renderModes[] = {"Screen Space - Overlay"};
+    if (DrawEnumCombo("Render Mode", component.RenderMode, renderModes, 1))
+      edited = true;
+
+    if (ImGuiDraw::Int1("Sort Order", component.SortOrder))
+      edited = true;
+
+    ImGui::Separator();
+
+    static const char *scaleModes[] = {"Constant Pixel Size", "Scale With Screen Size"};
+    if (DrawEnumCombo("UI Scale Mode", component.ScaleMode, scaleModes, 2))
+      edited = true;
+
+    if (component.ScaleMode == CanvasScaleMode::ConstantPixelSize) {
+      if (ImGuiDraw::Vec1("Scale Factor", component.ScaleFactor, 0.01f, 0.01f, 100.0f))
+        edited = true;
+    } else {
+      if (ImGuiDraw::Vec2("Reference Resolution", component.ReferenceResolution, 1.0f, 1.0f, 16384.0f))
+        edited = true;
+
+      static const char *matchModes[] = {"Match Width Or Height", "Expand", "Shrink"};
+      if (DrawEnumCombo("Screen Match Mode", component.ScreenMatchMode, matchModes, 3))
+        edited = true;
+
+      if (component.ScreenMatchMode == CanvasScreenMatchMode::MatchWidthOrHeight) {
+        if (ImGui::SliderFloat("Match", &component.MatchWidthOrHeight, 0.0f, 1.0f, "%.2f"))
+          edited = true;
+        ImGui::TextDisabled("0 = Width      1 = Height");
+      }
+    }
+
+    ImGui::Spacing();
+    ImGui::TreePop();
+  }
+
+  FinishComponent(selection, component, edited, header, "Canvas");
+}
+
+void DrawCanvasGroupComponent(Entity selection) {
+  if (!selection.HasComponent<CanvasGroupComponent>())
+    return;
+
+  auto &component = selection.GetComponent<CanvasGroupComponent>();
+  bool edited = false;
+  auto header = BeginComponent(selection, "CanvasGroup", component, edited);
+
+  if (header.Open) {
+    ImGui::Spacing();
+
+    if (ImGui::SliderFloat("Alpha", &component.Alpha, 0.0f, 1.0f, "%.2f"))
+      edited = true;
+    if (ImGuiDraw::CheckBox("Interactable", component.Interactable))
+      edited = true;
+    if (ImGuiDraw::CheckBox("Blocks Raycasts", component.BlocksRaycasts))
+      edited = true;
+    if (ImGuiDraw::CheckBox("Ignore Parent Groups", component.IgnoreParentGroups))
+      edited = true;
+
+    ImGui::Spacing();
+    ImGui::TreePop();
+  }
+
+  FinishComponent(selection, component, edited, header, "Canvas Group");
+}
+
+void DrawPanelComponent(Entity selection) {
+  if (!selection.HasComponent<PanelComponent>())
+    return;
+
+  auto &component = selection.GetComponent<PanelComponent>();
+  bool edited = false;
+  auto header = BeginComponent(selection, "Panel", component, edited);
+
+  if (header.Open) {
+    ImGui::Spacing();
+
+    if (DrawTextureSlot("Image", component.Texture))
+      edited = true;
+    if (ImGuiDraw::ColorEdit4("Color", component.Color))
+      edited = true;
+    if (ImGuiDraw::CheckBox("Raycast Target", component.RaycastTarget))
+      edited = true;
+
+    ImGui::Spacing();
+    ImGui::TreePop();
+  }
+
+  FinishComponent(selection, component, edited, header, "Panel");
+}
+
+void DrawButtonComponent(Entity selection) {
+  if (!selection.HasComponent<ButtonVisualComponent>())
+    return;
+
+  auto &component = selection.GetComponent<ButtonVisualComponent>();
+  bool edited = false;
+  auto header = BeginComponent(selection, "Button", component, edited);
+
+  if (header.Open) {
+    ImGui::Spacing();
+
+    if (DrawTextureSlot("Image", component.Texture))
+      edited = true;
+    if (ImGuiDraw::ColorEdit4("Normal Color", component.NormalColor))
+      edited = true;
+    if (ImGuiDraw::CheckBox("Raycast Target", component.RaycastTarget))
+      edited = true;
+
+    ImGui::Spacing();
+    ImGui::TreePop();
+  }
+
+  FinishComponent(selection, component, edited, header, "Button");
+}
+
+void DrawSelectableComponent(Entity selection) {
+  if (!selection.HasComponent<SelectableComponent>())
+    return;
+
+  auto &component = selection.GetComponent<SelectableComponent>();
+  bool edited = false;
+  auto header = BeginComponent(selection, "Selectable", component, edited);
+
+  if (header.Open) {
+    ImGui::Spacing();
+
+    if (ImGuiDraw::CheckBox("Interactable", component.Interactable))
+      edited = true;
+    if (ImGuiDraw::CheckBox("Navigable", component.Navigable))
+      edited = true;
+
+    static const char *transitions[] = {"None", "Color Tint"};
+    if (DrawEnumCombo("Transition", component.Transition, transitions, 2))
+      edited = true;
+
+    if (component.Transition == UITransition::ColorTint) {
+      if (ImGui::TreeNodeEx("Colors", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanAvailWidth)) {
+        if (ImGuiDraw::ColorEdit4("Normal", component.NormalTint)) edited = true;
+        if (ImGuiDraw::ColorEdit4("Highlighted", component.HighlightedTint)) edited = true;
+        if (ImGuiDraw::ColorEdit4("Pressed", component.PressedTint)) edited = true;
+        if (ImGuiDraw::ColorEdit4("Selected", component.SelectedTint)) edited = true;
+        if (ImGuiDraw::ColorEdit4("Disabled", component.DisabledTint)) edited = true;
+        ImGui::TreePop();
+      }
+      if (ImGuiDraw::Vec1("Fade Duration", component.FadeDuration, 0.01f, 0.0f, 10.0f))
+        edited = true;
+      if (ImGuiDraw::CheckBox("Tint Children", component.TintChildren))
+        edited = true;
+    }
+
+    ImGui::Spacing();
+    ImGui::TreePop();
+  }
+
+  FinishComponent(selection, component, edited, header, "Selectable");
+}
+
+void DrawEventListenerComponent(Entity selection) {
+  if (!selection.HasComponent<EventListenerComponent>())
+    return;
+
+  auto &component = selection.GetComponent<EventListenerComponent>();
+  bool edited = false;
+  auto header = BeginComponent(selection, "EventListener", component, edited);
+
+  if (header.Open) {
+    ImGui::Spacing();
+
+    struct MaskBit { const char *Name; uint32_t Bit; };
+    static const MaskBit bits[] = {
+        {"Hover", UIMask::Hover},
+        {"Press", UIMask::Press},
+        {"Click", UIMask::Click},
+        {"Drag", UIMask::Drag},
+        {"Scroll", UIMask::Scroll},
+    };
+
+    for (const auto &b : bits) {
+      bool on = (component.Mask & b.Bit) != 0;
+      if (ImGuiDraw::CheckBox(b.Name, on)) {
+        component.Mask = on ? (component.Mask | b.Bit) : (component.Mask & ~b.Bit);
         edited = true;
       }
     }
-    ImGui::EndGroup();
 
-    if (ImGuiDraw::ColorEdit4("Color", component.Color)) {
+    if (!selection.HasComponent<RectTransformComponent>())
+      ImGui::TextColored(ImVec4(1.0f, 0.75f, 0.2f, 1.0f),
+                         "Needs a RectTransform to receive events.");
+
+    ImGui::Spacing();
+    ImGui::TreePop();
+  }
+
+  FinishComponent(selection, component, edited, header, "Event Listener");
+}
+
+void DrawSpriteRendererComponent(Entity selection) {
+  if (!selection.HasComponent<SpriteRendererComponent>())
+    return;
+
+  auto &component = selection.GetComponent<SpriteRendererComponent>();
+  bool edited = false;
+  auto header = BeginComponent(selection, "SpriteRenderer", component, edited);
+
+  if (header.Open) {
+    ImGui::Spacing();
+
+    if (DrawTextureSlot("Sprite", component.Texture))
       edited = true;
-    }
-
-    if (ImGuiDraw::Vec1("Tiling Factor", component.TilingFactor, 0.1f, 0.0f, 100.0f)) {
+    if (ImGuiDraw::ColorEdit4("Color", component.Color))
       edited = true;
-    }
+    if (ImGuiDraw::Vec1("Tiling Factor", component.TilingFactor, 0.1f, 0.0f, 100.0f))
+      edited = true;
 
-    if (previewTexture && previewTexture->GetWidth() > 0 && previewTexture->GetHeight() > 0) {
-      ImGui::Spacing();
-      const float thumbSize = 48.0f;
-      const float aspect = static_cast<float>(previewTexture->GetWidth()) / static_cast<float>(previewTexture->GetHeight());
-      ImVec2 drawSize = (aspect >= 1.0f)
-        ? ImVec2(thumbSize, thumbSize / aspect)
-        : ImVec2(thumbSize * aspect, thumbSize);
-
-      ImGui::TextDisabled("Preview");
-      ImGui::SameLine(110.0f);
-      ImGui::Image((ImTextureID)((uint64_t)(previewTexture->GetRendererID())),
-                   drawSize, ImVec2{0, 1}, ImVec2{1, 0});
+    const AssetHandle handle = component.Texture;
+    if (handle != 0 && AssetManager::IsAssetHandleValid(handle) &&
+        AssetManager::GetAssetType(handle) == AssetType::Texture2D) {
+      Ref<Texture2D> preview = AssetManager::GetAsset<Texture2D>(handle);
+      if (preview && preview->GetWidth() > 0 && preview->GetHeight() > 0) {
+        ImGui::Spacing();
+        const float thumb = 48.0f;
+        const float aspect = (float)preview->GetWidth() / (float)preview->GetHeight();
+        const ImVec2 size = aspect >= 1.0f ? ImVec2(thumb, thumb / aspect)
+                                           : ImVec2(thumb * aspect, thumb);
+        ImGui::TextDisabled("Preview");
+        ImGui::SameLine(110.0f);
+        ImGui::Image((ImTextureID)((uint64_t)preview->GetRendererID()), size,
+                     ImVec2{0, 1}, ImVec2{1, 0});
+      }
     }
 
     ImGui::Spacing();
     ImGui::TreePop();
   }
 
-  if (edited) {
-    component.EditDirty = true;
-    auto &rc = selection.GetComponent<RelationshipComponent>();
-    Entity root = selection;
-    if (rc.Parent != 0) {
-      root = selection.GetRootParent();
-    }
-
-    if (root.HasComponent<PrefabLinkComponent>() && rc.Parent != 0)
-      component.PrefabDirty = true;
-  }
-
-  if (removeComponent) {
-    selection.RemoveComponent<SpriteRendererComponent>();
-    auto &osc = selection.GetComponent<ObjectStateComponent>();
-    osc.DeletedComponents.push_back("Sprite Renderer");
-  }
+  FinishComponent(selection, component, edited, header, "Sprite Renderer");
 }
 
 void DrawCircleRendererComponent(Entity selection) {
-  if (!selection.HasComponent<CircleRendererComponent>()) {
+  if (!selection.HasComponent<CircleRendererComponent>())
     return;
-  }
 
   auto &component = selection.GetComponent<CircleRendererComponent>();
-
-  const ImGuiTreeNodeFlags treeNodeFlags =
-      ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed |
-      ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap |
-      ImGuiTreeNodeFlags_FramePadding;
-  
-  ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{8.0f, 5.0f});
-  ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.19f, 0.20f, 0.23f, 1.0f));
-  ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.24f, 0.25f, 0.29f, 1.0f));
-  ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.22f, 0.24f, 0.28f, 1.0f));
-
-  float lineHeight = ImGui::GetFrameHeight();
-  std::string label = "CircleRenderer";
-
-  if (component.PrefabDirty)
-    label += " P";
-  if (component.EditDirty)
-    label += "*";
-
-  bool open = ImGui::TreeNodeEx(reinterpret_cast<void *>(typeid(CircleRendererComponent).hash_code()),
-                                treeNodeFlags, "%s", label.c_str());
-
-  ImGui::PopStyleColor(3);
-  ImGui::PopStyleVar();
-
-  const float buttonSize = lineHeight;
-  const float rightEdge = ImGui::GetWindowContentRegionMax().x;
-  ImGui::SameLine(rightEdge - buttonSize);
-  ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
-  ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.30f, 0.32f, 0.36f, 0.7f));
-  ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.36f, 0.38f, 0.42f, 0.9f));
-  if (ImGui::Button(":##CircleRendererSettings", ImVec2(buttonSize, buttonSize))) {
-    ImGui::OpenPopup("CircleRendererSettingsPopup");
-  }
-  ImGui::PopStyleColor(3);
-
-  bool removeComponent = false;
   bool edited = false;
-  if (ImGui::BeginPopup("CircleRendererSettingsPopup")) {
-    if (ImGui::MenuItem("Reset")) {
-      component = CircleRendererComponent();
-      edited = true;
-      ImGui::CloseCurrentPopup();
-    }
-    ImGui::Separator();
-    if (ImGui::MenuItem("Remove Component")) {
-      removeComponent = true;
-      ImGui::CloseCurrentPopup();
-    }
-    ImGui::EndPopup();
-  }
+  auto header = BeginComponent(selection, "CircleRenderer", component, edited);
 
-  if (open) {
+  if (header.Open) {
     ImGui::Spacing();
-    if (ImGuiDraw::ColorEdit4("Color", component.Color)) {
+    if (ImGuiDraw::ColorEdit4("Color", component.Color))
       edited = true;
-    }
-
-    if (ImGuiDraw::Vec1("Thickness", component.Thickness, 0.025f, 0.f, 1.f)) {
+    if (ImGuiDraw::Vec1("Thickness", component.Thickness, 0.025f, 0.f, 1.f))
       edited = true;
-    }
-
-    if (ImGuiDraw::Vec1("Fade", component.Fade, 0.00025f, 0.f, 1.f)) {
+    if (ImGuiDraw::Vec1("Fade", component.Fade, 0.00025f, 0.f, 1.f))
       edited = true;
-    }
-
     ImGui::TreePop();
   }
 
-  if (edited) {
-    component.EditDirty = true;
-    auto &rc = selection.GetComponent<RelationshipComponent>();
-    Entity root = selection;
-    if (rc.Parent != 0) {
-      root = selection.GetRootParent();
-    }
-
-    if (root.HasComponent<PrefabLinkComponent>() && rc.Parent != 0)
-      component.PrefabDirty = true;
-  }
-
-  if (removeComponent) {
-    selection.RemoveComponent<CircleRendererComponent>();
-    auto &osc = selection.GetComponent<ObjectStateComponent>();
-    osc.DeletedComponents.push_back("Circle Renderer");
-  }
+  FinishComponent(selection, component, edited, header, "Circle Renderer");
 }
 
 void DrawCameraComponent(Entity selection) {
-  if (!selection.HasComponent<CameraComponent>()) {
+  if (!selection.HasComponent<CameraComponent>())
     return;
-  }
 
   auto &component = selection.GetComponent<CameraComponent>();
-
-  const ImGuiTreeNodeFlags treeNodeFlags =
-      ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed |
-      ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap |
-      ImGuiTreeNodeFlags_FramePadding;
-  
-  ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{8.0f, 5.0f});
-  ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.19f, 0.20f, 0.23f, 1.0f));
-  ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.24f, 0.25f, 0.29f, 1.0f));
-  ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.22f, 0.24f, 0.28f, 1.0f));
-
-  float lineHeight = ImGui::GetFrameHeight();
-  std::string label = "Camera";
-
-  if (component.PrefabDirty)
-    label += " P";
-  if (component.EditDirty)
-    label += "*";
-
-  bool open = ImGui::TreeNodeEx(reinterpret_cast<void *>(typeid(CircleRendererComponent).hash_code()),
-                                treeNodeFlags, "%s", label.c_str());
-
-  ImGui::PopStyleColor(3);
-  ImGui::PopStyleVar();
-
-  const float buttonSize = lineHeight;
-  const float rightEdge = ImGui::GetWindowContentRegionMax().x;
-  ImGui::SameLine(rightEdge - buttonSize);
-  ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
-  ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.30f, 0.32f, 0.36f, 0.7f));
-  ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.36f, 0.38f, 0.42f, 0.9f));
-  if (ImGui::Button(":##CameraSettings", ImVec2(buttonSize, buttonSize))) {
-    ImGui::OpenPopup("CameraSettingsPopup");
-  }
-  ImGui::PopStyleColor(3);
-
-  bool removeComponent = false;
   bool edited = false;
-  if (ImGui::BeginPopup("CameraSettingsPopup")) {
-    if (ImGui::MenuItem("Reset")) {
-      component = CameraComponent();
-      edited = true;
-      ImGui::CloseCurrentPopup();
-    }
-    ImGui::Separator();
-    if (ImGui::MenuItem("Remove Component")) {
-      removeComponent = true;
-      ImGui::CloseCurrentPopup();
-    }
-    ImGui::EndPopup();
-  }
+  auto header = BeginComponent(selection, "Camera", component, edited);
 
-  if (open) {
+  if (header.Open) {
     ImGui::Spacing();
     auto &camera = component.Camera;
 
-    const char *projectionTypeString[] = {"Perspective", "Orthographic"};
-    const char *currentProjectionTypeString =
-        projectionTypeString[(int)camera.GetProjectionType()];
-    if (ImGui::BeginCombo("Projection", currentProjectionTypeString)) {
+    static const char *projectionNames[] = {"Perspective", "Orthographic"};
+    const int currentProjection = (int)camera.GetProjectionType();
+    if (ImGui::BeginCombo("Projection", projectionNames[currentProjection])) {
       for (int i = 0; i < 2; i++) {
-        bool isSelected = currentProjectionTypeString == projectionTypeString[i];
-        if (ImGui::Selectable(projectionTypeString[i], &isSelected)) {
-          currentProjectionTypeString = projectionTypeString[i];
+        const bool selected = currentProjection == i;
+        if (ImGui::Selectable(projectionNames[i], selected)) {
           camera.SetProjectionType((SceneCamera::ProjectionType)i);
           edited = true;
         }
-
-        if (isSelected)
-          ImGui::SetItemDefaultFocus();
+        if (selected) ImGui::SetItemDefaultFocus();
       }
       ImGui::EndCombo();
     }
-    auto &primary = component.Primary;
-    ImGuiDraw::CheckBox("Primary Camera", primary);
 
-    if (camera.GetProjectionType() == SceneCamera::ProjectionType::Perspectice) {
-      auto vertFov = glm::degrees(camera.GetPerspectiveVerticalFov());
-      if (ImGuiDraw::Vec1("Vertical FOV", vertFov))
-        camera.SetPerspectiveVerticalFov(glm::radians(vertFov));
+    if (ImGuiDraw::CheckBox("Active", component.Active)) edited = true;
+    if (ImGuiDraw::CheckBox("Primary Camera", component.Primary)) edited = true;
 
-      auto nearClip = camera.GetPerspectiveNearClip();
-      if (ImGuiDraw::Vec1("Near Clip", nearClip, .01f, 0.f))
-        camera.SetPerspectiveNearClip(nearClip);
+    const bool ortho = camera.GetProjectionType() == SceneCamera::ProjectionType::Orthographic;
+    if (!ortho) {
+      float vertFov = glm::degrees(camera.GetPerspectiveVerticalFov());
+      if (ImGuiDraw::Vec1("Vertical FOV", vertFov)) { camera.SetPerspectiveVerticalFov(glm::radians(vertFov)); edited = true; }
+      float nearClip = camera.GetPerspectiveNearClip();
+      if (ImGuiDraw::Vec1("Near Clip", nearClip, .01f, 0.f)) { camera.SetPerspectiveNearClip(nearClip); edited = true; }
+      float farClip = camera.GetPerspectiveFarClip();
+      if (ImGuiDraw::Vec1("Far Clip", farClip, .01f, 0.f)) { camera.SetPerspectiveFarClip(farClip); edited = true; }
+    } else {
+      static const char *sizeModes[] = {"Units", "Pixels Per Unit"};
+      if (DrawEnumCombo("Size Mode", component.OrthoSizeMode, sizeModes, 2)) edited = true;
 
-      auto farClip = camera.GetPerspectiveFarClip();
-      if (ImGuiDraw::Vec1("Far Clip", farClip, .01f, 0.f))
-        camera.SetPerspectiveFarClip(farClip);
+      if (component.OrthoSizeMode == CameraSizeMode::PixelsPerUnit) {
+        if (ImGuiDraw::Vec1("Pixels Per Unit", component.PixelsPerUnit, 1.0f, 1.0f, 10000.0f)) edited = true;
+        ImGui::TextDisabled("World size = output height / pixels per unit.");
+      } else {
+        float size = camera.GetOrthographicSize();
+        if (ImGuiDraw::Vec1("Size", size)) { camera.SetOrthographicSize(size); edited = true; }
+      }
+      float nearClip = camera.GetOrthographicNearClip();
+      if (ImGuiDraw::Vec1("Near Clip", nearClip, .01f)) { camera.SetOrthographicNearClip(nearClip); edited = true; }
+      float farClip = camera.GetOrthographicFarClip();
+      if (ImGuiDraw::Vec1("Far Clip", farClip, .01f)) { camera.SetOrthographicFarClip(farClip); edited = true; }
     }
 
-    if (camera.GetProjectionType() == SceneCamera::ProjectionType::Orthographic) {
-      auto size = camera.GetOrthographicSize();
-      if (ImGuiDraw::Vec1("FOV", size))
-        camera.SetOrthographicSize(size);
+    ImGui::Separator();
 
-      auto nearClip = camera.GetOrthographicNearClip();
-      if (ImGuiDraw::Vec1("Near Clip", nearClip, .01f, 0.f))
-        camera.SetOrthographicNearClip(nearClip);
+    static const char *aspectModes[] = {"Match Viewport", "Ratio", "Pixels"};
+    if (DrawEnumCombo("Aspect", component.AspectMode, aspectModes, 3)) edited = true;
 
-      auto farClip = camera.GetOrthographicFarClip();
-      if (ImGuiDraw::Vec1("Far Clip", farClip, .01f, 0.f))
-        camera.SetOrthographicFarClip(farClip);
+    if (component.AspectMode == CameraAspectMode::Ratio) {
+      struct Preset { const char *Name; float W, H; };
+      static const Preset presets[] = {{"16:9", 16, 9}, {"16:10", 16, 10}, {"4:3", 4, 3},
+                                       {"21:9", 21, 9}, {"3:2", 3, 2}, {"1:1", 1, 1}, {"9:16", 9, 16}};
+      const char *current = "Custom";
+      for (const auto &p : presets)
+        if (p.W == component.AspectRatio.x && p.H == component.AspectRatio.y) current = p.Name;
+
+      if (ImGui::BeginCombo("Ratio Preset", current)) {
+        for (const auto &p : presets) {
+          if (ImGui::Selectable(p.Name, p.W == component.AspectRatio.x && p.H == component.AspectRatio.y)) {
+            component.AspectRatio = {p.W, p.H};
+            edited = true;
+          }
+        }
+        ImGui::EndCombo();
+      }
+      if (ImGuiDraw::Vec2("Ratio (W:H)", component.AspectRatio, 0.05f, 0.1f, 100.0f)) edited = true;
     }
 
-    auto &fixed = component.FixedAspectRatio;
-    if (ImGuiDraw::CheckBox("Fixed Aspect Ratio", fixed)) {
-      edited = true;
+    if (component.AspectMode == CameraAspectMode::Pixels) {
+      if (ImGuiDraw::Vec2("Resolution", component.Resolution, 1.0f, 1.0f, 16384.0f)) {
+        component.Resolution = glm::round(component.Resolution);
+        edited = true;
+      }
+      if (ImGuiDraw::CheckBox("Integer Scaling", component.IntegerScaling)) edited = true;
+      ImGui::TextDisabled("Aspect %.3f", component.Resolution.x / std::max(component.Resolution.y, 1.0f));
     }
+
+    if (ImGuiDraw::Vec4("Viewport Rect", component.ViewportRect, 0.005f, 0.0f, 1.0f)) edited = true;
+
+    ImGui::Separator();
+
+    static const char *clearModes[] = {"Solid Color", "Don't Clear"};
+    if (DrawEnumCombo("Clear", component.ClearMode, clearModes, 2)) edited = true;
+    if (component.ClearMode == CameraClearMode::SolidColor)
+      if (ImGuiDraw::ColorEdit4("Background", component.BackgroundColor)) edited = true;
+
     ImGui::TreePop();
   }
-
-  if (edited) {
-    component.EditDirty = true;
-    auto &rc = selection.GetComponent<RelationshipComponent>();
-    Entity root = selection;
-    if (rc.Parent != 0) {
-      root = selection.GetRootParent();
-    }
-
-    if (root.HasComponent<PrefabLinkComponent>() && rc.Parent != 0)
-      component.PrefabDirty = true;
-  }
-
-  if (removeComponent) {
-    selection.RemoveComponent<CameraComponent>();
-    auto &osc = selection.GetComponent<ObjectStateComponent>();
-    osc.DeletedComponents.push_back("Camera");
-  }
+  FinishComponent(selection, component, edited, header, "Camera");
 }
 
 void DrawRigidbody2DComponent(Entity selection) {
-  if (!selection.HasComponent<Rigidbody2DComponent>()) {
+  if (!selection.HasComponent<Rigidbody2DComponent>())
     return;
-  }
 
   auto &component = selection.GetComponent<Rigidbody2DComponent>();
-
-  const ImGuiTreeNodeFlags treeNodeFlags =
-      ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed |
-      ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap |
-      ImGuiTreeNodeFlags_FramePadding;
-
-  ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{8.0f, 5.0f});
-  ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.19f, 0.20f, 0.23f, 1.0f));
-  ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.24f, 0.25f, 0.29f, 1.0f));
-  ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.22f, 0.24f, 0.28f, 1.0f));
-
-  float lineHeight = ImGui::GetFrameHeight();
-  std::string label = "Rigidbody2D";
-
-  if (component.PrefabDirty)
-    label += " P";
-  if (component.EditDirty)
-    label += "*";
-
-  bool open = ImGui::TreeNodeEx(reinterpret_cast<void *>(typeid(CircleRendererComponent).hash_code()),
-                                treeNodeFlags, "%s", label.c_str());
-
-  ImGui::PopStyleColor(3);
-  ImGui::PopStyleVar();
-
-  const float buttonSize = lineHeight;
-  const float rightEdge = ImGui::GetWindowContentRegionMax().x;
-  ImGui::SameLine(rightEdge - buttonSize);
-  ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
-  ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.30f, 0.32f, 0.36f, 0.7f));
-  ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.36f, 0.38f, 0.42f, 0.9f));
-  if (ImGui::Button(":##Rigidbody2DSettings", ImVec2(buttonSize, buttonSize))) {
-    ImGui::OpenPopup("Rigidbody2DSettingsPopup");
-  }
-  ImGui::PopStyleColor(3);
-
-  bool removeComponent = false;
   bool edited = false;
-  if (ImGui::BeginPopup("Rigidbody2DSettingsPopup")) {
-    if (ImGui::MenuItem("Reset")) {
-      component = Rigidbody2DComponent();
+  auto header = BeginComponent(selection, "Rigidbody2D", component, edited);
+
+  if (header.Open) {
+    ImGui::Spacing();
+
+    static const char *bodyTypes[] = {"Static", "Kinematic", "Dynamic"};
+    if (DrawEnumCombo("Body Type", component.Type, bodyTypes, 3))
       edited = true;
-      ImGui::CloseCurrentPopup();
-    }
-    ImGui::Separator();
-    if (ImGui::MenuItem("Remove Component")) {
-      removeComponent = true;
-      ImGui::CloseCurrentPopup();
-    }
-    ImGui::EndPopup();
-  }
 
-  if (open) {
-    ImGui::Spacing();    const char *bodyTypeString[] = {"Static", "Kinematic", "Dynamic"};
-    const char *currentBodyTypeString = bodyTypeString[(int)component.Type];
-    if (ImGui::BeginCombo("Body Type", currentBodyTypeString)) {
-      for (int i = 0; i < 3; i++) {
-        bool isSelected = currentBodyTypeString == bodyTypeString[i];
-        if (ImGui::Selectable(bodyTypeString[i], &isSelected)) {
-          currentBodyTypeString = bodyTypeString[i];
-          component.Type = (Rigidbody2DComponent::BodyType)i;
-          edited = true;
-        }
-
-        if (isSelected)
-          ImGui::SetItemDefaultFocus();
-      }
-      ImGui::EndCombo();
-    }
-
-    if (ImGuiDraw::CheckBox("Fixed Rotation", component.FixedRotation)) {
+    if (ImGuiDraw::CheckBox("Fixed Rotation", component.FixedRotation))
       edited = true;
-    }
+
     ImGui::TreePop();
   }
 
-  if (edited) {
-    component.EditDirty = true;
-    auto &rc = selection.GetComponent<RelationshipComponent>();
-    Entity root = selection;
-    if (rc.Parent != 0) {
-      root = selection.GetRootParent();
-    }
-
-    if (root.HasComponent<PrefabLinkComponent>() && rc.Parent != 0)
-      component.PrefabDirty = true;
-  }
-
-  if (removeComponent) {
-    selection.RemoveComponent<Rigidbody2DComponent>();
-    auto &osc = selection.GetComponent<ObjectStateComponent>();
-    osc.DeletedComponents.push_back("Rigidbody2D");
-  }
+  FinishComponent(selection, component, edited, header, "Rigidbody2D");
 }
 
 void DrawBoxCollider2DComponent(Entity selection) {
-  if (!selection.HasComponent<BoxCollider2DComponent>()) {
+  if (!selection.HasComponent<BoxCollider2DComponent>())
     return;
-  }
 
   auto &component = selection.GetComponent<BoxCollider2DComponent>();
-
-  const ImGuiTreeNodeFlags treeNodeFlags =
-      ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed |
-      ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap |
-      ImGuiTreeNodeFlags_FramePadding;
-
-  ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{8.0f, 5.0f});
-  ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.19f, 0.20f, 0.23f, 1.0f));
-  ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.24f, 0.25f, 0.29f, 1.0f));
-  ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.22f, 0.24f, 0.28f, 1.0f));
-
-  float lineHeight = ImGui::GetFrameHeight();
-  std::string label = "BoxCollider2D";
-
-  if (component.PrefabDirty)
-    label += " P";
-  if (component.EditDirty)
-    label += "*";
-
-  bool open = ImGui::TreeNodeEx(reinterpret_cast<void *>(typeid(BoxCollider2DComponent).hash_code()),
-                                treeNodeFlags, "%s", label.c_str());
-
-  ImGui::PopStyleColor(3);
-  ImGui::PopStyleVar();
-
-  const float buttonSize = lineHeight;
-  const float rightEdge = ImGui::GetWindowContentRegionMax().x;
-  ImGui::SameLine(rightEdge - buttonSize);
-  ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
-  ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.30f, 0.32f, 0.36f, 0.7f));
-  ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.36f, 0.38f, 0.42f, 0.9f));
-  if (ImGui::Button(":##BoxCollider2DSettings", ImVec2(buttonSize, buttonSize))) {
-    ImGui::OpenPopup("BoxCollider2DSettingsPopup");
-  }
-  ImGui::PopStyleColor(3);
-
-  bool removeComponent = false;
   bool edited = false;
-  if (ImGui::BeginPopup("BoxCollider2DSettingsPopup")) {
-    if (ImGui::MenuItem("Reset")) {
-      component = BoxCollider2DComponent();
-      edited = true;
-      ImGui::CloseCurrentPopup();
-    }
-    ImGui::Separator();
-    if (ImGui::MenuItem("Remove Component")) {
-      removeComponent = true;
-      ImGui::CloseCurrentPopup();
-    }
-    ImGui::EndPopup();
-  }
+  auto header = BeginComponent(selection, "BoxCollider2D", component, edited);
 
-  if (open) {
+  if (header.Open) {
     ImGui::Spacing();
 
-    if (ImGuiDraw::Vec2("Offset", component.Offset))
-      edited = true;
-
-    if (ImGuiDraw::Vec2("Size", component.Size, 0.025f, 0.0001f, 100000.f))
-      edited = true;
-
-    if (ImGuiDraw::Vec1("Rotation", component.Rotation, 0.025f, 0, 0))
-      edited = true;
-
-    if (ImGuiDraw::CheckBox("Show Collider", component.ShowColliderBounds))
-      edited = true;
-
-    if (ImGuiDraw::CheckBox("IsTrigger", component.IsTrigger))
-      edited = true;
-
-    if (ImGuiDraw::Vec1("Density", component.Density, 0.025f, 0.0001f, 100000.f))
-      edited = true;
-
-    if (ImGuiDraw::Vec1("Friction", component.Friction, 0.025f, 0.0001f, 100000.f))
-      edited = true;
-
-    if (ImGuiDraw::Vec1("Restitution", component.Restitution, 0.025f, 0.0001f, 100000.f))
-      edited = true;
-
-    if (ImGuiDraw::Vec1("Restitution Threshold", component.RestitutionThreshold, 0.025f, 0.0001f, 100000.f))
-      edited = true;
+    if (ImGuiDraw::Vec2("Offset", component.Offset)) edited = true;
+    if (ImGuiDraw::Vec2("Size", component.Size, 0.025f, 0.0001f, 100000.f)) edited = true;
+    if (ImGuiDraw::Vec1("Rotation", component.Rotation, 0.025f, 0, 0)) edited = true;
+    if (ImGuiDraw::CheckBox("Show Collider", component.ShowColliderBounds)) edited = true;
+    if (ImGuiDraw::CheckBox("IsTrigger", component.IsTrigger)) edited = true;
+    if (ImGuiDraw::Vec1("Density", component.Density, 0.025f, 0.0001f, 100000.f)) edited = true;
+    if (ImGuiDraw::Vec1("Friction", component.Friction, 0.025f, 0.0001f, 100000.f)) edited = true;
+    if (ImGuiDraw::Vec1("Restitution", component.Restitution, 0.025f, 0.0001f, 100000.f)) edited = true;
+    if (ImGuiDraw::Vec1("Restitution Threshold", component.RestitutionThreshold, 0.025f, 0.0001f, 100000.f)) edited = true;
 
     ImGui::TreePop();
   }
 
-  if (edited) {
-    component.EditDirty = true;
-    auto &rc = selection.GetComponent<RelationshipComponent>();
-    Entity root = selection;
-    if (rc.Parent != 0) {
-      root = selection.GetRootParent();
-    }
-
-    if (root.HasComponent<PrefabLinkComponent>() && rc.Parent != 0)
-      component.PrefabDirty = true;
-  }
-
-  if (removeComponent) {
-    selection.RemoveComponent<BoxCollider2DComponent>();
-    auto &osc = selection.GetComponent<ObjectStateComponent>();
-    osc.DeletedComponents.push_back("BoxCollider2D");
-  }
+  FinishComponent(selection, component, edited, header, "BoxCollider2D");
 }
 
 void DrawCircleCollider2DComponent(Entity selection) {
-  if (!selection.HasComponent<CircleCollider2DComponent>()) {
+  if (!selection.HasComponent<CircleCollider2DComponent>())
     return;
-  }
 
   auto &component = selection.GetComponent<CircleCollider2DComponent>();
-
-  const ImGuiTreeNodeFlags treeNodeFlags =
-      ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed |
-      ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap |
-      ImGuiTreeNodeFlags_FramePadding;
-
-  ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{8.0f, 5.0f});
-  ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.19f, 0.20f, 0.23f, 1.0f));
-  ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.24f, 0.25f, 0.29f, 1.0f));
-  ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.22f, 0.24f, 0.28f, 1.0f));
-
-  float lineHeight = ImGui::GetFrameHeight();
-  std::string label = "CircleCollider2D";
-
-    if (component.PrefabDirty)
-      label += " P";
-    if (component.EditDirty)
-      label += "*";
-
-  bool open = ImGui::TreeNodeEx(reinterpret_cast<void *>(typeid(CircleCollider2DComponent).hash_code()),
-                                treeNodeFlags, "%s", label.c_str());
-
-  ImGui::PopStyleColor(3);
-  ImGui::PopStyleVar();
-
-  const float buttonSize = lineHeight;
-  const float rightEdge = ImGui::GetWindowContentRegionMax().x;
-  ImGui::SameLine(rightEdge - buttonSize);
-  ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
-  ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.30f, 0.32f, 0.36f, 0.7f));
-  ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.36f, 0.38f, 0.42f, 0.9f));
-  if (ImGui::Button(":##CircleCollider2DSettings", ImVec2(buttonSize, buttonSize))) {
-    ImGui::OpenPopup("CircleCollider2DSettingsPopup");
-  }
-  ImGui::PopStyleColor(3);
-
-  bool removeComponent = false;
   bool edited = false;
-  if (ImGui::BeginPopup("CircleCollider2DSettingsPopup")) {
-    if (ImGui::MenuItem("Reset")) {
-      component = CircleCollider2DComponent();
-      edited = true;
-      ImGui::CloseCurrentPopup();
-    }
-    ImGui::Separator();
-    if (ImGui::MenuItem("Remove Component")) {
-      removeComponent = true;
-      ImGui::CloseCurrentPopup();
-    }
-    ImGui::EndPopup();
-  }
+  auto header = BeginComponent(selection, "CircleCollider2D", component, edited);
 
-  if (open) {
+  if (header.Open) {
     ImGui::Spacing();
 
-    if (ImGuiDraw::Vec2("Offset", component.Offset))
-      edited = true;
-
-    if (ImGuiDraw::Vec1("Radius", component.Radius, 0.025f, 0.0001f, 100000.f))
-      edited = true;
-
-    if (ImGuiDraw::CheckBox("Show Collider", component.ShowColliderBounds))
-      edited = true;
-
-    if (ImGuiDraw::Vec1("Density", component.Density, 0.025f, 0.0001f, 100000.f))
-      edited = true;
-
-    if (ImGuiDraw::Vec1("Friction", component.Friction, 0.025f, 0.0001f, 100000.f))
-      edited = true;
-
-    if (ImGuiDraw::Vec1("Restitution", component.Restitution, 0.025f, 0.0001f, 100000.f))
-      edited = true;
-
-    if (ImGuiDraw::Vec1("Restitution Threshold", component.RestitutionThreshold, 0.025f, 0.0001f, 100000.f))
-      edited = true;
+    if (ImGuiDraw::Vec2("Offset", component.Offset)) edited = true;
+    if (ImGuiDraw::Vec1("Radius", component.Radius, 0.025f, 0.0001f, 100000.f)) edited = true;
+    if (ImGuiDraw::CheckBox("Show Collider", component.ShowColliderBounds)) edited = true;
+    if (ImGuiDraw::Vec1("Density", component.Density, 0.025f, 0.0001f, 100000.f)) edited = true;
+    if (ImGuiDraw::Vec1("Friction", component.Friction, 0.025f, 0.0001f, 100000.f)) edited = true;
+    if (ImGuiDraw::Vec1("Restitution", component.Restitution, 0.025f, 0.0001f, 100000.f)) edited = true;
+    if (ImGuiDraw::Vec1("Restitution Threshold", component.RestitutionThreshold, 0.025f, 0.0001f, 100000.f)) edited = true;
 
     ImGui::TreePop();
   }
 
-  if (edited) {
-    component.EditDirty = true;
-    auto &rc = selection.GetComponent<RelationshipComponent>();
-    Entity root = selection;
-    if (rc.Parent != 0) {
-      root = selection.GetRootParent();
-    }
-
-    if (root.HasComponent<PrefabLinkComponent>() && rc.Parent != 0)
-      component.PrefabDirty = true;
-  }
-
-  if (removeComponent) {
-    selection.RemoveComponent<CircleCollider2DComponent>();
-    auto &osc = selection.GetComponent<ObjectStateComponent>();
-    osc.DeletedComponents.push_back("CircleCollider2D");
-  }
+  FinishComponent(selection, component, edited, header, "CircleCollider2D");
 }
-
 void DrawRuntimeScriptVector(const ScriptField &field, const int &index,
                              void *elementPtr, Ref<Scene> context) {
   // Wrap the entire element drawing inside ImGui::BeginDisabled to block
@@ -1894,16 +1836,16 @@ void DrawScriptComponent(Entity selection) {
     ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.22f, 0.24f, 0.28f, 1.0f));
 
     float lineHeight = ImGui::GetFrameHeight();
-    std::string label = "Script";
 
-    if (sc.PrefabDirty)
-      label += " P";
-    if (sc.EditDirty)
-      label += "*";
+    const bool isChild = selection.GetComponent<RelationshipComponent>().Parent != 0;
+    auto header = DrawComponentHeader("Script", typeid(ScriptComponentContainer).hash_code(),
+                                      sc.PrefabDirty, sc.EditDirty, isChild);
+    if (header.Reset)
+      sc = ScriptComponent();
+    if (header.Remove)
+      scriptsToRemove.push_back(currentIdx);
 
-    bool open = ImGui::TreeNodeEx(&idx, treeNodeFlags, "%s", label.c_str());
-
-    ImGui::PopStyleColor(3);
+    const bool open = header.Open;    ImGui::PopStyleColor(3);
     ImGui::PopStyleVar();
 
     const float buttonSize = lineHeight;

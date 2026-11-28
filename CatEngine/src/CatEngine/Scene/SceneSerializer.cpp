@@ -154,7 +154,116 @@ void SceneSerializer::SerializeEntity(YAML::Emitter &out, Entity entity) {
     tc.EditDirty = false;
     out << YAML::EndMap; // TransformComponent
   }
+  if (entity.HasComponent<RectTransformComponent>()) {
+    auto &rt = entity.GetComponent<RectTransformComponent>();
+    out << YAML::Key << "RectTransformComponent";
+    out << YAML::BeginMap; // RectTransformComponent
 
+    out << YAML::Key << "AnchorPreset" << YAML::Value << (int)rt.AnchorPreset;
+    out << YAML::Key << "AnchorMin" << YAML::Value << rt.AnchorMin;
+    out << YAML::Key << "AnchorMax" << YAML::Value << rt.AnchorMax;
+    out << YAML::Key << "Pivot" << YAML::Value << rt.Pivot;
+    out << YAML::Key << "Position" << YAML::Value << rt.Position;
+    out << YAML::Key << "Size" << YAML::Value << rt.Size;
+    out << YAML::Key << "Rotation" << YAML::Value << rt.Rotation;
+    out << YAML::Key << "PrefabDirty" << YAML::Value << rt.PrefabDirty;
+
+    rt.EditDirty = false;
+    out << YAML::EndMap; // RectTransformComponent
+  }
+
+  if (entity.HasComponent<CanvasComponent>()) {
+    auto &cv = entity.GetComponent<CanvasComponent>();
+    out << YAML::Key << "CanvasComponent";
+    out << YAML::BeginMap; // CanvasComponent
+
+    out << YAML::Key << "RenderMode" << YAML::Value << (int)cv.RenderMode;
+    out << YAML::Key << "SortOrder" << YAML::Value << cv.SortOrder;
+    out << YAML::Key << "ScaleMode" << YAML::Value << (int)cv.ScaleMode;
+    out << YAML::Key << "ScaleFactor" << YAML::Value << cv.ScaleFactor;
+    out << YAML::Key << "ReferenceResolution" << YAML::Value << cv.ReferenceResolution;
+    out << YAML::Key << "ScreenMatchMode" << YAML::Value << (int)cv.ScreenMatchMode;
+    out << YAML::Key << "MatchWidthOrHeight" << YAML::Value << cv.MatchWidthOrHeight;
+    out << YAML::Key << "PrefabDirty" << YAML::Value << cv.PrefabDirty;
+
+    cv.EditDirty = false;
+    out << YAML::EndMap; // CanvasComponent
+  }
+
+  if (entity.HasComponent<CanvasGroupComponent>()) {
+    auto &cg = entity.GetComponent<CanvasGroupComponent>();
+    out << YAML::Key << "CanvasGroupComponent";
+    out << YAML::BeginMap; // CanvasGroupComponent
+
+    out << YAML::Key << "Alpha" << YAML::Value << cg.Alpha;
+    out << YAML::Key << "Interactable" << YAML::Value << cg.Interactable;
+    out << YAML::Key << "BlocksRaycasts" << YAML::Value << cg.BlocksRaycasts;
+    out << YAML::Key << "IgnoreParentGroups" << YAML::Value << cg.IgnoreParentGroups;
+    out << YAML::Key << "PrefabDirty" << YAML::Value << cg.PrefabDirty;
+
+    cg.EditDirty = false;
+    out << YAML::EndMap; // CanvasGroupComponent
+  }
+
+  if (entity.HasComponent<PanelComponent>()) {
+    auto &pc = entity.GetComponent<PanelComponent>();
+    out << YAML::Key << "PanelComponent";
+    out << YAML::BeginMap; // PanelComponent
+
+    out << YAML::Key << "Color" << YAML::Value << pc.Color;
+    out << YAML::Key << "Texture" << YAML::Value << pc.Texture;
+    out << YAML::Key << "RaycastTarget" << YAML::Value << pc.RaycastTarget;
+    out << YAML::Key << "PrefabDirty" << YAML::Value << pc.PrefabDirty;
+
+    pc.EditDirty = false;
+    out << YAML::EndMap; // PanelComponent
+  }
+
+  if (entity.HasComponent<ButtonVisualComponent>()) {
+    auto &bv = entity.GetComponent<ButtonVisualComponent>();
+    out << YAML::Key << "ButtonVisualComponent";
+    out << YAML::BeginMap; // ButtonVisualComponent
+
+    out << YAML::Key << "NormalColor" << YAML::Value << bv.NormalColor;
+    out << YAML::Key << "Texture" << YAML::Value << bv.Texture;
+    out << YAML::Key << "RaycastTarget" << YAML::Value << bv.RaycastTarget;
+    out << YAML::Key << "PrefabDirty" << YAML::Value << bv.PrefabDirty;
+
+    bv.EditDirty = false;
+    out << YAML::EndMap; // ButtonVisualComponent
+  }
+
+  if (entity.HasComponent<SelectableComponent>()) {
+    auto &sel = entity.GetComponent<SelectableComponent>();
+    out << YAML::Key << "SelectableComponent";
+    out << YAML::BeginMap; // SelectableComponent
+
+    out << YAML::Key << "Interactable" << YAML::Value << sel.Interactable;
+    out << YAML::Key << "Navigable" << YAML::Value << sel.Navigable;
+    out << YAML::Key << "Transition" << YAML::Value << (int)sel.Transition;
+    out << YAML::Key << "NormalTint" << YAML::Value << sel.NormalTint;
+    out << YAML::Key << "HighlightedTint" << YAML::Value << sel.HighlightedTint;
+    out << YAML::Key << "PressedTint" << YAML::Value << sel.PressedTint;
+    out << YAML::Key << "SelectedTint" << YAML::Value << sel.SelectedTint;
+    out << YAML::Key << "DisabledTint" << YAML::Value << sel.DisabledTint;
+    out << YAML::Key << "FadeDuration" << YAML::Value << sel.FadeDuration;
+    out << YAML::Key << "TintChildren" << YAML::Value << sel.TintChildren;
+    out << YAML::Key << "PrefabDirty" << YAML::Value << sel.PrefabDirty;
+
+    sel.EditDirty = false;
+    out << YAML::EndMap; // SelectableComponent
+  }
+  if (entity.HasComponent<EventListenerComponent>()) {
+    auto &el = entity.GetComponent<EventListenerComponent>();
+    out << YAML::Key << "EventListenerComponent";
+    out << YAML::BeginMap; // EventListenerComponent
+
+    out << YAML::Key << "Mask" << YAML::Value << el.Mask;
+    out << YAML::Key << "PrefabDirty" << YAML::Value << el.PrefabDirty;
+
+    el.EditDirty = false;
+    out << YAML::EndMap; // EventListenerComponent
+  }
   if (entity.HasComponent<SpriteRendererComponent>()) {
     auto &src = entity.GetComponent<SpriteRendererComponent>();
     out << YAML::Key << "SpriteRendererComponent";
@@ -209,8 +318,16 @@ void SceneSerializer::SerializeEntity(YAML::Emitter &out, Entity entity) {
     out << YAML::EndMap; // Camera
 
     out << YAML::Key << "Primary" << YAML::Value << cameraComponent.Primary;
-    out << YAML::Key << "FixedAspectRatio" << YAML::Value
-        << cameraComponent.FixedAspectRatio;
+    out << YAML::Key << "Active" << YAML::Value << cameraComponent.Active;
+    out << YAML::Key << "AspectMode" << YAML::Value << (int)cameraComponent.AspectMode;
+    out << YAML::Key << "AspectRatio" << YAML::Value << cameraComponent.AspectRatio;
+    out << YAML::Key << "Resolution" << YAML::Value << cameraComponent.Resolution;
+    out << YAML::Key << "IntegerScaling" << YAML::Value << cameraComponent.IntegerScaling;
+    out << YAML::Key << "ViewportRect" << YAML::Value << cameraComponent.ViewportRect;
+    out << YAML::Key << "OrthoSizeMode" << YAML::Value << (int)cameraComponent.OrthoSizeMode;
+    out << YAML::Key << "PixelsPerUnit" << YAML::Value << cameraComponent.PixelsPerUnit;
+    out << YAML::Key << "ClearMode" << YAML::Value << (int)cameraComponent.ClearMode;
+    out << YAML::Key << "BackgroundColor" << YAML::Value << cameraComponent.BackgroundColor;
     out << YAML::Key << "PrefabDirty" << YAML::Value << cameraComponent.PrefabDirty;
 
     cameraComponent.EditDirty = false;
@@ -572,6 +689,84 @@ void SceneSerializer::DeserializeEntity(YAML::Node &entity, UUID parent) {
     trc.PrefabDirty = transformComponent["PrefabDirty"].as<bool>(false);
   }
 
+  auto rectTransformComponent = entity["RectTransformComponent"];
+  if (rectTransformComponent) {
+    auto &rt = deserializedEntity.GetOrAddComponent<RectTransformComponent>();
+    rt.AnchorPreset = (UIAnchorPreset)rectTransformComponent["AnchorPreset"].as<int>((int)UIAnchorPreset::Center);
+    rt.AnchorMin = rectTransformComponent["AnchorMin"].as<glm::vec2>(glm::vec2{0.5f});
+    rt.AnchorMax = rectTransformComponent["AnchorMax"].as<glm::vec2>(glm::vec2{0.5f});
+    rt.Pivot = rectTransformComponent["Pivot"].as<glm::vec2>(glm::vec2{0.5f});
+    rt.Position = rectTransformComponent["Position"].as<glm::vec2>(glm::vec2{0.0f});
+    rt.Size = rectTransformComponent["Size"].as<glm::vec2>(glm::vec2{160.0f, 48.0f});
+    rt.Rotation = rectTransformComponent["Rotation"].as<float>(0.0f);
+    rt.PrefabDirty = rectTransformComponent["PrefabDirty"].as<bool>(false);
+  }
+
+  auto canvasComponent = entity["CanvasComponent"];
+  if (canvasComponent) {
+    auto &cv = deserializedEntity.GetOrAddComponent<CanvasComponent>();
+    cv.RenderMode = (CanvasRenderMode)canvasComponent["RenderMode"].as<int>(0);
+    cv.SortOrder = canvasComponent["SortOrder"].as<int32_t>(0);
+    cv.ScaleMode = (CanvasScaleMode)canvasComponent["ScaleMode"].as<int>((int)CanvasScaleMode::ScaleWithScreenSize);
+    cv.ScaleFactor = canvasComponent["ScaleFactor"].as<float>(1.0f);
+    cv.ReferenceResolution = canvasComponent["ReferenceResolution"].as<glm::vec2>(glm::vec2{1920.0f, 1080.0f});
+    cv.ScreenMatchMode = (CanvasScreenMatchMode)canvasComponent["ScreenMatchMode"].as<int>(0);
+    cv.MatchWidthOrHeight = canvasComponent["MatchWidthOrHeight"].as<float>(0.5f);
+    cv.PrefabDirty = canvasComponent["PrefabDirty"].as<bool>(false);
+  }
+
+  auto canvasGroupComponent = entity["CanvasGroupComponent"];
+  if (canvasGroupComponent) {
+    auto &cg = deserializedEntity.GetOrAddComponent<CanvasGroupComponent>();
+    cg.Alpha = canvasGroupComponent["Alpha"].as<float>(1.0f);
+    cg.Interactable = canvasGroupComponent["Interactable"].as<bool>(true);
+    cg.BlocksRaycasts = canvasGroupComponent["BlocksRaycasts"].as<bool>(true);
+    cg.IgnoreParentGroups = canvasGroupComponent["IgnoreParentGroups"].as<bool>(false);
+    cg.PrefabDirty = canvasGroupComponent["PrefabDirty"].as<bool>(false);
+  }
+
+  auto panelComponent = entity["PanelComponent"];
+  if (panelComponent) {
+    auto &pc = deserializedEntity.GetOrAddComponent<PanelComponent>();
+    pc.Color = panelComponent["Color"].as<glm::vec4>(glm::vec4{1.0f, 1.0f, 1.0f, 0.9f});
+    pc.Texture = panelComponent["Texture"].as<AssetHandle>(AssetHandle(0));
+    pc.RaycastTarget = panelComponent["RaycastTarget"].as<bool>(true);
+    pc.PrefabDirty = panelComponent["PrefabDirty"].as<bool>(false);
+  }
+
+  auto buttonVisualComponent = entity["ButtonVisualComponent"];
+  if (buttonVisualComponent) {
+    auto &bv = deserializedEntity.GetOrAddComponent<ButtonVisualComponent>();
+    bv.NormalColor = buttonVisualComponent["NormalColor"].as<glm::vec4>(glm::vec4{1.0f});
+    bv.Texture = buttonVisualComponent["Texture"].as<AssetHandle>(AssetHandle(0));
+    bv.RaycastTarget = buttonVisualComponent["RaycastTarget"].as<bool>(true);
+    bv.PrefabDirty = buttonVisualComponent["PrefabDirty"].as<bool>(false);
+  }
+
+  auto selectableComponent = entity["SelectableComponent"];
+  if (selectableComponent) {
+    auto &sel = deserializedEntity.GetOrAddComponent<SelectableComponent>();
+    SelectableComponent defaults; // single source of truth for default tints
+    sel.Interactable = selectableComponent["Interactable"].as<bool>(true);
+    sel.Navigable = selectableComponent["Navigable"].as<bool>(true);
+    sel.Transition = (UITransition)selectableComponent["Transition"].as<int>((int)UITransition::ColorTint);
+    sel.NormalTint = selectableComponent["NormalTint"].as<glm::vec4>(defaults.NormalTint);
+    sel.HighlightedTint = selectableComponent["HighlightedTint"].as<glm::vec4>(defaults.HighlightedTint);
+    sel.PressedTint = selectableComponent["PressedTint"].as<glm::vec4>(defaults.PressedTint);
+    sel.SelectedTint = selectableComponent["SelectedTint"].as<glm::vec4>(defaults.SelectedTint);
+    sel.DisabledTint = selectableComponent["DisabledTint"].as<glm::vec4>(defaults.DisabledTint);
+    sel.FadeDuration = selectableComponent["FadeDuration"].as<float>(defaults.FadeDuration);
+    sel.TintChildren = selectableComponent["TintChildren"].as<bool>(false);
+    sel.PrefabDirty = selectableComponent["PrefabDirty"].as<bool>(false);
+  }
+
+  auto eventListenerComponent = entity["EventListenerComponent"];
+  if (eventListenerComponent) {
+    auto &el = deserializedEntity.GetOrAddComponent<EventListenerComponent>();
+    el.Mask = eventListenerComponent["Mask"].as<uint32_t>(UIMask::All);
+    el.PrefabDirty = eventListenerComponent["PrefabDirty"].as<bool>(false);
+  }
+
   auto spriteRendererComponent = entity["SpriteRendererComponent"];
   if (spriteRendererComponent) {
     auto &src = deserializedEntity.GetOrAddComponent<SpriteRendererComponent>();
@@ -611,7 +806,21 @@ void SceneSerializer::DeserializeEntity(YAML::Node &entity, UUID parent) {
         cameraProps["OrthographicFar"].as<float>());
 
     cc.Primary = cameraComponent["Primary"].as<bool>();
-    cc.FixedAspectRatio = cameraComponent["FixedAspectRatio"].as<bool>();
+    cc.Active = cameraComponent["Active"].as<bool>(true);
+
+    if (cameraComponent["AspectMode"])
+      cc.AspectMode = (CameraAspectMode)cameraComponent["AspectMode"].as<int>(0);
+    else if (cameraComponent["FixedAspectRatio"].as<bool>(false))
+      cc.AspectMode = CameraAspectMode::Ratio; // migrate old scenes
+
+    cc.AspectRatio = cameraComponent["AspectRatio"].as<glm::vec2>(glm::vec2{16.0f, 9.0f});
+    cc.Resolution = cameraComponent["Resolution"].as<glm::vec2>(glm::vec2{1920.0f, 1080.0f});
+    cc.IntegerScaling = cameraComponent["IntegerScaling"].as<bool>(false);
+    cc.ViewportRect = cameraComponent["ViewportRect"].as<glm::vec4>(glm::vec4{0, 0, 1, 1});
+    cc.OrthoSizeMode = (CameraSizeMode)cameraComponent["OrthoSizeMode"].as<int>(0);
+    cc.PixelsPerUnit = cameraComponent["PixelsPerUnit"].as<float>(100.0f);
+    cc.ClearMode = (CameraClearMode)cameraComponent["ClearMode"].as<int>(0);
+    cc.BackgroundColor = cameraComponent["BackgroundColor"].as<glm::vec4>(glm::vec4{0.1f, 0.1f, 0.1f, 1.0f});
     cc.PrefabDirty = cameraComponent["PrefabDirty"].as<bool>(false);
   }
 

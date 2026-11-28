@@ -28,10 +28,8 @@ public:
 
   static void DrawSprite(const glm::mat4 &transform, SpriteRendererComponent &sprite, int entityID);
   static void DrawCircle(const glm::mat4 &transform, CircleRendererComponent &crc, int entityID);
-  static void DrawLine(const glm::vec3 &p0, const glm::vec3 &p1,
-                       const glm::vec4 &color, int entityID);
-  static void DrawRect(const glm::mat4 &transform, const glm::vec4 &color,
-                       int entityID = -1);
+  static void DrawLine(const glm::vec3 &p0, const glm::vec3 &p1, const glm::vec4 &color, int entityID);
+  static void DrawRect(const glm::mat4 &transform, const glm::vec4 &color, int entityID = -1);
 
   struct Statistics {
     uint32_t DrawCalls = 0;

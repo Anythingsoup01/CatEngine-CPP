@@ -158,25 +158,24 @@ void EditorLayer::OnImGuiDraw() {
 void EditorLayer::OnOverlayRender() {
   Renderer2D::BeginScene(m_EditorCamera);
   {
-    Entity selectedEntity =
-        m_PanelManager->GetPanel<SceneHierarchyPanel>("SceneHierarchyPanel")
-            ->GetSelectedEntity();
+    Entity selectedEntity = m_PanelManager->GetPanel<SceneHierarchyPanel>("SceneHierarchyPanel")->GetSelectedEntity();
 
     if (selectedEntity) {
-      auto &tc = selectedEntity.GetComponent<TransformComponent>();
-      glm::vec3 position = tc.WorldPosition;
-      glm::mat4 rotation = glm::toMat4(glm::quat(tc.WorldRotation));
-      glm::vec3 scale = tc.WorldScale;
-      glm::mat4 transform = glm::translate(glm::mat4(1.f), position) *
-                            rotation * glm::scale(glm::mat4(1.f), scale);
-      Renderer2D::DrawRect(transform, glm::vec4(0.85f, 0.1f, 0.85f, 1.0f));
+      if (selectedEntity.HasComponent<RectTransformComponent>()) {
+        OnUIOverlay(selectedEntity);
+      } else {
+        auto &tc = selectedEntity.GetComponent<TransformComponent>();
+        glm::vec3 position = tc.WorldPosition;
+        glm::mat4 rotation = glm::toMat4(glm::quat(tc.WorldRotation));
+        glm::vec3 scale = tc.WorldScale;
+        glm::mat4 transform = glm::translate(glm::mat4(1.f), position) * rotation * glm::scale(glm::mat4(1.f), scale);
+        Renderer2D::DrawRect(transform, glm::vec4(0.85f, 0.1f, 0.85f, 1.0f));
+      }
     }
   }
 
   {
-    auto view =
-        m_EditorScene->GetAllComponentsWith<TransformComponent,
-                                            CircleCollider2DComponent>();
+    auto view = m_EditorScene->GetAllComponentsWith<TransformComponent, CircleCollider2DComponent>();
 
     for (auto entity : view) {
       auto [tc, cc2D] =
@@ -224,10 +223,189 @@ void EditorLayer::OnOverlayRender() {
   }
   Renderer2D::EndScene();
 }
+void EditorLayer::OnUIOverlay(Entity selectedEntity) {
+glm::mat4 toWorld;
+  if (!m_CurrentScene->ComputeCanvasToWorld(toWorld))
+    return; // no primary camera, so the UI isn't drawn either
+
+  // Canvas pixels to world. A small z offset keeps lines in front of the UI quads.
+  constexpr float z = 0.01f;
+  auto W = [&](glm::vec2 p) { return glm::vec3(toWorld * glm::vec4(p, z, 1.0f)); };
+
+  auto line = [&](glm::vec2 a, glm::vec2 b, const glm::vec4 &c) {
+    Renderer2D::DrawLine(W(a), W(b), c, -1); // -1: don't pollute the picking buffer
+  };
+  auto box = [&](const UIScreenRect &r, const glm::vec4 &c) {
+    line({r.Min.x, r.Min.y}, {r.Max.x, r.Min.y}, c);
+    line({r.Max.x, r.Min.y}, {r.Max.x, r.Max.y}, c);
+    line({r.Max.x, r.Max.y}, {r.Min.x, r.Max.y}, c);
+    line({r.Min.x, r.Max.y}, {r.Min.x, r.Min.y}, c);
+  };
+  auto diamond = [&](glm::vec2 p, float s, const glm::vec4 &c) {
+    line(p + glm::vec2(0, s), p + glm::vec2(s, 0), c);
+    line(p + glm::vec2(s, 0), p + glm::vec2(0, -s), c);
+    line(p + glm::vec2(0, -s), p + glm::vec2(-s, 0), c);
+    line(p + glm::vec2(-s, 0), p + glm::vec2(0, s), c);
+  };
+
+  // 1. Canvas frame(s)
+  for (auto id : m_CurrentScene->GetAllComponentsWith<CanvasComponent>()) {
+    Entity canvas{id, m_CurrentScene.get()};
+    if (const UIScreenRect *r = m_CurrentScene->GetUIRect(canvas.GetUUID()))
+      box(*r, {0.55f, 0.55f, 0.6f, 1.0f});
+  }
+
+  if (!selectedEntity || !selectedEntity.HasComponent<RectTransformComponent>())
+    return;
+
+  const UIScreenRect *rect = m_CurrentScene->GetUIRect(selectedEntity.GetUUID());
+  if (!rect)
+    return;
+
+  // 2. Selection outline
+  box(*rect, {0.85f, 0.1f, 0.85f, 1.0f});
+
+  const auto &rt = selectedEntity.GetComponent<RectTransformComponent>();
+  const glm::vec2 size = rect->Max - rect->Min;
+
+  // 3. Pivot (cross)
+  const glm::vec2 pivot = rect->Min + size * rt.Pivot;
+  const float arm = 8.0f;
+  const glm::vec4 pivotColor{0.2f, 0.8f, 1.0f, 1.0f};
+  line(pivot - glm::vec2(arm, 0), pivot + glm::vec2(arm, 0), pivotColor);
+  line(pivot - glm::vec2(0, arm), pivot + glm::vec2(0, arm), pivotColor);
+
+  // 4. Anchors, positioned inside the nearest ancestor that has a rect
+  //    (pass-through nodes without a RectTransform have no rect of their own).
+  const UIScreenRect *parentRect = nullptr;
+  UUID parentID = selectedEntity.GetComponent<RelationshipComponent>().Parent;
+  for (int guard = 0; parentID != 0 && guard < 64; ++guard) {
+    if ((parentRect = m_CurrentScene->GetUIRect(parentID)))
+      break;
+    Entity p = m_CurrentScene->GetEntityByUUID(parentID);
+    if (!p) break;
+    parentID = p.GetComponent<RelationshipComponent>().Parent;
+  }
+
+  if (parentRect) {
+    const glm::vec2 ps = parentRect->Max - parentRect->Min;
+    const glm::vec2 aMin = parentRect->Min + rt.AnchorMin * ps;
+    const glm::vec2 aMax = parentRect->Min + rt.AnchorMax * ps;
+    const glm::vec4 anchorColor{1.0f, 0.85f, 0.2f, 1.0f};
+
+    if (rt.AnchorMin == rt.AnchorMax) {
+      diamond(aMin, 7.0f, anchorColor);
+    } else {
+      diamond({aMin.x, aMin.y}, 7.0f, anchorColor);
+      diamond({aMax.x, aMin.y}, 7.0f, anchorColor);
+      diamond({aMax.x, aMax.y}, 7.0f, anchorColor);
+      diamond({aMin.x, aMax.y}, 7.0f, anchorColor);
+    }
+  }
+}
+
+bool EditorLayer::MouseToCanvas(glm::vec2 &out) {
+  glm::mat4 toWorld;
+  if (!m_CurrentScene->ComputeCanvasToWorld(toWorld))
+    return false;
+
+  const glm::vec2 *b = m_SceneViewportPanel.GetPanelBounds();
+  const glm::vec2 size = b[1] - b[0];
+  if (size.x <= 0.0f || size.y <= 0.0f)
+    return false;
+
+  const ImVec2 m = ImGui::GetMousePos();
+  const glm::vec2 ndc{(m.x - b[0].x) / size.x * 2.0f - 1.0f,
+                      1.0f - (m.y - b[0].y) / size.y * 2.0f};
+
+  const glm::mat4 inv = glm::inverse(m_EditorCamera.GetViewProjection());
+  glm::vec4 n = inv * glm::vec4(ndc, -1.0f, 1.0f); // OpenGL clip depth: -1..1
+  glm::vec4 f = inv * glm::vec4(ndc,  1.0f, 1.0f);
+  n /= n.w;
+  f /= f.w;
+  const glm::vec3 origin = n;
+  const glm::vec3 dir = glm::vec3(f) - origin;
+
+  const glm::vec3 planePoint = glm::vec3(toWorld * glm::vec4(0, 0, 0, 1));
+  const glm::vec3 planeNormal = glm::normalize(glm::vec3(toWorld * glm::vec4(0, 0, 1, 0)));
+
+  const float denom = glm::dot(planeNormal, dir);
+  if (std::abs(denom) < 1e-6f)
+    return false; // looking edge-on
+
+  const float t = glm::dot(planeNormal, planePoint - origin) / denom;
+  const glm::vec3 hit = origin + dir * t;
+
+  const glm::vec4 local = glm::inverse(toWorld) * glm::vec4(hit, 1.0f);
+  out = {local.x, local.y};
+  return true;
+}
+
+void EditorLayer::BeginUIDrag(Entity selected) {
+  m_UIDrag = {};
+  if (m_SceneState != SceneState::Edit || !selected ||
+      !selected.HasComponent<RectTransformComponent>() ||
+      selected.HasComponent<CanvasComponent>()) // canvases fill the screen, don't move them
+    return;
+  if (selected.GetComponent<ObjectStateComponent>().Locked)
+    return;
+
+  // Only elements that were laid out (i.e. under a canvas) can be dragged.
+  if (!m_CurrentScene->GetUIRect(selected.GetUUID()))
+    return;
+
+  glm::vec2 p;
+  if (!MouseToCanvas(p))
+    return;
+
+  m_UIDrag.Active = true;
+  m_UIDrag.Entity = selected.GetUUID();
+  m_UIDrag.StartCanvas = p;
+  m_UIDrag.StartPosition = selected.GetComponent<RectTransformComponent>().Position;
+  m_UIDrag.Scale = m_CurrentScene->GetUIScale(selected.GetUUID());
+}
+
+void EditorLayer::UpdateUIDrag() {
+  if (!m_UIDrag.Active)
+    return;
+
+  Entity e = m_CurrentScene->GetEntityByUUID(m_UIDrag.Entity);
+  if (m_SceneState != SceneState::Edit || !e || !e.HasComponent<RectTransformComponent>() ||
+      !Input::IsMouseButtonPressed(MouseCode::ButtonLeft)) {
+    EndUIDrag();
+    return;
+  }
+
+  glm::vec2 p;
+  if (!MouseToCanvas(p))
+    return;
+
+  // Position is in unscaled canvas units, so undo the canvas scale.
+  glm::vec2 pos = m_UIDrag.StartPosition + (p - m_UIDrag.StartCanvas) / m_UIDrag.Scale;
+
+  if (Input::IsKeyPressed(KeyCode::LeftControl)) { // snap to a 10-unit grid
+    constexpr float grid = 10.0f;
+    pos = glm::round(pos / grid) * grid;
+  }
+
+  auto &rt = e.GetComponent<RectTransformComponent>();
+  if (pos == rt.Position)
+    return;
+
+  rt.Position = pos;
+  rt.EditDirty = true;
+  if (e.GetComponent<RelationshipComponent>().Parent != 0 &&
+    e.GetRootParent().HasComponent<PrefabLinkComponent>())
+    rt.PrefabDirty = true;
+}
 
 void EditorLayer::ImGuizmoDraw(Entity selectedEntity,
                                const glm::mat4 &cameraProjection,
                                glm::mat4 cameraView) {
+  if (!selectedEntity || m_GizmoType == -1 || selectedEntity.HasComponent<RectTransformComponent>()) {
+    return;
+  }
+
   // Entity transform
   auto &tc = selectedEntity.GetComponent<TransformComponent>();
   glm::mat4 transform = selectedEntity.GetWorldTransform();
@@ -284,8 +462,9 @@ void EditorLayer::OnUpdateEditor(Time deltaTime) {
     }
 
     m_EditorCamera.AllowEvents(!ImGuizmo::IsUsing() && !m_BlockMouseEvents);
-
     m_EditorCamera.OnUpdate(deltaTime);
+
+    UpdateUIDrag();
 
     m_SceneViewportPanel.BindFramebuffer();
 
@@ -328,8 +507,8 @@ void EditorLayer::OnUpdateMainCameraPreview(Time deltaTime) {
 
     m_SceneCameraPanel.BindFramebuffer();
     RenderCommand::Clear({0.1, 0.1, 0.1, 1.0});
-    m_CurrentScene->OnUpdateMainCameraPreview(deltaTime);
-
+    m_CurrentScene->OnUpdateMainCameraPreview(
+        deltaTime, {(float)m_SceneCameraPanel.GetWidth(), (float)m_SceneCameraPanel.GetHeight()});
     m_SceneCameraPanel.UnbindFramebuffer();
   }
 }
@@ -340,7 +519,7 @@ void EditorLayer::OnUpdateRuntime(Time deltaTime) {
 
     m_SceneCameraPanel.BindFramebuffer();
     RenderCommand::Clear({0.1, 0.1, 0.1, 1.0});
-    m_CurrentScene->OnUpdateRuntime(deltaTime);
+    m_CurrentScene->OnUpdateRuntime(deltaTime, {(float)m_SceneCameraPanel.GetWidth(), (float)m_SceneCameraPanel.GetHeight()});
 
     m_SceneCameraPanel.UnbindFramebuffer();
   } else if (m_SceneViewportPanel.IsActive()) {
@@ -816,6 +995,8 @@ void EditorLayer::NewProject() { Project::New(); }
 void EditorLayer::OnScenePlay() {
   CE_PROFILE_FUNCTION();
 
+  EndUIDrag();
+
   m_SceneState = SceneState::Play;
 
   m_RuntimeScene = CreateRef<Scene>();
@@ -1052,12 +1233,35 @@ bool EditorLayer::OnKeyPressed(KeyPressedEvent &e) {
 }
 
 bool EditorLayer::OnMouseButtonPressed(MouseButtonPressedEvent &e) {
+  // Never change selection while a UI drag is in progress.
+  if (m_UIDrag.Active)
+    return false;
+
   bool alt = Input::IsKeyPressed(KeyCode::LeftAlt) ||
              Input::IsKeyPressed(KeyCode::RightAlt);
   if (Input::IsMouseButtonPressed(MouseCode::ButtonLeft)) {
     if (m_SceneViewportPanel.IsHovered() && !ImGuizmo::IsOver() && !alt) {
-      m_PanelManager->GetPanel<SceneHierarchyPanel>("SceneHierarchyPanel")->SetSelectedEntity(m_HoveredEntity);
-      m_PanelManager->GetPanel<InspectorPanel>("InspectorPanel")->UpdateEntitySelection();
+      Entity picked = m_HoveredEntity;
+
+      // UI elements are picked in canvas space, which is exact and has no one-frame lag.
+      glm::vec2 canvasPoint;
+      if (m_SceneState == SceneState::Edit && MouseToCanvas(canvasPoint)) {
+        if (Entity ui = m_CurrentScene->PickUI(canvasPoint))
+          picked = ui;
+      }
+
+      auto hierarchy = m_PanelManager->GetPanel<SceneHierarchyPanel>("SceneHierarchyPanel");
+      Entity current = hierarchy->GetSelectedEntity();
+      const uint64_t currentID = current ? current.GetUUID().uuid() : 0;
+      const uint64_t pickedID = picked ? picked.GetUUID().uuid() : 0;
+
+      // Re-selecting the same entity would only reset panel state.
+      if (currentID != pickedID) {
+        hierarchy->SetSelectedEntity(picked);
+        m_PanelManager->GetPanel<InspectorPanel>("InspectorPanel")->UpdateEntitySelection();
+      }
+
+      BeginUIDrag(picked);
     }
   }
 

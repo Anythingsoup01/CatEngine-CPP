@@ -38,6 +38,59 @@ static void CopyComponentIfExistsForEntity(entt::registry &dstRegistry,
   }
 }
 
+
+using PrefabComponents = ComponentGroup<
+    TagComponent,
+    LayerComponent,
+    ObjectStateComponent,
+    TransformComponent,
+    CameraComponent,
+    SpriteRendererComponent,
+    CircleRendererComponent,
+    Rigidbody2DComponent,
+    BoxCollider2DComponent,
+    CircleCollider2DComponent,
+    ScriptComponentContainer,
+    RectTransformComponent,
+    CanvasComponent,
+    CanvasGroupComponent,
+    PanelComponent,
+    ButtonVisualComponent,
+    SelectableComponent,
+    EventListenerComponent>;
+
+template <typename T>
+static void AddIfDirty(Entity e, std::vector<std::string> &out, const char *label) {
+  if (e.HasComponent<T>() && e.GetComponent<T>().PrefabDirty)
+    out.push_back(label);
+}
+
+template <typename... Component>
+static void ClearPrefabDirty(Entity e) {
+  ([&]() {
+    if (e.HasComponent<Component>())
+      e.GetComponent<Component>().PrefabDirty = false;
+  }(), ...);
+}
+
+template <typename... Component>
+static void ClearPrefabDirty(ComponentGroup<Component...>, Entity e) {
+  ClearPrefabDirty<Component...>(e);
+}
+
+// Removes components from dst that src no longer has.
+template <typename... Component>
+static void RemoveIfMissing(Entity dst, Entity src) {
+  ([&]() {
+    if (dst.HasComponent<Component>() && !src.HasComponent<Component>())
+      dst.RemoveComponent<Component>();
+  }(), ...);
+}
+
+template <typename... Component>
+static void RemoveIfMissing(ComponentGroup<Component...>, Entity dst, Entity src) {
+  RemoveIfMissing<Component...>(dst, src);
+}
 }
 
 using namespace PrefabUtil;
@@ -157,34 +210,34 @@ void PrefabManager::GetDirtyComponents(Entity entity, std::unordered_map<UUID, s
     return;
 
   std::vector<std::string> outDirty;
-  if (entity.HasComponent<TransformComponent>() && entity.GetComponent<TransformComponent>().PrefabDirty)
-    outDirty.push_back("Transform");
-  if (entity.HasComponent<SpriteRendererComponent>() && entity.GetComponent<SpriteRendererComponent>().PrefabDirty)
-    outDirty.push_back("Sprite Renderer");
-  if (entity.HasComponent<CircleRendererComponent>() && entity.GetComponent<CircleRendererComponent>().PrefabDirty)
-    outDirty.push_back("Circle Renderer");
-  if (entity.HasComponent<CameraComponent>() && entity.GetComponent<CameraComponent>().PrefabDirty)
-    outDirty.push_back("Camera");
-  if (entity.HasComponent<Rigidbody2DComponent>() && entity.GetComponent<Rigidbody2DComponent>().PrefabDirty)
-    outDirty.push_back("Rigidbody 2D");
-  if (entity.HasComponent<BoxCollider2DComponent>() && entity.GetComponent<BoxCollider2DComponent>().PrefabDirty)
-    outDirty.push_back("Box Collider 2D");
-  if (entity.HasComponent<CircleCollider2DComponent>() && entity.GetComponent<CircleCollider2DComponent>().PrefabDirty)
-    outDirty.push_back("Circle Collider 2D");
+
+  AddIfDirty<TransformComponent>(entity, outDirty, "Transform");
+  AddIfDirty<RectTransformComponent>(entity, outDirty, "Rect Transform");
+  AddIfDirty<CanvasComponent>(entity, outDirty, "Canvas");
+  AddIfDirty<CanvasGroupComponent>(entity, outDirty, "Canvas Group");
+  AddIfDirty<PanelComponent>(entity, outDirty, "Panel");
+  AddIfDirty<ButtonVisualComponent>(entity, outDirty, "Button");
+  AddIfDirty<SelectableComponent>(entity, outDirty, "Selectable");
+  AddIfDirty<EventListenerComponent>(entity, outDirty, "Event Listener");
+  AddIfDirty<SpriteRendererComponent>(entity, outDirty, "Sprite Renderer");
+  AddIfDirty<CircleRendererComponent>(entity, outDirty, "Circle Renderer");
+  AddIfDirty<CameraComponent>(entity, outDirty, "Camera");
+  AddIfDirty<Rigidbody2DComponent>(entity, outDirty, "Rigidbody 2D");
+  AddIfDirty<BoxCollider2DComponent>(entity, outDirty, "Box Collider 2D");
+  AddIfDirty<CircleCollider2DComponent>(entity, outDirty, "Circle Collider 2D");
+  AddIfDirty<TagComponent>(entity, outDirty, "Tag");
+  AddIfDirty<LayerComponent>(entity, outDirty, "Layer");
+
+  // Scripts report per script, not per container
   if (entity.HasComponent<ScriptComponentContainer>()) {
     auto &scc = entity.GetComponent<ScriptComponentContainer>();
     if (scc.PrefabDirty) {
-      for (auto &sc : scc.Scripts) {
-        if (sc.PrefabDirty) {
+      for (auto &sc : scc.Scripts)
+        if (sc.PrefabDirty)
           outDirty.push_back(sc.ClassName);
-        }
-      }
     }
   }
-  if (entity.HasComponent<TagComponent>() && entity.GetComponent<TagComponent>().PrefabDirty)
-    outDirty.push_back("Tag");
-  if (entity.HasComponent<LayerComponent>() && entity.GetComponent<LayerComponent>().PrefabDirty)
-    outDirty.push_back("Layer");
+
   if (entity.HasComponent<ObjectStateComponent>()) {
     auto &osc = entity.GetComponent<ObjectStateComponent>();
     if (osc.PrefabDirty)
@@ -192,10 +245,8 @@ void PrefabManager::GetDirtyComponents(Entity entity, std::unordered_map<UUID, s
     if (osc.PrefabAdded)
       outDirty.push_back("New Component");
 
-    for (auto &deletedComponent : osc.DeletedComponents) {
-      std::string label = deletedComponent + " (Deleted)";
-      outDirty.push_back(label);
-    }
+    for (auto &deletedComponent : osc.DeletedComponents)
+      outDirty.push_back(deletedComponent + " (Deleted)");
   }
 
   changeMap->emplace(entity.GetUUID(), outDirty);
@@ -213,20 +264,7 @@ void PrefabManager::CopyComponentsToPrefabEntity(Entity dstPrefabEntity, Entity 
 
   TransformComponent storedTC = dstPrefabEntity.GetComponent<TransformComponent>();
 
-  // Copy components present on the scene entity onto the prefab entity (preserving IDComponent and RelationshipComponent)
-  CopyComponentIfExists<
-      TagComponent,
-      LayerComponent,
-      ObjectStateComponent,
-      TransformComponent,
-      CameraComponent,
-      SpriteRendererComponent,
-      CircleRendererComponent,
-      Rigidbody2DComponent,
-      BoxCollider2DComponent,
-      CircleCollider2DComponent,
-      ScriptComponentContainer
-  >(dstPrefabEntity, srcSceneEntity);
+  CopyComponentIfExists(PrefabComponents{}, dstPrefabEntity, srcSceneEntity);
 
   if (isRoot) {
     dstPrefabEntity.GetComponent<TransformComponent>() = storedTC;
@@ -236,29 +274,8 @@ void PrefabManager::CopyComponentsToPrefabEntity(Entity dstPrefabEntity, Entity 
     ScriptEngine::GetMutable().CopyScriptFields(srcSceneEntity, dstPrefabEntity);
   }
 
-  // Remove components that exist on dstPrefabEntity but were removed from srcSceneEntity
-  auto removeIfMissingOnScene = [&]<typename T>() {
-    if constexpr (!std::is_same_v<T, IDComponent> &&
-                  !std::is_same_v<T, RelationshipComponent> &&
-                  !std::is_same_v<T, PrefabLinkComponent>) {
-      if (dstPrefabEntity.HasComponent<T>() && !srcSceneEntity.HasComponent<T>()) {
-        dstPrefabEntity.RemoveComponent<T>();
-      }
-    }
-  };
-
-  removeIfMissingOnScene.template operator()<TagComponent>();
-  removeIfMissingOnScene.template operator()<LayerComponent>();
-  removeIfMissingOnScene.template operator()<ObjectStateComponent>();
-  removeIfMissingOnScene.template operator()<TransformComponent>();
-  removeIfMissingOnScene.template operator()<CameraComponent>();
-  removeIfMissingOnScene.template operator()<SpriteRendererComponent>();
-  removeIfMissingOnScene.template operator()<CircleRendererComponent>();
-  removeIfMissingOnScene.template operator()<Rigidbody2DComponent>();
-  removeIfMissingOnScene.template operator()<BoxCollider2DComponent>();
-  removeIfMissingOnScene.template operator()<CircleCollider2DComponent>();
-  removeIfMissingOnScene.template operator()<ScriptComponentContainer>();
-}
+  // Remove components that exist on the prefab entity but were removed from the scene entity
+  RemoveIfMissing(PrefabComponents{}, dstPrefabEntity, srcSceneEntity);}
 
 void PrefabManager::SyncPrefabEntityFromSceneRecursive(Entity dstPrefabEntity, Entity srcSceneEntity, bool isRoot) {
   if (!dstPrefabEntity || !srcSceneEntity)
@@ -322,26 +339,8 @@ void PrefabManager::ClearInstanceOverrideFlagsRecursive(Entity current) {
   if (!current)
     return;
 
-  if (current.HasComponent<NameComponent>())
-    current.GetComponent<NameComponent>().PrefabDirty = false;
-  if (current.HasComponent<TagComponent>())
-    current.GetComponent<TagComponent>().PrefabDirty = false;
-  if (current.HasComponent<LayerComponent>())
-    current.GetComponent<LayerComponent>().PrefabDirty = false;
-  if (current.HasComponent<TransformComponent>())
-    current.GetComponent<TransformComponent>().PrefabDirty = false;
-  if (current.HasComponent<SpriteRendererComponent>())
-    current.GetComponent<SpriteRendererComponent>().PrefabDirty = false;
-  if (current.HasComponent<CircleRendererComponent>())
-    current.GetComponent<CircleRendererComponent>().PrefabDirty = false;
-  if (current.HasComponent<CameraComponent>())
-    current.GetComponent<CameraComponent>().PrefabDirty = false;
-  if (current.HasComponent<Rigidbody2DComponent>())
-    current.GetComponent<Rigidbody2DComponent>().PrefabDirty = false;
-  if (current.HasComponent<BoxCollider2DComponent>())
-    current.GetComponent<BoxCollider2DComponent>().PrefabDirty = false;
-  if (current.HasComponent<CircleCollider2DComponent>())
-    current.GetComponent<CircleCollider2DComponent>().PrefabDirty = false;
+  ClearPrefabDirty<NameComponent>(current);
+  ClearPrefabDirty(PrefabComponents{}, current);
 
   if (current.HasComponent<PrefabLinkComponent>()) {
     auto &plc = current.GetComponent<PrefabLinkComponent>();
@@ -351,17 +350,13 @@ void PrefabManager::ClearInstanceOverrideFlagsRecursive(Entity current) {
 
   if (current.HasComponent<ObjectStateComponent>()) {
     auto &osc = current.GetComponent<ObjectStateComponent>();
-    osc.PrefabDirty = false;
     osc.PrefabAdded = false;
     osc.DeletedComponents.clear();
   }
 
   if (current.HasComponent<ScriptComponentContainer>()) {
-    auto &scc = current.GetComponent<ScriptComponentContainer>();
-    scc.PrefabDirty = false;
-    for (auto &sc : scc.Scripts) {
+    for (auto &sc : current.GetComponent<ScriptComponentContainer>().Scripts)
       sc.PrefabDirty = false;
-    }
   }
 
   if (current.HasComponent<RelationshipComponent>()) {

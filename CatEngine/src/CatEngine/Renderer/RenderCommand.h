@@ -13,6 +13,10 @@ public:
     s_RenderAPI->SetViewport(width, height);
   }
 
+  static void SetViewport(uint32_t x, uint32_t y, uint32_t w, uint32_t h) {
+    s_RenderAPI->SetViewport(x, y, w, h);
+  }
+
   static inline void DrawIndexed(const Ref<VertexArray> &vertexArray) {
     vertexArray->Bind();
     s_RenderAPI->DrawIndexed(vertexArray);
@@ -32,6 +36,10 @@ public:
 
   static inline void Clear(const glm::vec4 &clearColor) {
     s_RenderAPI->Clear(clearColor);
+  }
+
+  static inline void ClearRegion(int x, int y, int w, int h, const glm::vec4 &clearColor) {
+    s_RenderAPI->ClearRegion(x, y, w, h, clearColor);
   }
 
   static inline void SetLineThickness(float thickness) {

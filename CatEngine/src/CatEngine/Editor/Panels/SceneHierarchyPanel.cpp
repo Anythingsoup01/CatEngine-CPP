@@ -545,6 +545,34 @@ void SceneHierarchyPanel::DrawContextMenu(Entity hoveredEntity) {
     ImGui::EndMenu();
   }
 
+  if (ImGui::BeginMenu("UI")) {
+    if (ImGui::MenuItem("Create Canvas")) {
+      const auto &entity = m_Context->CreateCanvas("Canvas", parent);
+      m_SelectionContext = entity;
+      Ref<InspectorPanel> inspector = PanelManager::Get().GetPanel<InspectorPanel>("InspectorPanel");
+      inspector->UpdateEntitySelection();
+      ImGui::CloseCurrentPopup();
+    }
+    if (ImGui::MenuItem("Create Panel")) {
+      const auto &entity = m_Context->CreatePanel(parent);
+      m_SelectionContext = entity;
+      Ref<InspectorPanel> inspector = PanelManager::Get().GetPanel<InspectorPanel>("InspectorPanel");
+      inspector->UpdateEntitySelection();
+
+      ImGui::CloseCurrentPopup();
+    }
+    if (ImGui::MenuItem("Create Button")) {
+      const auto &entity = m_Context->CreateButton(parent);
+      m_SelectionContext = entity;
+      Ref<InspectorPanel> inspector = PanelManager::Get().GetPanel<InspectorPanel>("InspectorPanel");
+      inspector->UpdateEntitySelection();
+
+      ImGui::CloseCurrentPopup();
+    }
+    ImGui::EndMenu();
+  }
+
+
   if (ImGui::MenuItem("Create Camera")) {
     const auto &entity = m_Context->CreateEntity("Camera");
     entity.AddComponent<CameraComponent>().Primary = false;

@@ -119,6 +119,55 @@ bool ScriptEngine::ScriptClassExists(const std::string_view &className) {
          s_ScriptData->EntityClasses.end();
 }
 
+std::vector<Ref<ScriptInstance>> ScriptEngine::GetActiveScriptInstances(Entity entity, bool requireLoaded) {
+  std::vector<Ref<ScriptInstance>> out;
+  if (!entity || !entity.HasComponent<ScriptComponentContainer>() ||
+      !entity.HasComponent<ObjectStateComponent>())
+    return out;
+  if (!entity.GetComponent<ObjectStateComponent>().Active)
+    return out;
+
+  auto it = s_ScriptData->EntityInstances.find(entity.GetUUID());
+  if (it == s_ScriptData->EntityInstances.end())
+    return out;
+
+  for (auto &sc : entity.GetComponent<ScriptComponentContainer>().Scripts) {
+    if (!sc.Active || (requireLoaded && !sc.Loaded))
+      continue;
+    auto inst = it->second.find(sc.ScriptID);
+    if (inst != it->second.end() && inst->second)
+      out.push_back(inst->second); // copies the refs, so handlers can't invalidate iteration
+  }
+  return out;
+}
+
+Ref<ScriptInstance> ScriptEngine::FindScript(Entity entity, std::string_view className) {
+  for (auto &s : GetActiveScriptInstances(entity))
+    if (s->m_ScriptClass->m_ClassName == className) return s;
+  return nullptr;
+}
+
+uint32_t ScriptEngine::GetUIHandlerMask(UUID entityID) {
+  if (!s_ScriptData->SceneContext || !s_ScriptData->SceneContext->IsRunning())
+    return 0;
+  Entity e = s_ScriptData->SceneContext->GetEntityByUUID(entityID);
+  uint32_t mask = 0;
+  for (auto &s : GetActiveScriptInstances(e, true))
+    mask |= s->m_ScriptClass->m_UIMask;
+  return mask;
+}
+
+bool ScriptEngine::DispatchUIEvent(Entity target, const UIEvent &ev) {
+  const uint32_t bit = 1u << (uint32_t)ev.Type;
+  bool consumed = false;
+  for (auto &s : GetActiveScriptInstances(target, true)) {
+    if (!(s->m_ScriptClass->m_UIHandlerBits & bit))
+      continue;
+    consumed |= s->InvokeUIEvent(ev);
+  }
+  return consumed;
+}
+
 void ScriptEngine::LoadEntityScriptInstances(Entity entity) {
   auto &scc = entity.GetComponent<ScriptComponentContainer>();
 
@@ -254,7 +303,7 @@ void ScriptEngine::OnStartEntity(Entity entity) {
       continue;
 
     auto &instance = scriptInstances[sc.ScriptID];
-    instance->InvokeStartMethod();
+    instance->Invoke("OnStart");
     sc.Loaded = true;
   }
 }
@@ -325,7 +374,7 @@ void ScriptEngine::OnUpdateEntity(Entity e, float ts) {
     auto entityInstances = instances.at(entityUUID);
     for (auto &[scriptID, sc] : entityInstances) {
       Ref<ScriptInstance> instance = entityInstances[scriptID];
-      instance->InvokeUpdateMethod(ts);
+      instance->Invoke("OnUpdate", ts);
     }
   }
 }
@@ -349,7 +398,7 @@ void ScriptEngine::OnFixedUpdateEntity(Entity e, float ts) {
     auto entityInstances = instances.at(entityUUID);
     for (auto &[scriptID, sc] : entityInstances) {
       Ref<ScriptInstance> instance = entityInstances[scriptID];
-      instance->InvokeFixedUpdateMethod(ts);
+      instance->Invoke("OnFixedUpdate", ts);
     }
   }
 }
@@ -370,7 +419,7 @@ void ScriptEngine::DeleteEntity(Entity entity) {
   m_CommandQueue.push_back([this, entity]() {
     auto &entityInstances = s_ScriptData->EntityInstances[entity.GetUUID()];
     for (auto &[scriptID, script] : entityInstances) {
-      script->InvokeDeleteMethod();
+      script->Invoke("OnDelete");
       script->DestroyInstance();
     }
     entityInstances.clear();
@@ -411,9 +460,9 @@ void ScriptEngine::DispatchCollisionEvent(UUID uuidA, UUID uuidB, CollisionType 
           isTrigger = entityA.GetComponent<CircleCollider2DComponent>().IsTrigger;
         }
         if (isTrigger) {
-          script->InvokeOnTriggerEnter(uuidB);
+          script->Invoke("OnTriggerEnter", uuidB.uuid());
         } else {
-          script->InvokeOnCollisionEnter(uuidB);
+          script->Invoke("OnCollisionEnter", uuidB.uuid());
         }
       }
       case CollisionType::End: {
@@ -424,9 +473,9 @@ void ScriptEngine::DispatchCollisionEvent(UUID uuidA, UUID uuidB, CollisionType 
           isTrigger = entityA.GetComponent<CircleCollider2DComponent>().IsTrigger;
         }
         if (isTrigger) {
-          script->InvokeOnTriggerExit(uuidB);
+          script->Invoke("OnTriggerExit", uuidB.uuid());
         } else {
-          script->InvokeOnCollisionExit(uuidB);
+          script->Invoke("OnCollisionExit", uuidB.uuid());
         }
         break;
       }
@@ -445,9 +494,9 @@ void ScriptEngine::DispatchCollisionEvent(UUID uuidA, UUID uuidB, CollisionType 
           isTrigger = entityB.GetComponent<CircleCollider2DComponent>().IsTrigger;
         }
         if (isTrigger) {
-          script->InvokeOnTriggerEnter(uuidA);
+          script->Invoke("OnTriggerEnter", uuidA.uuid());
         } else {
-          script->InvokeOnCollisionEnter(uuidA);
+          script->Invoke("OnCollisionEnter", uuidA.uuid());
         }
       }
       case CollisionType::End: {
@@ -458,9 +507,9 @@ void ScriptEngine::DispatchCollisionEvent(UUID uuidA, UUID uuidB, CollisionType 
           isTrigger = entityB.GetComponent<CircleCollider2DComponent>().IsTrigger;
         }
         if (isTrigger) {
-          script->InvokeOnTriggerExit(uuidA);
+          script->Invoke("OnTriggerExit", uuidA.uuid());
         } else {
-          script->InvokeOnCollisionExit(uuidA);
+          script->Invoke("OnCollisionExit", uuidA.uuid());
         }
         break;
       }
@@ -704,22 +753,16 @@ ScriptClass::ScriptClass(const std::string &className)
   CE_API_ASSERT(m_ClassObject, "Class is null!");
 
   for (auto &method : m_ClassObject->Methods) {
-    if (method.Name == "Start") {
-      m_HasStart = true;
-    } else if (method.Name == "Update") {
-      m_HasUpdate = true;
-    } else if (method.Name == "FixedUpdate") {
-      m_HasFixedUpdate = true;
-    } else if (method.Name == "Delete") {
-      m_HasDelete = true;
-    } else if (method.Name == "OnCollisionEnter") {
-      m_HasOnCollisionEnter = true;
-    } else if (method.Name == "OnCollisionExit") {
-      m_HasOnCollisionExit = true;
-    } else if (method.Name == "OnTriggerEnter") {
-      m_HasOnTriggerEnter = true;
-    } else if (method.Name == "OnTriggerExit") {
-      m_HasOnTriggerExit = true;
+    if (method.Visibility == Capybara::MemberVisibility::Private ||
+      method.Visibility == Capybara::MemberVisibility::Protected)
+      continue; // place this at the top of the loop, before the Start/Update checks
+
+    m_Methods.insert(method.Name);
+    for (const auto &h : kUIHandlers) {
+      if (method.Name == h.Method) {
+        m_UIHandlerBits |= 1u << (uint32_t)h.Type;
+        m_UIMask |= h.Mask;
+      }
     }
   }
 }
@@ -752,54 +795,29 @@ ScriptInstance::~ScriptInstance() {
 
   m_ScriptClass->Destroy(m_Instance);
 }
-void ScriptInstance::DestroyInstance() {
-  m_ScriptClass->Destroy(m_Instance);
-}
+void ScriptInstance::DestroyInstance() { m_ScriptClass->Destroy(m_Instance); }
 
-void ScriptInstance::InvokeStartMethod() {
-  if (m_ScriptClass->m_HasStart)
-    m_ScriptClass->InvokeMethod<void>("Start", m_Instance);
-}
-
-void ScriptInstance::InvokeUpdateMethod(float ts) {
-  if (m_ScriptClass->m_HasUpdate)
-    m_ScriptClass->InvokeMethod<void>("Update", m_Instance, ts);
-}
-
-void ScriptInstance::InvokeFixedUpdateMethod(float ts) {
-  if (m_ScriptClass->m_HasFixedUpdate)
-    m_ScriptClass->InvokeMethod<void>("FixedUpdate", m_Instance, ts);
-}
-
-
-void ScriptInstance::InvokeDeleteMethod() {
-  if (m_ScriptClass->m_HasDelete)
-    m_ScriptClass->InvokeMethod<void>("Delete", m_Instance);
-}
-
-
-void ScriptInstance::InvokeOnCollisionEnter(const UUID &other) {
-  if (m_ScriptClass->m_HasOnCollisionEnter)
-    m_ScriptClass->InvokeMethod<void>("OnCollisionEnter", m_Instance,
-                                      (uint64_t)other.uuid());
-}
-
-void ScriptInstance::InvokeOnCollisionExit(const UUID &other) {
-  if (m_ScriptClass->m_HasOnCollisionExit)
-    m_ScriptClass->InvokeMethod<void>("OnCollisionExit", m_Instance,
-                                      (uint64_t)other.uuid());
-}
-
-void ScriptInstance::InvokeOnTriggerEnter(const UUID &other) {
-  if (m_ScriptClass->m_HasOnTriggerEnter)
-    m_ScriptClass->InvokeMethod<void>("OnTriggerEnter", m_Instance,
-                                      (uint64_t)other.uuid());
-}
-
-void ScriptInstance::InvokeOnTriggerExit(const UUID &other) {
-  if (m_ScriptClass->m_HasOnTriggerExit)
-    m_ScriptClass->InvokeMethod<void>("OnTriggerExit", m_Instance,
-                                      (uint64_t)other.uuid());
+bool ScriptInstance::InvokeUIEvent(const UIEvent &ev) { 
+  auto &c = *m_ScriptClass;
+  const int32_t button = ev.Button;
+  switch (ev.Type) {
+    case UIEventType::PointerEnter: c.InvokeMethod<void>("OnPointerEnter", m_Instance); break;
+    case UIEventType::PointerExit:  c.InvokeMethod<void>("OnPointerExit", m_Instance); break;
+    case UIEventType::PointerDown:  c.InvokeMethod<void>("OnPointerDown", m_Instance, button); break;
+    case UIEventType::PointerUp:    c.InvokeMethod<void>("OnPointerUp", m_Instance, button); break;
+    case UIEventType::PointerClick: c.InvokeMethod<void>("OnPointerClick", m_Instance, button, (int32_t)ev.ClickCount); break;
+    case UIEventType::BeginDrag:    c.InvokeMethod<void>("OnBeginDrag", m_Instance, button); break;
+    case UIEventType::Drag:         c.InvokeMethod<void>("OnDrag", m_Instance, button, ev.Delta.x, ev.Delta.y); break;
+    case UIEventType::EndDrag:      c.InvokeMethod<void>("OnEndDrag", m_Instance, button); break;
+    case UIEventType::Scroll:       c.InvokeMethod<void>("OnScroll", m_Instance, ev.Delta.x, ev.Delta.y); break;
+    case UIEventType::Select:       c.InvokeMethod<void>("OnSelect", m_Instance); break;
+    case UIEventType::Deselect:     c.InvokeMethod<void>("OnDeselect", m_Instance); break;
+    case UIEventType::Submit:       c.InvokeMethod<void>("OnSubmit", m_Instance); break;
+    case UIEventType::Cancel:       c.InvokeMethod<void>("OnCancel", m_Instance); break;
+    case UIEventType::Move:
+      return c.InvokeMethod<bool>("OnMove", m_Instance, (int32_t)ev.Direction);
+  }
+  return false;
 }
 
 } // namespace CatEngine

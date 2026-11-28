@@ -190,9 +190,9 @@ bool ImGuiDraw::Vec4(const std::string &label, glm::vec4 &values, float step,
                      float min, float max) {
   bool triggered = false;
   ImGui::PushID(label.c_str());
-  if (ImGui::BeginTable("##", 4)) {
+  if (ImGui::BeginTable("##", 5)) {
 
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 5; i++) {
       ImGui::TableSetupColumn(names[i].c_str(),
                               ImGuiTableColumnFlags_WidthStretch);
     }

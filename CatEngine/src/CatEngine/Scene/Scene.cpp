@@ -13,9 +13,64 @@
 #include "CatEngine/Prefab/PrefabManager.h"
 #include "CatEngine/Project/Project.h"
 #include "CatEngine/Renderer/Renderer2D.h"
+#include "CatEngine/Renderer/RenderCommand.h"
 #include "CatEngine/Scripting/ScriptEngine.h"
 
 namespace CatEngine {
+
+namespace SceneUtil {
+
+static UIScreenRect ComputeNodeRect(const RectTransformComponent &rt, const UIScreenRect &parent, float scale) {
+  const glm::vec2 parentSize = parent.Max - parent.Min;
+
+  const glm::vec2 anchorMinPx = parent.Min + rt.AnchorMin * parentSize;
+  const glm::vec2 anchorMaxPx = parent.Min + rt.AnchorMax * parentSize;
+  const glm::vec2 anchorSize = anchorMaxPx - anchorMinPx;
+
+  const glm::vec2 size = anchorSize + rt.Size * scale;
+
+  // The pivot sits at the same normalized point between the anchors, plus the offset.
+  const glm::vec2 pivotPos =
+      anchorMinPx + anchorSize * rt.Pivot + rt.Position * scale;
+
+  const glm::vec2 minCorner = pivotPos - size * rt.Pivot;
+  return UIScreenRect{minCorner, minCorner + size};
+}
+
+static UIGroupState ResolveGroup(Entity e, const UIGroupState &parent) {
+  if (!e.HasComponent<CanvasGroupComponent>())
+    return parent;
+  const auto &g = e.GetComponent<CanvasGroupComponent>();
+  UIGroupState out;
+  if (g.IgnoreParentGroups) {
+    out = {g.Alpha, g.Interactable, g.BlocksRaycasts};
+  } else {
+    out.Alpha = parent.Alpha * g.Alpha;
+    out.Interactable = parent.Interactable && g.Interactable;
+    out.BlocksRaycasts = parent.BlocksRaycasts && g.BlocksRaycasts;
+  }
+  out.Alpha = std::clamp(out.Alpha, 0.0f, 1.0f);
+  return out;
+}
+
+static uint32_t HandlerMask(Entity e) {
+  uint32_t m = 0;
+  if (e.HasComponent<SelectableComponent>())
+    m |= UIMask::Hover | UIMask::Press | UIMask::Click;
+  if (e.HasComponent<EventListenerComponent>())
+    m |= e.GetComponent<EventListenerComponent>().Mask;
+  m |= ScriptEngine::GetMutable().GetUIHandlerMask(e.GetUUID());
+  return m;
+}
+
+static bool IsRaycastTarget(Entity e) {
+  if (e.HasComponent<EventListenerComponent>()) return true; // invisible hit zone
+  if (e.HasComponent<PanelComponent>() && e.GetComponent<PanelComponent>().RaycastTarget) return true;
+  if (e.HasComponent<ButtonVisualComponent>() && e.GetComponent<ButtonVisualComponent>().RaycastTarget) return true;
+  return ScriptEngine::GetMutable().GetUIHandlerMask(e.GetUUID()) != 0;
+}
+
+} // namespace SceneUtil
 
 Scene::Scene() {}
 
@@ -97,7 +152,14 @@ void Scene::RecursiveCopyTo(Ref<Scene> &target, const UUID &entityID) {
     BoxCollider2DComponent,
     CircleCollider2DComponent,
     ScriptComponentContainer,
-    PrefabLinkComponent
+    PrefabLinkComponent,
+    RectTransformComponent,
+    ButtonVisualComponent,
+    PanelComponent,
+    CanvasComponent,
+    CanvasGroupComponent,
+    SelectableComponent,
+    EventListenerComponent
     >(destEntityWrapper, srcEntityWrapper, false);
 
   auto &rc = srcEntityWrapper.GetComponent<RelationshipComponent>();
@@ -127,7 +189,32 @@ void Scene::OnUpdateEditor(Time ts, EditorCamera &camera) {
   if (!m_IsRunning)
     ExecuteSceneCommandQueue();
 
-  UpdateTransforms();
+  Entity cam = GetPrimaryCameraEntity();
+  m_UIVirtualCanvas = !cam || cam.GetComponent<CameraComponent>().Camera.GetProjectionType()
+                                != SceneCamera::ProjectionType::Orthographic;
+  glm::vec2 layoutSize{0.0f};
+  if (cam && !m_UIVirtualCanvas) {
+    auto &cc = cam.GetComponent<CameraComponent>();
+    cc.ApplyView(cc.Resolve(m_ViewportWidth, m_ViewportHeight));
+
+    // Stable design size, independent of the editor panel.
+    glm::vec2 ref{1920.0f, 1080.0f};
+    for (auto id : m_Registry.view<CanvasComponent>()) {
+      ref = m_Registry.get<CanvasComponent>(id).ReferenceResolution;
+      break;
+    }
+    ref = glm::max(ref, glm::vec2(1.0f));
+
+    switch (cc.AspectMode) {
+      case CameraAspectMode::Pixels: layoutSize = glm::max(cc.Resolution, glm::vec2(1.0f)); break;
+      case CameraAspectMode::Ratio:
+        layoutSize = {ref.y * cc.AspectRatio.x / std::max(cc.AspectRatio.y, 0.001f), ref.y};
+        break;
+      default: layoutSize = ref; break;
+    }
+  }
+
+  UpdateUILayout(layoutSize);
   Renderer2D::BeginScene(camera);
   const auto &rootEntities = GetRootEntities();
   for (auto entityID : rootEntities) {
@@ -138,41 +225,63 @@ void Scene::OnUpdateEditor(Time ts, EditorCamera &camera) {
     }
   }
   Renderer2D::EndScene();
+
+  DrawUICanvases(camera);
 }
 
-void Scene::OnUpdateMainCameraPreview(Time ts) {
+void Scene::OnUpdateMainCameraPreview(Time ts, const glm::vec2 &viewSize) {
   CE_PROFILE_FUNCTION();
-  // Render 2D
-  Camera *mainCamera = nullptr;
-  glm::mat4 cameraTransform;
-  {
-    auto view = m_Registry.view<CameraComponent>();
-    for (auto entity : view) {
-      Entity e{entity, this};
-      auto &camera = view.get<CameraComponent>(entity);
 
-      if (camera.Primary) {
-        mainCamera = &camera.Camera;
+  glm::vec2 viewSizeT = viewSize;
+  if (viewSize.x <= 0.0f || viewSize.y <= 0.0f)
+    viewSizeT = {(float)m_ViewportWidth, (float)m_ViewportHeight};
+
+  UpdateTransforms();
+
+  CameraComponent *mainCamera = nullptr;
+  glm::mat4 cameraTransform{1.0f};
+  CameraViewInfo view;
+  m_UIViewOrigin = {0.0f, 0.0f};
+  {
+    auto cameras = m_Registry.view<CameraComponent>();
+    for (auto entity : cameras) {
+      auto &cc = cameras.get<CameraComponent>(entity);
+      if (cc.Primary && cc.Active) {
+        Entity e{entity, this};
+        mainCamera = &cc;
         cameraTransform = e.GetWorldTransform();
+        view = cc.Resolve((uint32_t)viewSizeT.x, (uint32_t)viewSizeT.y);
+        cc.ApplyView(view);
+        m_UIViewOrigin = glm::vec2(view.Origin);
         break;
       }
     }
   }
 
+  // The UI lays out against the camera's (possibly letterboxed) output, not the whole panel.
+  m_UIVirtualCanvas = false;
+  UpdateUILayout(mainCamera ? glm::vec2(view.Size) : viewSizeT);
+
   if (mainCamera) {
-    Renderer2D::BeginScene(mainCamera->GetProjection(), cameraTransform);
+    if (mainCamera->ClearMode == CameraClearMode::SolidColor)
+      RenderCommand::ClearRegion(view.Origin.x, view.Origin.y, view.Size.x, view.Size.y,
+                                 mainCamera->BackgroundColor);
+    RenderCommand::SetViewport(view.Origin.x, view.Origin.y, view.Size.x, view.Size.y);
+
+    Renderer2D::BeginScene(mainCamera->Camera.GetProjection(), cameraTransform);
     const auto &rootEntities = GetRootEntities();
     for (auto entityID : rootEntities) {
       Entity rootEntity = GetEntityByUUID(entityID);
-      if (rootEntity) {
-        // Pass identity matrix (1.0) as the base parent matrix for roots
+      if (rootEntity)
         DrawEntityRecursive(rootEntity, glm::mat4(1.0f));
-      }
     }
     Renderer2D::EndScene();
   }
-}
 
+  DrawUICanvases(); // ortho over m_UILayoutSize, so it fills the current viewport
+
+  RenderCommand::SetViewport(0, 0, (uint32_t)viewSizeT.x, (uint32_t)viewSizeT.y);
+}
 void Scene::OnPauseStart() { m_IsPaused = true; }
 
 void Scene::OnPauseStop() { m_IsPaused = false; }
@@ -183,7 +292,7 @@ void Scene::OnRuntimeStart() {
   OnScriptStart();
 }
 
-void Scene::OnUpdateRuntime(Time time) {
+void Scene::OnUpdateRuntime(Time time, const glm::vec2 &viewSize) {
   CE_PROFILE_FUNCTION();
   ExecuteSceneCommandQueue();
 
@@ -210,41 +319,53 @@ void Scene::OnUpdateRuntime(Time time) {
     ScriptEngine::GetMutable().OnUpdate(time.deltaTime());
   }
 
-  UpdateTransforms();
+  glm::vec2 viewSizeT = viewSize;
+  if (viewSize.x <= 0.0f || viewSize.y <= 0.0f)
+    viewSizeT = {(float)m_ViewportWidth, (float)m_ViewportHeight};
 
-
-  // Render 2D
-  Camera *mainCamera = nullptr;
-  glm::mat4 cameraTransform;
+  CameraComponent *mainCamera = nullptr;
+  glm::mat4 cameraTransform{1.0f};
+  CameraViewInfo view;
+  m_UIViewOrigin = {0.0f, 0.0f};
   {
-    auto view = m_Registry.view<TransformComponent, CameraComponent>();
-    for (auto entity : view) {
-      auto [transform, camera] =
-          view.get<TransformComponent, CameraComponent>(entity);
-
-      Entity e = {entity, this};
-
-      if (camera.Primary) {
-        mainCamera = &camera.Camera;
+    auto cameras = m_Registry.view<CameraComponent>();
+    for (auto entity : cameras) {
+      auto &cc = cameras.get<CameraComponent>(entity);
+      if (cc.Primary && cc.Active) {
+        Entity e{entity, this};
+        mainCamera = &cc;
         cameraTransform = e.GetWorldTransform();
+        view = cc.Resolve((uint32_t)viewSizeT.x, (uint32_t)viewSizeT.y);
+        cc.ApplyView(view);
+        m_UIViewOrigin = glm::vec2(view.Origin);
         break;
       }
     }
   }
 
+  m_UIVirtualCanvas = false;
+  UpdateUILayout(mainCamera ? glm::vec2(view.Size) : viewSizeT);
+  UpdateUITints(time.deltaTime());
+
   if (mainCamera) {
-    Renderer2D::BeginScene(mainCamera->GetProjection(), cameraTransform);
-    // Draw Sprites
+    if (mainCamera->ClearMode == CameraClearMode::SolidColor)
+      RenderCommand::ClearRegion(view.Origin.x, view.Origin.y, view.Size.x, view.Size.y,
+                                 mainCamera->BackgroundColor);
+    RenderCommand::SetViewport(view.Origin.x, view.Origin.y, view.Size.x, view.Size.y);
+
+    Renderer2D::BeginScene(mainCamera->Camera.GetProjection(), cameraTransform);
     const auto &rootEntities = GetRootEntities();
     for (auto entityID : rootEntities) {
       Entity rootEntity = GetEntityByUUID(entityID);
-      if (rootEntity) {
-        // Pass identity matrix (1.0) as the base parent matrix for roots
+      if (rootEntity)
         DrawEntityRecursive(rootEntity, glm::mat4(1.0f));
-      }
     }
     Renderer2D::EndScene();
   }
+
+  DrawUICanvases();
+
+  RenderCommand::SetViewport(0, 0, (uint32_t)viewSize.x, (uint32_t)viewSize.y);
 }
 
 void Scene::OnViewportResize(uint32_t width, uint32_t height) {
@@ -258,9 +379,7 @@ void Scene::OnViewportResize(uint32_t width, uint32_t height) {
   auto view = m_Registry.view<CameraComponent>();
   for (auto entity : view) {
     auto &cameraComponent = view.get<CameraComponent>(entity);
-    if (!cameraComponent.FixedAspectRatio) {
-      cameraComponent.Camera.SetViewportSize(width, height);
-    }
+    cameraComponent.Camera.SetViewportSize(width, height);
   }
 }
 
@@ -394,6 +513,602 @@ void Scene::CalculateTransformRecursive(Entity entity,
   }
 }
 
+void Scene::UpdateUILayout(const glm::vec2 &sizeOverride) {
+  m_UIRects.clear();
+  m_UIDrawList.clear();
+  m_UIDrawIndex.clear();
+
+  glm::vec2 viewportSize;
+  if (m_UIVirtualCanvas) {
+    // Fixed design resolution, independent of the editor panel size.
+    viewportSize = {1920.0f, 1080.0f};
+    for (auto id : m_Registry.view<CanvasComponent>()) {
+      viewportSize = m_Registry.get<CanvasComponent>(id).ReferenceResolution;
+      break; // first canvas defines the virtual screen
+    }
+    viewportSize = glm::max(viewportSize, glm::vec2(1.0f));
+  } else {
+    if (sizeOverride.x > 0.0f && sizeOverride.y > 0.0f) {
+      viewportSize = sizeOverride;
+    } else {
+      if (m_ViewportWidth == 0 || m_ViewportHeight == 0)
+        return;
+      viewportSize = {(float)m_ViewportWidth, (float)m_ViewportHeight};
+    }
+  }
+  m_UILayoutSize = viewportSize;
+
+  const UIScreenRect rootRect{glm::vec2{0.0f}, viewportSize};
+
+  struct Bucket { int32_t SortOrder; std::vector<UIDrawItem> Items; };
+  std::vector<Bucket> buckets;
+
+  auto canvasView = m_Registry.view<CanvasComponent>();
+  for (auto id : canvasView) {
+    Entity canvasEntity{id, this};
+    //if (!IsEntityActiveInHierarchy(canvasEntity))
+    //  continue;
+
+    const auto &canvas = canvasView.get<CanvasComponent>(id);
+    const float scale = canvas.ComputeScaleFactor(viewportSize);
+    m_UIRects[canvasEntity.GetUUID()] = rootRect;
+
+    buckets.push_back({canvas.SortOrder, {}});
+    std::vector<UIDrawItem> &items = buckets.back().Items; // no push_back until we're done with it
+
+    if (!canvasEntity.HasComponent<RelationshipComponent>())
+      continue;
+
+    // A CanvasGroup on the canvas entity itself applies to everything under it.
+    const UIGroupState rootGroup = SceneUtil::ResolveGroup(canvasEntity, UIGroupState{});
+
+    const auto children = canvasEntity.GetComponent<RelationshipComponent>().Children;
+    for (UUID childUUID : children)
+    if (Entity child = GetEntityByUUID(childUUID))
+      UpdateUINodeRecursive(child, rootRect, scale, rootGroup, 0, items);
+  }
+
+  std::stable_sort(buckets.begin(), buckets.end(), [](const Bucket &a, const Bucket &b) { return a.SortOrder < b.SortOrder; });
+  for (auto &b : buckets)
+    m_UIDrawList.insert(m_UIDrawList.end(), b.Items.begin(), b.Items.end());
+
+  for (uint32_t i = 0; i < m_UIDrawList.size(); ++i)
+    m_UIDrawIndex[m_UIDrawList[i].Entity] = i;
+}
+
+
+void Scene::UpdateUINodeRecursive(Entity entity, const UIScreenRect &parentRect, float canvasScale,
+                                  const UIGroupState &parentGroup, UUID inheritedTint,
+                                  std::vector<UIDrawItem> &out) {
+  if (!entity)
+    return;
+
+  if (entity.HasComponent<ObjectStateComponent>() &&
+      !entity.GetComponent<ObjectStateComponent>().Active)
+    return;
+
+  const UIGroupState group = SceneUtil::ResolveGroup(entity, parentGroup);
+
+  // Which selectable's tint colors this node's graphics, and its children's.
+  UUID selfTint = inheritedTint, childTint = inheritedTint;
+  if (entity.HasComponent<SelectableComponent>()) {
+    selfTint = entity.GetUUID();
+    if (entity.GetComponent<SelectableComponent>().TintChildren)
+      childTint = selfTint;
+  }
+
+  UIScreenRect currentRect = parentRect;
+  if (entity.HasComponent<RectTransformComponent>()) {
+    currentRect = ComputeNodeRect(entity.GetComponent<RectTransformComponent>(), parentRect, canvasScale);
+    m_UIRects[entity.GetUUID()] = currentRect;
+    // Pre-order: parents draw before children.
+    out.push_back({entity.GetUUID(), canvasScale, group.Alpha, group.Interactable,
+                   group.BlocksRaycasts, selfTint});
+  }
+
+  if (!entity.HasComponent<RelationshipComponent>())
+    return;
+
+  for (UUID childUUID : entity.GetComponent<RelationshipComponent>().Children)
+    if (Entity child = GetEntityByUUID(childUUID))
+      UpdateUINodeRecursive(child, currentRect, canvasScale, group, childTint, out);
+}
+
+void Scene::UpdateUIInput(float dt) {
+  CE_PROFILE_FUNCTION();
+  auto &in = m_UIInput;
+
+  // Take this frame's input and consume the one-shots.
+  const UIInputFrame frame = in.Frame;
+  in.Frame.Scroll = {0.0f, 0.0f};
+  in.Frame.Move = UINavDirection::None;
+  in.Frame.Submit = in.Frame.Cancel = in.Frame.TabNext = in.Frame.TabPrev = false;
+  in.Time += dt;
+
+  ValidateUIInputState();
+
+  // Hit-test against last frame's layout (this runs before UpdateUILayout).
+  const glm::vec2 pos = frame.PointerValid ? frame.PointerPos : in.LastPointerPos;
+  in.LastPointerPos = pos;
+  in.RawHit = frame.PointerValid ? RaycastUI(pos) : UUID(0);
+
+  SetUIHovered(ResolveUITarget(in.RawHit, UIMask::Hover));
+
+  for (int b = 0; b < 3; ++b)
+    ProcessUIPointerButton(b, frame.Buttons[b], frame.PointerValid, pos);
+
+  if (frame.Scroll != glm::vec2(0.0f)) {
+    if (UUID t = ResolveUITarget(in.RawHit, UIMask::Scroll))
+      SendUIEvent(UIEventType::Scroll, t, 0, frame.Scroll);
+  }
+
+  ProcessUINavigation(frame);
+}
+
+void Scene::UpdateUITints(float dt) {
+  const auto &in = m_UIInput;
+  const auto &left = in.Btn[0];
+
+  for (const UIDrawItem &item : m_UIDrawList) {
+    Entity e = GetEntityByUUID(item.Entity);
+    if (!e || !e.HasComponent<SelectableComponent>())
+      continue;
+    const auto &s = e.GetComponent<SelectableComponent>();
+
+    // Same priority as Unity: Disabled > Pressed > Selected > Highlighted > Normal
+    glm::vec4 target{1.0f};
+    if (s.Transition == UITransition::ColorTint) {
+      if (!s.Interactable || !item.Interactable)                     target = s.DisabledTint;
+      else if (left.Down && !left.Ignored && left.PressTarget == item.Entity) target = s.PressedTint;
+      else if (in.Selected == item.Entity)                           target = s.SelectedTint;
+      else if (in.Hovered == item.Entity)                            target = s.HighlightedTint;
+      else                                                           target = s.NormalTint;
+    }
+
+    auto [it, inserted] = m_UITints.try_emplace(item.Entity, target); // snap on first sight
+    if (inserted)
+      continue;
+
+    glm::vec4 &cur = it->second;
+    if (s.FadeDuration <= 0.0f)
+      cur = target;
+    else
+      cur += (target - cur) * std::min(dt / s.FadeDuration, 1.0f);
+  }
+
+  for (auto it = m_UITints.begin(); it != m_UITints.end();)
+    it = FindUIDrawItem(it->first) ? std::next(it) : m_UITints.erase(it);
+}
+
+void Scene::ValidateUIInputState() {
+  auto &in = m_UIInput;
+  if (in.Hovered != 0 && !FindUIDrawItem(in.Hovered))
+    SetUIHovered(0);
+
+  if (in.Selected != 0) {
+    Entity sel = GetEntityByUUID(in.Selected);
+    const UIDrawItem *item = FindUIDrawItem(in.Selected);
+    const bool ok = sel && item && item->Interactable &&
+                    sel.HasComponent<SelectableComponent>() &&
+                    sel.GetComponent<SelectableComponent>().Interactable;
+    if (!ok)
+      SetSelectedUI({});
+  }
+
+  for (auto &s : in.Btn) {
+    if (s.PressTarget != 0 && !FindUIDrawItem(s.PressTarget)) s.PressTarget = 0;
+    if (s.ClickTarget != 0 && !FindUIDrawItem(s.ClickTarget)) s.ClickTarget = 0;
+    if (s.DragTarget != 0 && !FindUIDrawItem(s.DragTarget)) {
+      s.DragTarget = 0;
+      s.Dragging = false;
+    }
+  }
+}
+
+const UIDrawItem *Scene::FindUIDrawItem(UUID id) const {
+  auto it = m_UIDrawIndex.find(id);
+  return it != m_UIDrawIndex.end() ? &m_UIDrawList[it->second] : nullptr;
+}
+
+UUID Scene::RaycastUI(const glm::vec2 &p) {
+  for (auto it = m_UIDrawList.rbegin(); it != m_UIDrawList.rend(); ++it) {
+    if (!it->BlocksRaycasts)
+      continue;
+    const UIScreenRect *r = GetUIRect(it->Entity);
+    if (!r)
+      continue;
+    if (p.x < r->Min.x || p.x > r->Max.x || p.y < r->Min.y || p.y > r->Max.y)
+      continue;
+    Entity e = GetEntityByUUID(it->Entity);
+    if (e && SceneUtil::IsRaycastTarget(e))
+      return it->Entity; // topmost raycastable graphic under the pointer
+  }
+  return 0;
+}
+
+UUID Scene::ResolveUITarget(UUID raw, uint32_t mask, bool needSelectable) {
+  Entity cur = GetEntityByUUID(raw);
+  size_t guard = m_EntityMap.size();
+
+  while (cur && guard--) {
+    if (const UIDrawItem *item = FindUIDrawItem(cur.GetUUID())) {
+      const bool isSelectable = cur.HasComponent<SelectableComponent>();
+      const bool handles = needSelectable ? isSelectable
+                                          : (SceneUtil::HandlerMask(cur) & mask) != 0;
+      if (handles) {
+        bool interactable = item->Interactable;
+        if (isSelectable)
+          interactable = interactable && cur.GetComponent<SelectableComponent>().Interactable;
+        return interactable ? cur.GetUUID() : UUID(0);
+      }
+    }
+
+    const UUID parent = cur.GetComponent<RelationshipComponent>().Parent;
+    if (parent == 0)
+      break;
+    cur = GetEntityByUUID(parent);
+  }
+  return 0;
+}
+bool Scene::SendUIEvent(UIEventType type, UUID target, int button,
+                        glm::vec2 delta, int clickCount, UINavDirection dir) {
+  if (!m_IsRunning || target == 0)
+    return false;
+
+  Entity e = GetEntityByUUID(target);
+  if (!e || !e.HasComponent<ObjectStateComponent>() ||
+      !e.GetComponent<ObjectStateComponent>().Active)
+    return false; // inactive or destroyed objects get nothing
+
+  UIEvent ev;
+  ev.Type = type;
+  ev.Target = target;
+  ev.Position = m_UIInput.LastPointerPos;
+  ev.Delta = delta;
+  ev.Button = (uint8_t)button;
+  ev.ClickCount = clickCount;
+  ev.Direction = dir;
+
+  // Hook point: forward to scripts here, e.g.
+  // ScriptEngine::GetMutable().OnUIEvent(GetEntityByUUID(target), ev);
+  return ScriptEngine::GetMutable().DispatchUIEvent(e, ev);
+}
+
+void Scene::SetUIHovered(UUID next) {
+  auto &in = m_UIInput;
+  if (in.Hovered == next)
+    return;
+
+  const UUID prev = in.Hovered;
+  in.Hovered = next;
+  if (prev != 0 && GetEntityByUUID(prev)) // skip if it was destroyed
+    SendUIEvent(UIEventType::PointerExit, prev);
+  if (next != 0)
+    SendUIEvent(UIEventType::PointerEnter, next);
+}
+
+void Scene::ProcessUIPointerButton(int b, bool down, bool pointerValid,
+                                   const glm::vec2 &pos) {
+  auto &in = m_UIInput;
+  auto &s = in.Btn[b];
+
+  const bool pressedNow = down && !s.Down;
+  const bool releasedNow = !down && s.Down;
+  s.Down = down;
+
+  if (pressedNow) {
+    // A press that starts outside the game view never becomes ours, even if the
+    // pointer later drags into it.
+    s.Ignored = !pointerValid;
+    if (s.Ignored)
+      return;
+
+    const UUID raw = in.RawHit;
+    s.PressTarget = ResolveUITarget(raw, UIMask::Press);
+    s.ClickTarget = ResolveUITarget(raw, UIMask::Click);
+    s.DragTarget  = ResolveUITarget(raw, UIMask::Drag);
+    s.PressPos = s.LastPos = pos;
+    s.Dragging = false;
+
+    // Left press moves selection. Pressing anything non-selectable clears it.
+    if (b == 0)
+      SetSelectedUI(GetEntityByUUID(ResolveUITarget(raw, 0, true)));
+
+    SendUIEvent(UIEventType::PointerDown, s.PressTarget, b);
+    return;
+  }
+
+  if (down) {
+    if (s.Ignored)
+      return;
+
+    const glm::vec2 delta = pos - s.LastPos;
+    s.LastPos = pos;
+
+    if (!s.Dragging && s.DragTarget != 0 &&
+        glm::distance(pos, s.PressPos) > m_UIDragThreshold) {
+      s.Dragging = true;
+      SendUIEvent(UIEventType::BeginDrag, s.DragTarget, b);
+    }
+    // The drag target keeps receiving events even when the pointer leaves it.
+    if (s.Dragging && delta != glm::vec2(0.0f))
+      SendUIEvent(UIEventType::Drag, s.DragTarget, b, delta);
+    return;
+  }
+
+  if (!releasedNow)
+    return;
+
+  if (s.Ignored) {
+    s.Ignored = false;
+    return;
+  }
+
+  const UUID clickNow = ResolveUITarget(in.RawHit, UIMask::Click);
+
+  if (s.PressTarget != 0 && GetEntityByUUID(s.PressTarget))
+    SendUIEvent(UIEventType::PointerUp, s.PressTarget, b);
+
+  if (s.Dragging) {
+    if (s.DragTarget != 0)
+      SendUIEvent(UIEventType::EndDrag, s.DragTarget, b);
+  } else if (s.ClickTarget != 0 && clickNow == s.ClickTarget) {
+    // Pressed and released on the same handler: a click. Count rapid repeats.
+    const bool repeat = s.LastClickTarget == s.ClickTarget &&
+                        (in.Time - s.LastClickTime) <= m_UIDoubleClickTime &&
+                        glm::distance(pos, s.LastClickPos) <= m_UIDragThreshold;
+    s.ClickCount = repeat ? s.ClickCount + 1 : 1;
+    s.LastClickTarget = s.ClickTarget;
+    s.LastClickTime = in.Time;
+    s.LastClickPos = pos;
+    SendUIEvent(UIEventType::PointerClick, s.ClickTarget, b, {0.0f, 0.0f}, s.ClickCount);
+  }
+
+  s.PressTarget = s.ClickTarget = s.DragTarget = 0;
+  s.Dragging = false;
+}
+
+void Scene::ProcessUINavigation(const UIInputFrame &frame) {
+  auto &in = m_UIInput;
+  Entity selected = GetEntityByUUID(in.Selected);
+
+  if (frame.Move != UINavDirection::None) {
+    // The selected widget gets first refusal (e.g. a slider consuming Left/Right).
+    const bool consumed = selected &&
+        SendUIEvent(UIEventType::Move, in.Selected, 0, {0.0f, 0.0f}, 0, frame.Move);
+    if (!consumed) {
+      Entity next = selected ? FindNavigationTarget(selected, frame.Move)
+                             : FindTabTarget(Entity{}, true);
+      if (next) { SetSelectedUI(next); selected = next; }
+    }
+  }
+
+  if (frame.TabNext || frame.TabPrev) {
+    if (Entity next = FindTabTarget(selected, frame.TabNext)) {
+      SetSelectedUI(next);
+      selected = next;
+    }
+  }
+
+  if (frame.Submit && selected) SendUIEvent(UIEventType::Submit, selected.GetUUID());
+  if (frame.Cancel && selected) SendUIEvent(UIEventType::Cancel, selected.GetUUID());
+}
+
+std::vector<Entity> Scene::CollectNavigableUI() {
+  std::vector<Entity> out;
+  for (const UIDrawItem &item : m_UIDrawList) {
+    if (!item.Interactable)
+      continue;
+    Entity e = GetEntityByUUID(item.Entity);
+    if (!e || !e.HasComponent<SelectableComponent>())
+      continue;
+    const auto &s = e.GetComponent<SelectableComponent>();
+    if (s.Interactable && s.Navigable)
+      out.push_back(e);
+  }
+  return out; // draw order = hierarchy order, which is also the Tab order}
+}
+Entity Scene::FindNavigationTarget(Entity from, UINavDirection dir) {
+  const UIScreenRect *fromRect = GetUIRect(from.GetUUID());
+  if (!fromRect)
+    return {};
+
+  glm::vec2 d{0.0f};
+  switch (dir) {
+    case UINavDirection::Left:  d = {-1.0f, 0.0f}; break;
+    case UINavDirection::Right: d = { 1.0f, 0.0f}; break;
+    case UINavDirection::Up:    d = { 0.0f, 1.0f}; break;
+    case UINavDirection::Down:  d = { 0.0f, -1.0f}; break;
+    default: return {};
+  }
+
+  const glm::vec2 origin = (fromRect->Min + fromRect->Max) * 0.5f;
+  float bestScore = 0.0f;
+  Entity best;
+
+  for (Entity cand : CollectNavigableUI()) {
+    if (cand.GetUUID() == from.GetUUID())
+      continue;
+    const UIScreenRect *r = GetUIRect(cand.GetUUID());
+    if (!r)
+      continue;
+
+    const glm::vec2 v = (r->Min + r->Max) * 0.5f - origin;
+    const float along = glm::dot(d, v);
+    const float dist2 = glm::dot(v, v);
+    if (along <= 0.0f || dist2 <= 0.0f)
+      continue; // behind us, or exactly on top of us
+
+    const float score = along / dist2;
+    if (score > bestScore) {
+      bestScore = score;
+      best = cand;
+    }
+  }
+  return best;
+}
+
+Entity Scene::FindTabTarget(Entity from, bool forward) {
+  const auto list = CollectNavigableUI();
+  if (list.empty())
+    return {};
+
+  size_t i = list.size();
+  if (from) {
+    for (size_t k = 0; k < list.size(); ++k)
+      if (list[k].GetUUID() == from.GetUUID()) { i = k; break; }
+  }
+  if (i == list.size())
+    return forward ? list.front() : list.back();
+
+  const size_t n = list.size();
+  return list[forward ? (i + 1) % n : (i + n - 1) % n]; // wraps
+}
+
+glm::vec4 Scene::UITintFor(const UIDrawItem &item) const {
+  glm::vec4 tint{1.0f};
+  if (item.TintSource != 0) {
+    auto it = m_UITints.find(item.TintSource);
+    if (it != m_UITints.end())
+      tint = it->second;
+  }
+  tint.a *= item.Alpha; // CanvasGroup alpha
+  return tint;
+}
+
+void Scene::DrawUIList(const glm::mat4 &toWorld) {
+  for (const UIDrawItem &item : m_UIDrawList) {
+    Entity e = GetEntityByUUID(item.Entity);
+    const UIScreenRect *rect = GetUIRect(item.Entity);
+    if (!e || !rect)
+      continue;
+
+    const int id = (int)e.GetEntityID();
+    const glm::vec4 tint = UITintFor(item);
+
+    if (e.HasComponent<PanelComponent>()) {
+      const auto &p = e.GetComponent<PanelComponent>();
+      DrawUIQuad(*rect, p.Color * tint, p.Texture, id, toWorld);
+    }
+    if (e.HasComponent<ButtonVisualComponent>()) {
+      const auto &b = e.GetComponent<ButtonVisualComponent>();
+      DrawUIQuad(*rect, b.NormalColor * tint, b.Texture, id, toWorld);
+    }
+  }
+}
+
+void Scene::DrawUICanvases(EditorCamera &camera) {
+  CE_PROFILE_FUNCTION();
+
+  if (m_UIDrawList.empty())
+    return;
+
+  glm::mat4 canvasToWorld;
+  if (!ComputeCanvasToWorld(canvasToWorld))
+    return; // no primary camera: nothing to lock onto
+
+  Renderer2D::BeginScene(camera);
+  DrawUIList(canvasToWorld);
+  Renderer2D::EndScene();
+}
+
+void Scene::DrawUICanvases() {
+  CE_PROFILE_FUNCTION();
+
+  if (m_UIDrawList.empty())
+    return;
+
+  const glm::mat4 projection =
+      glm::ortho(0.0f, m_UILayoutSize.x, 0.0f, m_UILayoutSize.y, -1.0f, 1.0f);
+
+  Renderer2D::BeginScene(projection, glm::mat4(1.0f));
+  DrawUIList(glm::mat4(1.0f));
+  Renderer2D::EndScene();
+}
+
+
+
+bool Scene::ComputeCanvasToWorld(glm::mat4 &out) {
+  Entity camEntity = GetPrimaryCameraEntity();
+
+  if (m_UIVirtualCanvas || !camEntity) {
+    // Canvas centered on the world origin, in the z = 0 plane.
+    const float s = 1.0f / kVirtualPixelsPerUnit;
+    out = glm::translate(glm::mat4(1.0f), glm::vec3(-m_UILayoutSize * 0.5f * s, 0.0f)) *
+          glm::scale(glm::mat4(1.0f), glm::vec3(s, s, 1.0f));
+    return true;
+  }
+
+  auto &cam = camEntity.GetComponent<CameraComponent>().Camera;
+  const glm::mat4 invProj = glm::inverse(cam.GetProjection());
+
+  auto unproject = [&](glm::vec2 ndc) {
+    const glm::vec4 p = invProj * glm::vec4(ndc, 0.0f, 1.0f);
+    return glm::vec2(p) / p.w;
+  };
+
+  // Visible rectangle in camera space
+  const glm::vec2 lo = unproject({-1.0f, -1.0f});
+  const glm::vec2 hi = unproject({ 1.0f,  1.0f});
+
+  const float s = (hi.y - lo.y) / m_UILayoutSize.y;
+  const glm::vec2 center = (lo + hi) * 0.5f;
+  const glm::vec2 origin = center - m_UILayoutSize * s * 0.5f;
+
+  out = camEntity.GetWorldTransform() *
+        glm::translate(glm::mat4(1.0f), glm::vec3(origin, 0.0f)) *
+        glm::scale(glm::mat4(1.0f), glm::vec3(s, s, 1.0f));
+  return true;
+}
+
+float Scene::GetUIScale(const UUID &id) const {
+  const UIDrawItem *item = FindUIDrawItem(id);
+  return (item && item->Scale > 0.0001f) ? item->Scale : 1.0f;
+}
+
+void Scene::DrawUIQuad(const UIScreenRect &rect, const glm::vec4 &color,
+                       AssetHandle texture, int entityID, const glm::mat4 &canvasToWorld) {
+  const glm::vec2 size = rect.Max - rect.Min;
+  if (size.x <= 0.0f || size.y <= 0.0f)
+    return;
+
+  const glm::vec2 center = (rect.Min + rect.Max) * 0.5f;
+
+  // Assumes Renderer2D's unit quad is centered on the origin.
+  const glm::mat4 transform =
+    canvasToWorld *
+    glm::translate(glm::mat4(1.0f), glm::vec3(center, 0.0f)) *
+    glm::scale(glm::mat4(1.0f), glm::vec3(size, 1.0f));
+
+  // Reuse the sprite path so texture lookup and batching behave identically.
+  SpriteRendererComponent sprite;
+  sprite.Color = color;
+  sprite.Texture = texture;
+
+  Renderer2D::DrawSprite(transform, sprite, entityID);
+}
+Entity Scene::FindOrCreateCanvas() {
+  auto view = m_Registry.view<CanvasComponent>();
+  for (auto e : view)
+    return Entity{e, this};          // first canvas found
+  return CreateCanvas();
+}
+
+Entity Scene::CreateUIElement(const std::string &name, Entity parent) {
+  if (!parent || !IsUnderCanvas(parent))
+    parent = FindOrCreateCanvas();
+
+  Entity element = CreateEntity(name, parent.GetUUID());
+
+  // CreateEntityWithUUID only sets Parent, so link it into the Children list
+  // or layout and drawing will never reach it.
+  parent.GetComponent<RelationshipComponent>().Children.push_back(element.GetUUID());
+
+  element.AddComponent<RectTransformComponent>(); // defaults: centered, 160x48
+  return element;
+}
+
+
 void Scene::DeleteRuntimeEntity(Entity entity) {
   m_SceneCommandQueue.push_back([this, entity](){
     auto &rc = entity.GetComponent<RelationshipComponent>();
@@ -486,6 +1201,28 @@ Entity Scene::GetEntityByUUID(UUID entityID) {
     return {m_EntityMap.at(entityID), this};
   return {};
 }
+void Scene::SetUIInput(const UIInputFrame &frame) {
+  m_UIInput.Frame = frame;
+}
+
+void Scene::SetSelectedUI(Entity e) {
+UUID next = 0;
+  if (e && e.HasComponent<SelectableComponent>() &&
+    e.GetComponent<SelectableComponent>().Interactable)
+    next = e.GetUUID();
+
+  auto &in = m_UIInput;
+  if (in.Selected == next)
+    return;
+
+  const UUID prev = in.Selected;
+  in.Selected = next;
+  if (prev != 0 && GetEntityByUUID(prev))
+    SendUIEvent(UIEventType::Deselect, prev);
+  if (next != 0)
+    SendUIEvent(UIEventType::Select, next);
+}
+
 Entity Scene::GetPrimaryCameraEntity() {
   CE_PROFILE_FUNCTION();
 
@@ -535,6 +1272,42 @@ Entity Scene::CreateEntityWithUUID(UUID uuid, const std::string &name, UUID pare
   m_EntityMap[uuid] = entity.GetEntityID();
 
   return entity;
+}
+
+Entity Scene::CreateCanvas(const std::string &name, UUID parent) {
+  Entity canvas = CreateEntity(name.empty() ? "Canvas" : name, parent);
+  canvas.AddComponent<CanvasComponent>();
+  // A canvas fills the viewport, so give it a RectTransform for consistency
+  // with the rest of the UI hierarchy.
+  auto &rt = canvas.AddComponent<RectTransformComponent>();
+  rt.ApplyAnchorPreset(UIAnchorPreset::StretchAll);
+  rt.Size = {0.0f, 0.0f};
+  return canvas;
+}
+
+Entity Scene::CreatePanel(UUID parent) {
+  // Use the selected entity if it's inside a canvas, otherwise find/create one.
+  Entity parentEntity = GetEntityByUUID(parent);
+  Entity panel = CreateUIElement("Panel", parentEntity);
+
+  // Panels fill their parent by default, like Unity.
+  auto &rt = panel.GetComponent<RectTransformComponent>();
+  rt.ApplyAnchorPreset(UIAnchorPreset::StretchAll);
+  rt.Size = {0.0f, 0.0f};
+
+  panel.AddComponent<PanelComponent>();
+  return panel;
+}
+
+Entity Scene::CreateButton(UUID parent) {
+  Entity parentEntity = GetEntityByUUID(parent);
+  Entity button = CreateUIElement("Button", parentEntity);
+
+  // Keep the RectTransform defaults: centered, 160x48, which is
+  // Unity's default button size.
+  button.AddComponent<ButtonVisualComponent>();
+  button.AddComponent<SelectableComponent>();
+  return button;
 }
 
 void Scene::DeleteEntity(Entity entity) {
@@ -728,7 +1501,14 @@ Entity Scene::InstantiatePrefab(const UUID &prefabID, const UUID &parentID) {
     Rigidbody2DComponent,
     BoxCollider2DComponent,
     CircleCollider2DComponent,
-    ScriptComponentContainer
+    ScriptComponentContainer,
+    RectTransformComponent,
+    ButtonVisualComponent,
+    PanelComponent,
+    CanvasComponent,
+    CanvasGroupComponent,
+    SelectableComponent,
+    EventListenerComponent
     >(newEntity, prefabRootEntity, false);
 
 
@@ -756,7 +1536,14 @@ Entity Scene::InstantiatePrefab(const UUID &prefabID, const UUID &parentID) {
         BoxCollider2DComponent,
         CircleCollider2DComponent,
         ScriptComponentContainer,
-        PrefabLinkComponent
+        PrefabLinkComponent,
+        RectTransformComponent,
+        ButtonVisualComponent,
+        PanelComponent,
+        CanvasComponent,
+        CanvasGroupComponent,
+        SelectableComponent,
+        EventListenerComponent
         >(newEntity, srcEntity, false);
 
       // Recursively clone children
@@ -1010,7 +1797,14 @@ void Scene::SyncEntityComponentsFromPrefab(Entity dstEntity, Entity srcPrefabEnt
       Rigidbody2DComponent,
       BoxCollider2DComponent,
       CircleCollider2DComponent,
-      ScriptComponentContainer
+      ScriptComponentContainer,
+      RectTransformComponent,
+      ButtonVisualComponent,
+      PanelComponent,
+      CanvasComponent,
+      CanvasGroupComponent,
+      SelectableComponent,
+      EventListenerComponent
       >(dstEntity, srcPrefabEntity);
   } else {
     CopyComponentIfExists<
@@ -1024,7 +1818,14 @@ void Scene::SyncEntityComponentsFromPrefab(Entity dstEntity, Entity srcPrefabEnt
       Rigidbody2DComponent,
       BoxCollider2DComponent,
       CircleCollider2DComponent,
-      ScriptComponentContainer
+      ScriptComponentContainer,
+      RectTransformComponent,
+      ButtonVisualComponent,
+      PanelComponent,
+      CanvasComponent,
+      CanvasGroupComponent,
+      SelectableComponent,
+      EventListenerComponent
       >(dstEntity, srcPrefabEntity, forceUpdate);
   }
 
@@ -1062,6 +1863,13 @@ void Scene::SyncEntityComponentsFromPrefab(Entity dstEntity, Entity srcPrefabEnt
   removeIfMissingOnPrefab.template operator()<BoxCollider2DComponent>();
   removeIfMissingOnPrefab.template operator()<CircleCollider2DComponent>();
   removeIfMissingOnPrefab.template operator()<ScriptComponentContainer>();
+  removeIfMissingOnPrefab.template operator()<RectTransformComponent>();
+  removeIfMissingOnPrefab.template operator()<ButtonVisualComponent>();
+  removeIfMissingOnPrefab.template operator()<PanelComponent>();
+  removeIfMissingOnPrefab.template operator()<CanvasComponent>();
+  removeIfMissingOnPrefab.template operator()<CanvasGroupComponent>();
+  removeIfMissingOnPrefab.template operator()<SelectableComponent>();
+  removeIfMissingOnPrefab.template operator()<EventListenerComponent>();
 }
 
 void Scene::SyncPrefabHierarchyRecursive(Entity dstEntity, Entity srcPrefabEntity, AssetHandle prefabID, uint64_t prefabVersion, bool forceUpdate) {
@@ -1170,6 +1978,65 @@ void Scene::UpdateAllPrefabs() {
     RecursiveUpdatePrefabs(entity);
   }
 }
+Entity Scene::FindOwningCanvas(Entity entity) {
+  // The step limit guards against a corrupted (cyclic) parent chain
+  // turning into an infinite loop.
+  size_t steps = 0;
+  const size_t maxSteps = m_EntityMap.size();
+
+  while (entity && steps++ <= maxSteps) {
+    if (entity.HasComponent<CanvasComponent>())
+      return entity;
+
+    if (!entity.HasComponent<RelationshipComponent>())
+      break;
+
+    const UUID parentID = entity.GetComponent<RelationshipComponent>().Parent;
+    if (parentID == 0)
+      break;
+
+    entity = GetEntityByUUID(parentID);
+  }
+
+  return {};
+}
+
+bool Scene::IsUnderCanvas(Entity entity) {
+  return static_cast<bool>(FindOwningCanvas(entity));
+}
+
+const UIScreenRect *Scene::GetUIRect(UUID entityID) const {
+  auto it = m_UIRects.find(entityID);
+  return it != m_UIRects.end() ? &it->second : nullptr;
+}
+Entity Scene::PickUI(const glm::vec2 &p) {
+    for (auto it = m_UIDrawList.rbegin(); it != m_UIDrawList.rend(); ++it) {
+    const UIScreenRect *r = GetUIRect(it->Entity);
+    if (!r || p.x < r->Min.x || p.x > r->Max.x || p.y < r->Min.y || p.y > r->Max.y)
+      continue;
+    Entity e = GetEntityByUUID(it->Entity);
+    if (e && (e.HasComponent<PanelComponent>() || e.HasComponent<ButtonVisualComponent>()))
+      return e;
+  }
+  return {};
+}
+
+Scene::UIElementInfo Scene::GetUIElementInfo(UUID id) const {
+  UIElementInfo info;
+  const UIDrawItem *item = FindUIDrawItem(id);
+  const UIScreenRect *r = GetUIRect(id);
+  if (!item || !r) return info;
+
+  info.Valid = true;
+  info.Min = r->Min; info.Max = r->Max;
+  info.Hovered = m_UIInput.Hovered == id;
+  info.Pressed = m_UIInput.Btn[0].Down && m_UIInput.Btn[0].PressTarget == id;
+  info.Selected = m_UIInput.Selected == id;
+  info.Alpha = item->Alpha;
+  info.Interactable = item->Interactable;
+  // (and the selectable's own Interactable flag, if present)
+  return info;
+}
 
 void Scene::ExecuteSceneCommandQueue() {
   std::vector<std::function<void()>> copy;
@@ -1261,5 +2128,26 @@ void Scene::OnComponentAdded<IDComponent>(Entity entity, IDComponent &component)
 
 template <>
 void Scene::OnComponentAdded<RelationshipComponent>(Entity entity, RelationshipComponent &component) {}
+
+template <>
+void Scene::OnComponentAdded<RectTransformComponent>(Entity entity, RectTransformComponent &component) {}
+
+template <>
+void Scene::OnComponentAdded<ButtonVisualComponent>(Entity entity, ButtonVisualComponent &component) {}
+
+template <>
+void Scene::OnComponentAdded<PanelComponent>(Entity entity, PanelComponent &component) {}
+
+template <>
+void Scene::OnComponentAdded<CanvasComponent>(Entity entity, CanvasComponent &component) {}
+
+template <>
+void Scene::OnComponentAdded<CanvasGroupComponent>(Entity entity, CanvasGroupComponent &component) {}
+
+template <>
+void Scene::OnComponentAdded<SelectableComponent>(Entity entity, SelectableComponent &component) {}
+
+template <>
+void Scene::OnComponentAdded<EventListenerComponent>(Entity entity, EventListenerComponent &component) {}
 
 } // namespace CatEngine

@@ -66,6 +66,21 @@ private:
   void PasteEntity();
 
   void OnOverlayRender();
+  void OnUIOverlay(Entity selectedEntity);
+
+  bool MouseToCanvas(glm::vec2 &out);
+  void BeginUIDrag(Entity selected);
+  void UpdateUIDrag();
+  void EndUIDrag() { m_UIDrag = {}; }
+private:
+
+  struct UIDragState {
+    bool Active = false;
+    UUID Entity = 0;
+    glm::vec2 StartCanvas{0.0f};   // pointer in canvas pixels at press
+    glm::vec2 StartPosition{0.0f}; // RectTransform.Position at press
+    float Scale = 1.0f;
+  } m_UIDrag;
 
 private:
   Scope<PanelManager> m_PanelManager;

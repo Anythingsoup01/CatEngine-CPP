@@ -14,4 +14,12 @@ void DrawBoxCollider2DComponent(Entity selection);
 void DrawCircleCollider2DComponent(Entity selection);
 void DrawScriptComponent(Entity selection);
 
+void DrawCanvasComponent(Entity selection);
+void DrawCanvasGroupComponent(Entity selection);
+void DrawPanelComponent(Entity selection);
+void DrawButtonComponent(Entity selection);
+void DrawRectTransformComponent(Entity selection);
+void DrawSelectableComponent(Entity selection);
+void DrawEventListenerComponent(Entity selection);
+
 }

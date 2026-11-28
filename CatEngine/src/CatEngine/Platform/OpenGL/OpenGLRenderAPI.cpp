@@ -49,11 +49,22 @@ void OpenGLRenderAPI::SetViewport(uint32_t width, uint32_t height) {
   CE_PROFILE_FUNCTION();
   glViewport(0, 0, width, height);
 }
+void OpenGLRenderAPI::SetViewport(uint32_t x, uint32_t y, uint32_t w, uint32_t h) {
+  CE_PROFILE_FUNCTION();
+  glViewport(x, y, w, h);
+}
 
 void OpenGLRenderAPI::Clear(const glm::vec4 &clearColor) {
   CE_PROFILE_FUNCTION();
   glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
   glClear(GL_COLOR_BUFFER_BIT);
+}
+
+void OpenGLRenderAPI::ClearRegion(int x, int y, int w, int h, const glm::vec4 &clearColor) {
+  glEnable(GL_SCISSOR_TEST);
+  glScissor(x, y, w, h);
+  Clear(clearColor);
+  glDisable(GL_SCISSOR_TEST);
 }
 
 void OpenGLRenderAPI::DrawIndexed(const Ref<VertexArray> &vertexArray) {

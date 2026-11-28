@@ -17,6 +17,46 @@
 
 namespace CatEngine {
 
+template <typename T>
+T &EnsureComponent(Entity e) {
+  return e.HasComponent<T>() ? e.GetComponent<T>() : e.AddComponent<T>();
+}
+
+// Existing RectTransforms are never touched. A new one optionally starts out
+// stretched to fill its parent, like the Create UI menu items do.
+RectTransformComponent &EnsureRectTransform(Entity e, bool stretch) {
+  if (e.HasComponent<RectTransformComponent>())
+    return e.GetComponent<RectTransformComponent>();
+
+  auto &rt = e.AddComponent<RectTransformComponent>();
+  if (stretch) {
+    rt.ApplyAnchorPreset(UIAnchorPreset::StretchAll);
+    rt.Size = {0.0f, 0.0f};
+  }
+  return rt;
+}
+
+// Adds T plus everything it needs to work.
+template <typename T>
+void AddComponentWithDependencies(Entity e) {
+  if constexpr (std::is_same_v<T, CanvasComponent> ||
+                std::is_same_v<T, CanvasGroupComponent> ||
+                std::is_same_v<T, PanelComponent>) {
+    EnsureRectTransform(e, /*stretch*/ true);
+  } else if constexpr (std::is_same_v<T, ButtonVisualComponent>) {
+    EnsureRectTransform(e, false);
+    EnsureComponent<SelectableComponent>(e); // a button that can't be hovered or clicked is useless
+  } else if constexpr (std::is_same_v<T, SelectableComponent> ||
+                       std::is_same_v<T, EventListenerComponent>) {
+    EnsureRectTransform(e, false);
+  } else if constexpr (std::is_same_v<T, BoxCollider2DComponent> ||
+                       std::is_same_v<T, CircleCollider2DComponent>) {
+    EnsureComponent<Rigidbody2DComponent>(e); // colliders need a body to exist in the simulation
+  }
+
+  EnsureComponent<T>(e);
+}
+
 InspectorPanel::InspectorPanel(const Ref<Scene> &context)
     : m_Context(context) {}
 
@@ -46,15 +86,18 @@ void InspectorPanel::OnImGuiRender(bool &isOpen) {
 
       DrawComponents(m_EntitySelection);
 
-      bool Components2DAvaliable =
-          ((!m_EntitySelection.HasComponent<SpriteRendererComponent>() &&
-            !m_EntitySelection.HasComponent<CircleRendererComponent>()) ||
-           !m_EntitySelection.HasComponent<Rigidbody2DComponent>() ||
-           (!m_EntitySelection.HasComponent<BoxCollider2DComponent>() &&
-            !m_EntitySelection.HasComponent<CircleCollider2DComponent>()));
+
+      const bool isUI = m_EntitySelection.HasComponent<RectTransformComponent>();
+      const bool hasWorld2D =
+        m_EntitySelection.HasComponent<CameraComponent>() ||
+        m_EntitySelection.HasComponent<SpriteRendererComponent>() ||
+        m_EntitySelection.HasComponent<CircleRendererComponent>() ||
+        m_EntitySelection.HasComponent<Rigidbody2DComponent>() ||
+        m_EntitySelection.HasComponent<BoxCollider2DComponent>() ||
+        m_EntitySelection.HasComponent<CircleCollider2DComponent>();
 
       float lineHeight =
-          GImGui->Font->LegacySize + GImGui->Style.FramePadding.y * 2.0f;
+        GImGui->Font->LegacySize + GImGui->Style.FramePadding.y * 2.0f;
 
       float buttonSize = contentRegionAvailable.x / 2.f;
       ImGui::SetCursorPosX(buttonSize - (buttonSize / 2.f));
@@ -63,21 +106,33 @@ void InspectorPanel::OnImGuiRender(bool &isOpen) {
         ImGui::OpenPopup("AddComponent");
 
       if (ImGui::BeginPopup("AddComponent")) {
-        DisplayAddComponentEntry<CameraComponent>("Camera Component");
-        if (Components2DAvaliable) {
-          bool opened = ImGui::TreeNodeEx("2D Components", treeNodeFlags);
+        if (!isUI) {
+          DisplayAddComponentEntry<CameraComponent>("Camera Component");
 
-          if (opened) {
+          if (ImGui::TreeNodeEx("2D Components", treeNodeFlags)) {
             DisplayAddComponentEntries<SpriteRendererComponent,
-                                       CircleRendererComponent>(
+              CircleRendererComponent>(
                 "Sprite Renderer Component", "Circle Renderer Component");
             DisplayAddComponentEntry<Rigidbody2DComponent>("Rigidbody 2D");
             DisplayAddComponentEntries<BoxCollider2DComponent,
-                                       CircleCollider2DComponent>(
+              CircleCollider2DComponent>(
                 "Box Collider 2D", "Circle Collider 2D");
             ImGui::TreePop();
           }
         }
+
+        if (!hasWorld2D) {
+          if (ImGui::TreeNodeEx("UI", treeNodeFlags)) {
+            DisplayAddComponentEntry<CanvasComponent>("Canvas");
+            DisplayAddComponentEntry<CanvasGroupComponent>("Canvas Group");
+            DisplayAddComponentEntry<PanelComponent>("Panel");
+            DisplayAddComponentEntry<ButtonVisualComponent>("Button");
+            DisplayAddComponentEntry<SelectableComponent>("Selectable");
+            DisplayAddComponentEntry<EventListenerComponent>("Event Listener");
+            ImGui::TreePop();
+          }
+        }
+
         DisplayAddScriptComponent("Script");
         ImGui::EndPopup();
       }
@@ -730,7 +785,7 @@ template <typename T>
 void InspectorPanel::DisplayAddComponentEntry(const std::string &entryName) {
   if (!m_EntitySelection.HasComponent<T>()) {
     if (ImGui::MenuItem(entryName.c_str())) {
-      m_EntitySelection.AddComponent<T>();
+      AddComponentWithDependencies<T>(m_EntitySelection);
       ImGui::CloseCurrentPopup();
     }
   }
@@ -739,17 +794,14 @@ void InspectorPanel::DisplayAddComponentEntry(const std::string &entryName) {
 template <typename T, typename O>
 void InspectorPanel::DisplayAddComponentEntries(
     const std::string &entryOneName, const std::string &entryTwoName) {
-    if (!m_EntitySelection.HasComponent<T>() &&
+  if (!m_EntitySelection.HasComponent<T>() &&
       !m_EntitySelection.HasComponent<O>()) {
     if (ImGui::MenuItem(entryOneName.c_str())) {
-      m_EntitySelection.AddComponent<T>();
+      AddComponentWithDependencies<T>(m_EntitySelection);
       ImGui::CloseCurrentPopup();
     }
-  }
-  if (!m_EntitySelection.HasComponent<O>() &&
-      !m_EntitySelection.HasComponent<T>()) {
     if (ImGui::MenuItem(entryTwoName.c_str())) {
-      m_EntitySelection.AddComponent<O>();
+      AddComponentWithDependencies<O>(m_EntitySelection);
       ImGui::CloseCurrentPopup();
     }
   }

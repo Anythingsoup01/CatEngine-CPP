@@ -49,7 +49,12 @@ public:
   }
 
   float GetAspectRatio() const { return m_AspectRatio; }
-  void SetAspectRatio(float aspectRatio) { m_AspectRatio = aspectRatio; }
+  void SetAspectRatio(float aspectRatio) {
+    if (m_AspectRatio == aspectRatio)
+      return;
+    m_AspectRatio = aspectRatio;
+    RecalculateProjection();
+  }
 
   ProjectionType GetProjectionType() const { return m_ProjectionType; }
   void SetProjectionType(ProjectionType projectionType) {

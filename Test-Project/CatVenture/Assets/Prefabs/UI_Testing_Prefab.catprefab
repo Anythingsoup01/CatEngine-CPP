@@ -1,0 +1,143 @@
+Prefab: CatEngine Prefab
+Entities:
+  - Entity: 9963837735260762044
+    TagComponent:
+      Tag: None
+      PrefabDirty: false
+    LayerComponent:
+      Layer: Default
+      PrefabDirty: false
+    NameComponent:
+      Name: Canvas_Test
+      PrefabDirty: false
+    ObjectStateComponent:
+      Locked: false
+      SelfLocked: false
+      HierarchyLocked: false
+      Active: true
+      SelfActive: true
+      HierarchyActive: true
+      PrefabDirty: false
+      PrefabAdded: false
+    TransformComponent:
+      LocalPosition: [0, 0, 0]
+      LocalRotation: [0, 0, 0]
+      LocalScale: [1, 1, 1]
+      PrefabDirty: false
+    RectTransformComponent:
+      AnchorPreset: 9
+      AnchorMin: [0, 0]
+      AnchorMax: [1, 1]
+      Pivot: [0.5, 0.5]
+      Position: [0, 0]
+      Size: [0, 0]
+      Rotation: 0
+      PrefabDirty: false
+    CanvasComponent:
+      RenderMode: 0
+      SortOrder: 0
+      ScaleMode: 1
+      ScaleFactor: 1
+      ReferenceResolution: [1920, 1080]
+      ScreenMatchMode: 0
+      MatchWidthOrHeight: 1
+      PrefabDirty: false
+    RelationshipComponent:
+      ParentID: 0
+      Children:
+        - Entity: 4123112598242108193
+          TagComponent:
+            Tag: None
+            PrefabDirty: false
+          LayerComponent:
+            Layer: Default
+            PrefabDirty: false
+          NameComponent:
+            Name: Panel
+            PrefabDirty: false
+          ObjectStateComponent:
+            Locked: false
+            SelfLocked: false
+            HierarchyLocked: false
+            Active: true
+            SelfActive: true
+            HierarchyActive: true
+            PrefabDirty: false
+            PrefabAdded: false
+          TransformComponent:
+            LocalPosition: [0, 0, 0]
+            LocalRotation: [0, 0, 0]
+            LocalScale: [1, 1, 1]
+            PrefabDirty: false
+          RectTransformComponent:
+            AnchorPreset: 9
+            AnchorMin: [0, 0]
+            AnchorMax: [1, 1]
+            Pivot: [0.5, 0.5]
+            Position: [0, 0]
+            Size: [0, 0]
+            Rotation: 0
+            PrefabDirty: false
+          PanelComponent:
+            Color: [1, 1, 1, 0.899999976]
+            Texture: 0
+            RaycastTarget: true
+            PrefabDirty: false
+          RelationshipComponent:
+            ParentID: 9963837735260762044
+            Children:
+              []
+        - Entity: 9807004280665795883
+          TagComponent:
+            Tag: None
+            PrefabDirty: false
+          LayerComponent:
+            Layer: Default
+            PrefabDirty: false
+          NameComponent:
+            Name: Button
+            PrefabDirty: false
+          ObjectStateComponent:
+            Locked: false
+            SelfLocked: false
+            HierarchyLocked: false
+            Active: true
+            SelfActive: true
+            HierarchyActive: true
+            PrefabDirty: false
+            PrefabAdded: false
+          TransformComponent:
+            LocalPosition: [0, 0, 0]
+            LocalRotation: [0, 0, 0]
+            LocalScale: [1, 1, 1]
+            PrefabDirty: false
+          RectTransformComponent:
+            AnchorPreset: 4
+            AnchorMin: [0.5, 0.5]
+            AnchorMax: [0.5, 0.5]
+            Pivot: [0.5, 0.5]
+            Position: [-472.701294, 303.769379]
+            Size: [160, 158]
+            Rotation: 0
+            PrefabDirty: false
+          ButtonVisualComponent:
+            NormalColor: [1, 1, 1, 1]
+            Texture: 9011015729964880298
+            RaycastTarget: true
+            PrefabDirty: false
+          SelectableComponent:
+            Interactable: true
+            Navigable: true
+            Transition: 1
+            NormalTint: [1, 1, 1, 1]
+            HighlightedTint: [0.959999979, 0.959999979, 0.959999979, 1]
+            PressedTint: [0.779999971, 0.779999971, 0.779999971, 1]
+            SelectedTint: [0.959999979, 0.959999979, 0.959999979, 1]
+            DisabledTint: [0.779999971, 0.779999971, 0.779999971, 0.5]
+            FadeDuration: 0.100000001
+            TintChildren: false
+            PrefabDirty: false
+          RelationshipComponent:
+            ParentID: 9963837735260762044
+            Children:
+              []
